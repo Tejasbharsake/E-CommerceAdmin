@@ -1,0 +1,394 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+<div class="modal-header text-white" style="background: #2C3E50;">
+    <h5 class="modal-title" id="updateOfferModalLabel">Update Offer</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="modal-body">
+    @using (Html.BeginForm("UpdateOfferPK", "Admin", FormMethod.Post, new { id = "editOfferForm" }))
+    {
+        @Html.HiddenFor(m => m.OfferCode)
+        @Html.HiddenFor(m => m.OfferDuration)
+
+        <!-- Offer Name - Always visible for updates -->
+        <div class="mb-3" id="offerNameContainer">
+            @Html.LabelFor(m => m.OfferNameId, "Offer Name", new { @class = "form-label" })
+            @Html.DropDownListFor(m => m.OfferNameId,
+                ViewBag.OfferNames as IEnumerable<SelectListItem>,
+                "-- Select Offer Name --",
+                new { @class = "form-select", id = "OfferNameId", required = "required" })
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                @Html.LabelFor(m => m.OfferStartDate, "Start Date", new { @class = "form-label" })
+                @Html.TextBoxFor(m => m.OfferStartDate, "{0:yyyy-MM-dd}",
+                    new { @type = "date", @class = "form-control", id = "editOfferStartDate", required = "required" })
+            </div>
+            <div class="col-md-6 mb-3">
+                @Html.LabelFor(m => m.OfferEndDate, "End Date", new { @class = "form-label" })
+                @Html.TextBoxFor(m => m.OfferEndDate, "{0:yyyy-MM-dd}",
+                    new { @type = "date", @class = "form-control", id = "editOfferEndDate", required = "required" })
+            </div>
+        </div>
+
+        <!-- Discount -->
+        @*<div class="mb-3">
+                @Html.LabelFor(m => m.OfferDiscountPercentage, "Discount Percentage", new { @class = "form-label" })
+                <div class="input-group">
+                    @Html.TextBoxFor(m => m.OfferDiscountPercentage,
+                        new { @class = "form-control", type = "number", step = "0.01", min = "0", max = "100", required = "required" })
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>*@
+
+        <div class="mb-3">
+            @Html.LabelFor(
+                m => m.OfferDiscountPercentage,
+                "Discount Percentage",
+                new { @class = "form-label" }
+            )
+            <div class="input-group">
+                @Html.TextBoxFor(
+                    m => m.OfferDiscountPercentage,
+                    new
+                    {
+                        @class = "form-control",
+                        placeholder = "Enter like 10.50%",
+                        type = "text",
+                        pattern = @"^\d{1,2}(\.\d{1,2})?$", // allows 0–99.99
+                        title = "Enter a valid discount (e.g., 20.22)",
+                        maxlength = "5", // max like 99.99
+                        oninput = "this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*)\\./g, '$1');" // allow only digits and one dot
+                    }
+                )
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+
+
+        <!-- Categories -->
+        <div class="mb-3" id="mainCategoryContainer">
+            @Html.LabelFor(m => m.MainCategoryCode, "Main Category", new { @class = "form-label" })
+            @Html.DropDownListFor(m => m.MainCategoryCode,
+                ViewBag.MainCategories as IEnumerable<SelectListItem>,
+                "-- Select Main Category --",
+                new { @class = "form-select", id = "editMainCategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="sub1CategoryContainer">
+            @Html.LabelFor(m => m.Sub1CategoryCode, "Sub1 Category", new { @class = "form-label" })
+            @Html.DropDownListFor(m => m.Sub1CategoryCode,
+                ViewBag.Sub1Categories as IEnumerable<SelectListItem>,
+                "-- Select Sub1 Category --",
+                new { @class = "form-select", id = "editSub1CategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="sub2CategoryContainer">
+            @Html.LabelFor(m => m.Sub2CategoryCode, "Sub2 Category", new { @class = "form-label" })
+            @Html.DropDownListFor(m => m.Sub2CategoryCode,
+                ViewBag.Sub2Categories as IEnumerable<SelectListItem>,
+                "-- Select Sub2 Category --",
+                new { @class = "form-select", id = "editSub2CategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="sub3CategoryContainer">
+            @Html.LabelFor(m => m.Sub3CategoryCode, "Sub3 Category", new { @class = "form-label" })
+            @Html.DropDownListFor(m => m.Sub3CategoryCode,
+                ViewBag.Sub3Categories as IEnumerable<SelectListItem>,
+                "-- Select Sub3 Category --",
+                new { @class = "form-select", id = "editSub3CategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="sub4CategoryContainer">
+            @Html.LabelFor(m => m.Sub4CategoryCode, "Sub4 Category", new { @class = "form-label" })
+            @Html.DropDownListFor(m => m.Sub4CategoryCode,
+                ViewBag.Sub4Categories as IEnumerable<SelectListItem>,
+                "-- Select Sub4 Category --",
+                new { @class = "form-select", id = "editSub4CategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="sub5CategoryContainer">
+            @Html.LabelFor(m => m.Sub5CategoryCode, "Sub5 Category", new { @class = "form-label" })
+            @Html.DropDownListFor(m => m.Sub5CategoryCode,
+                ViewBag.Sub5Categories as IEnumerable<SelectListItem>,
+                "-- Select Sub5 Category --",
+                new { @class = "form-select", id = "editSub5CategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="productContainer">
+            @Html.LabelFor(m => m.ProductCode, "Product", new { @class = "form-label" })
+            @Html.DropDownListFor(m => m.ProductCode,
+                ViewBag.Products as IEnumerable<SelectListItem>,
+                "-- Select Product --",
+                new { @class = "form-select", id = "editProductDropdown" })
+        </div>
+
+        <div class="modal-footer">
+
+            <button type="submit" class="btn btn-warning">Update Offer</button>
+        </div>
+    }
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        // ✅ Hide empty fields on modal open (but NEVER hide Offer Name for updates)
+        $('#updateOfferModal').on('shown.bs.modal', function () {
+            // Always show offer name container for updates
+            $('#offerNameContainer').show();
+
+            // Only hide other empty fields
+            toggleEmptyField('#editMainCategoryDropdown', '#mainCategoryContainer');
+            toggleEmptyField('#editSub1CategoryDropdown', '#sub1CategoryContainer');
+            toggleEmptyField('#editSub2CategoryDropdown', '#sub2CategoryContainer');
+            toggleEmptyField('#editSub3CategoryDropdown', '#sub3CategoryContainer');
+            toggleEmptyField('#editSub4CategoryDropdown', '#sub4CategoryContainer');
+            toggleEmptyField('#editSub5CategoryDropdown', '#sub5CategoryContainer');
+            toggleEmptyField('#editProductDropdown', '#productContainer');
+        });
+
+        function toggleEmptyField(inputSelector, containerSelector) {
+            if (!$(inputSelector).val()) {
+                $(containerSelector).hide();
+            } else {
+                $(containerSelector).show();
+            }
+        }
+
+        // ✅ Function to update End Date based on Duration
+        function updateEndDateFromDuration() {
+            var startDate = new Date($('#editOfferStartDate').val());
+            var duration = parseInt($('#OfferDuration').val(), 10);
+
+            if (!isNaN(startDate.getTime()) && duration > 0) {
+                var endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + duration - 1);
+                $('#editOfferEndDate').val(endDate.toISOString().split('T')[0]);
+            }
+        }
+
+        // ✅ Function to update Duration based on Start & End Date
+        function updateDurationFromDates() {
+            var startDate = new Date($('#editOfferStartDate').val());
+            var endDate = new Date($('#editOfferEndDate').val());
+
+            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && endDate >= startDate) {
+                var duration = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                $('#OfferDuration').val(duration);
+            }
+        }
+
+        // ✅ When Start Date changes → Update End Date based on Duration
+        $('#editOfferStartDate').on('change', function () {
+            updateEndDateFromDuration();
+        });
+
+        // ✅ When End Date changes → Update Duration
+        $('#editOfferEndDate').on('change', function () {
+            updateDurationFromDates();
+        });
+
+        // ✅ When Duration changes → Update End Date
+        $('#OfferDuration').on('input', function () {
+            updateEndDateFromDuration();
+        });
+
+        // ✅ On modal load, auto-fill End Date if Start Date & Duration exist
+        updateEndDateFromDuration();
+
+        // ✅ Cascading Dropdowns
+        $('#editMainCategoryDropdown').change(function () {
+            let mainCode = $(this).val();
+            clearDropdownsFrom('#editSub1CategoryDropdown');
+            if (mainCode) {
+                loadDropdown('/Admin/GetSub1CategoriesByMainPK', { MainCategoryCode: mainCode }, '#editSub1CategoryDropdown');
+            }
+        });
+
+        $('#editSub1CategoryDropdown').change(function () {
+            let sub1 = $(this).val();
+            clearDropdownsFrom('#editSub2CategoryDropdown');
+            if (sub1) {
+                loadDropdown('/Admin/GetSub2CategoriesBySub1PK', { Sub1CategoryCode: sub1 }, '#editSub2CategoryDropdown');
+            }
+        });
+
+        $('#editSub2CategoryDropdown').change(function () {
+            let sub2 = $(this).val();
+            clearDropdownsFrom('#editSub3CategoryDropdown');
+            if (sub2) {
+                loadDropdown('/Admin/GetSub3CategoriesBySub2PK', { Sub2CategoryCode: sub2 }, '#editSub3CategoryDropdown');
+            }
+        });
+
+        $('#editSub3CategoryDropdown').change(function () {
+            let sub3 = $(this).val();
+            clearDropdownsFrom('#editSub4CategoryDropdown');
+            if (sub3) {
+                loadDropdown('/Admin/GetSub4CategoriesBySub3PK', { Sub3CategoryCode: sub3 }, '#editSub4CategoryDropdown');
+            }
+        });
+
+        $('#editSub4CategoryDropdown').change(function () {
+            let sub4 = $(this).val();
+            clearDropdownsFrom('#editSub5CategoryDropdown');
+            if (sub4) {
+                loadDropdown('/Admin/GetSub5CategoriesBySub4PK', { Sub4CategoryCode: sub4 }, '#editSub5CategoryDropdown');
+            }
+        });
+
+        $('#editSub5CategoryDropdown').change(function () {
+            let sub5 = $(this).val();
+            $('#editProductDropdown').empty().append($('<option>').val('').text('-- Select Product --'));
+            if (sub5) {
+                loadDropdown('/Admin/GetProductsBySub5', { Sub5CategoryCode: sub5 }, '#editProductDropdown');
+            }
+        });
+
+        $('#editProductDropdown').on('change', function () {
+            var product = $(this).val();
+            if (product) {
+                $('#editMainCategoryDropdown, #editSub1CategoryDropdown').val('');
+            }
+        });
+
+        //// ✅ AJAX form submit
+        //$('#editOfferForm').submit(function (e) {
+        //    e.preventDefault();
+        //    var form = $(this);
+
+        //    $.ajax({
+        //        url: form.attr('action'),
+        //        type: 'POST',
+        //        data: form.serialize(),
+        //        success: function (response) {
+        //            if (response.success) {
+        //                $('#updateOfferModal').modal('hide');
+        //                /*showToast('success', 'Offer Updated', response.message);*/
+        //                setTimeout(() => location.reload(), 1500);
+        //            } else {
+        //                showToast('error', 'Error', response.message);
+        //            }
+        //        },
+        //        error: function () {
+        //            showToast('error', 'Error', 'An error occurred while updating the offer.');
+        //        }
+        //    });
+        //});
+
+
+        // ✅ AJAX form submit with SweetAlert
+        $('#editOfferForm').submit(function (e) {
+            e.preventDefault();
+            var form = $(this);
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+                success: function (response) {
+                    if (response.success) {
+                        $('#updateOfferModal').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Updated!',
+                            text: response.message || 'Offer updated successfully.',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true
+                        }).then(() => {
+                            location.reload(); // Reload after success
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'Failed to update offer.',
+                            confirmButtonColor: '#d33'
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while updating the offer.',
+                        confirmButtonColor: '#d33'
+                    });
+                }
+            });
+        });
+
+
+        // ✅ Preload dependent dropdowns if values are already selected
+        setTimeout(function () {
+            if ($('#editMainCategoryDropdown').val()) {
+                $('#editMainCategoryDropdown').trigger('change');
+            }
+            if ($('#editSub1CategoryDropdown').val()) {
+                $('#editSub1CategoryDropdown').trigger('change');
+            }
+            if ($('#editSub2CategoryDropdown').val()) {
+                $('#editSub2CategoryDropdown').trigger('change');
+            }
+            if ($('#editSub3CategoryDropdown').val()) {
+                $('#editSub3CategoryDropdown').trigger('change');
+            }
+            if ($('#editSub4CategoryDropdown').val()) {
+                $('#editSub4CategoryDropdown').trigger('change');
+            }
+            if ($('#editSub5CategoryDropdown').val()) {
+                $('#editSub5CategoryDropdown').trigger('change');
+            }
+        }, 500); // Small delay to ensure modal is fully loaded
+
+    });
+
+    // ✅ Helper Functions
+    function loadDropdown(url, data, target) {
+        $.post(url, data, function (res) {
+            var dropdown = $(target);
+            dropdown.empty().append($('<option>').val('').text('-- Select --'));
+            $.each(res, function (i, item) {
+                dropdown.append($('<option>').val(item.Value).text(item.Text));
+            });
+        });
+    }
+
+    function clearDropdownsFrom(startSelector) {
+        const dropdowns = [
+            '#editSub1CategoryDropdown',
+            '#editSub2CategoryDropdown',
+            '#editSub3CategoryDropdown',
+            '#editSub4CategoryDropdown',
+            '#editSub5CategoryDropdown',
+            '#editProductDropdown'
+        ];
+
+        let clear = false;
+        for (let id of dropdowns) {
+            if (id === startSelector) clear = true;
+            if (clear) {
+                $(id).empty().append($('<option>').val('').text('-- Select --'));
+            }
+        }
+    }
+
+    function showToast(type, title, message) {
+        var toast = `<div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>`;
+        $('#toastContainer').append(toast);
+        $('.toast').toast('show');
+    }
+
+</script>

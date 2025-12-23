@@ -1,0 +1,614 @@
+﻿@model IEnumerable<GSTECommerceLibrary.Admin.Admin>
+
+<!-- DataTables + Buttons CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.dataTables.min.css" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<!-- Daterangepicker CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" />
+
+<!-- External Custom CSS -->
+<link href="~/Content/Document/CSS/PaymentHistorySeller.css" rel="stylesheet" />
+
+<style>
+    /* Custom styles for compact date picker */
+    .compact-date-picker {
+        max-width: 200px;
+        font-size: 0.9rem;
+    }
+
+    .compact-btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        height: 38px;
+    }
+
+    .btn-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Enhanced DataTable button styling */
+    .dt-button {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 5px 12px !important;
+        font-size: 13px !important;
+        font-weight: 500;
+        border: 1px solid #0d6efd !important;
+        background-color: transparent !important;
+        color: #0d6efd !important;
+        box-shadow: none !important;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .dt-button:hover {
+            background-color: #0d6efd !important;
+            color: white !important;
+        }
+
+    /* Pagination */
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 2px 8px;
+        margin: 0 2px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        color: #495057 !important;
+        cursor: pointer;
+    }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background-color: #0d6efd !important;
+            color: white !important;
+            border: 1px solid #0d6efd;
+        }
+
+    /* Export Buttons Transparent Fix */
+    .dt-button,
+    .dt-button:active,
+    .dt-button:focus {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: 1px solid #0d6efd !important;
+    }
+
+    /* Reduce header height */
+    #table1 thead th {
+        background-color: #2C3E50; /* Solid Navy */
+        color: #FFFFFF; /* White text */
+        font-weight: 600;
+        text-align: center;
+        padding: 5px;
+        border-bottom: 2px solid #ddd;
+        font-size: 14px; /* smaller text */
+        height: 8px !important; /* fixed header height */
+        font-family: 'Poppins', sans-serif; /* Added font */
+        vertical-align: middle;
+    }
+
+    /* Reduce body row height */
+    #table1 tbody td {
+        padding: 2px 5px !important;
+        height: 5px !important;
+        line-height: 1;
+        font-size: 13px;
+        text-align: center;
+        font-family: 'Poppins', sans-serif; /* Added font */
+        vertical-align: middle;
+    }
+
+    /* Target DataTables pagination buttons */
+    #table1_paginate .pagination .page-link {
+        padding: 2px 10px;
+        font-size: 12px;
+        min-width: 33px;
+    }
+</style>
+
+<div class="row mb-3">
+    <div class="col-md-6 d-flex align-items-center">
+    </div>
+    <div class="col-md-6 text-end"></div>
+</div>
+
+<!-- Date Range Filter Section - Compact Layout -->
+<div class="row mb-4 align-items-end">
+    <div class="col-md-auto">
+        <label class="form-label fw-semibold mb-1">Date Range Picker</label>
+        <input class="form-control input-daterange-datepicker compact-date-picker" type="text" name="daterange" autocomplete="off" placeholder="Select Date Range" />
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table id="table1" class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="selectAll" /></th>
+                <th>Sr No</th>
+                <th>Client Code</th>
+                <th>Seller Name</th>
+                <th>Transaction ID</th>
+                <th>Payment Date</th>
+                <th>Paid Amount ₹ </th>
+                <th>Paid From Date</th>
+                <th>Paid To Date</th>
+                <th>Order Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                int srNo = 1;
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td><input type="checkbox" class="payment-checkbox" value="@item.ClientCode" /></td>
+                        <td>@srNo</td>
+                        <td>@item.ClientCode</td>
+                        <td>@item.SellerName</td>
+                        <td>@item.TransactionId</td>
+                        <td>@(item.PaymentDate.HasValue ? item.PaymentDate.Value.ToString("yyyy-MM-dd") : "")</td>
+                        <td>@item.PaidAmount</td>
+                        <td>@(!string.IsNullOrEmpty(item.PaidDateFrom) ? DateTime.Parse(item.PaidDateFrom).ToString("dd-MM-yyyy") : "")</td>
+                        <td>@(!string.IsNullOrEmpty(item.PaidDateTo) ? DateTime.Parse(item.PaidDateTo).ToString("dd-MM-yyyy") : "")</td>
+                        <td>
+                            <a href="javascript:void(0);"
+                               class="order-count-link text-dark"
+                               data-transaction="@item.TransactionId"
+                               data-seller="@item.SellerName">
+                                @item.OrderCount
+                            </a>
+                        </td>
+                    </tr>
+                    srNo++;
+                }
+            }
+            else
+            {
+                <tr><td colspan="10" class="text-center">No records found.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for Order Details -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Order Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="orderDetailsContent" class="p-2">
+                    <p class="text-muted">Select an order count to view details...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification HTML -->
+<div class="position-fixed end-0 p-3" style="z-index: 9999; top: 60px;">
+    <div id="liveToast" class="toast align-items-center text-white bg-danger border-0"
+         role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- JS: Ensure correct order! -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+<script src="~/Content/Document/CustomJS/jszip.min.js"></script>
+<script src="~/Content/Document/CustomJS/pdfmake.min.js"></script>
+<script src="~/Content/Document/CustomJS/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        // Initialize Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl, {
+                placement: 'top',
+                trigger: 'hover'
+            });
+        });
+
+        let selectedRows = new Set();
+        let srNoCounter = 0;
+
+        // Date Range Variables - Calculate from actual data
+        let minDate, maxDate;
+
+        // Calculate min/max dates from Payment Date column
+        function calculateDateRange() {
+            let dates = [];
+            $('#table1 tbody tr').each(function () {
+                let paymentDateStr = $(this).find('td:eq(5)').text().trim(); // Payment Date column
+                if (paymentDateStr && paymentDateStr !== '') {
+                    let paymentDate = moment(paymentDateStr, 'YYYY-MM-DD');
+                    if (paymentDate.isValid()) {
+                        dates.push(paymentDate);
+                    }
+                }
+            });
+
+            if (dates.length > 0) {
+                minDate = moment.min(dates);
+                maxDate = moment.max(dates);
+            } else {
+                // Fallback if no dates found
+                minDate = moment().subtract(1, 'year');
+                maxDate = moment();
+            }
+        }
+
+        // Initialize date range
+        calculateDateRange();
+
+        function showErrorToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-success').addClass('bg-danger');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function showSuccessToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        // Enhanced Export Button Configuration
+        function exportBtnConfig(type, iconFile, btnClass, filePrefix = '', tooltipText = '', isPdf = false) {
+            return {
+                extend: type,
+                text: `<img src="/Content/Document/Image/${iconFile}" class="btn-icon" />`,
+                className: `btn ${btnClass} ${type === 'print' ? 'text-dark' : 'text-white'}`,
+                filename: filePrefix + new Date().toISOString().slice(0, 10),
+                attr: {
+                    'data-bs-toggle': 'tooltip',
+                    'title': tooltipText
+                },
+                orientation: isPdf ? 'landscape' : undefined,
+                pageSize: isPdf ? 'A4' : undefined,
+                exportOptions: {
+                    columns: [1, 2, 3, 4, 5, 6, 7, 8, 9], // exclude checkbox column
+                    rows: (idx, data, node) => $(node).find('.payment-checkbox').is(':checked'),
+                    format: {
+                        body: (data, row, column, node) => {
+                            if (column === 0) {
+                                srNoCounter++;
+                                return srNoCounter;
+                            }
+                            return $(node).text().trim();
+                        }
+                    }
+                },
+                action: function (e, dt, button, config) {
+                    // Count only checked checkboxes
+                    var totalSelected = dt.rows().nodes().to$().find('.payment-checkbox:checked').length;
+                    if (totalSelected === 0) {
+                        showErrorToast(`Please select at least one row to ${type}.`);
+                        return;
+                    }
+
+                    srNoCounter = 0;
+
+                    if (isPdf) {
+                        // Customize PDF
+                        config.customize = (function (totalSelected) {
+                            return function (doc) {
+                                const now = moment().format('DD-MM-YYYY HH:mm:ss');
+
+                                // Remove existing first item if needed
+                                if (doc.content[0].text) {
+                                    doc.content.splice(0, 1);
+                                }
+
+                                // Header: Rahishop & Seller Payment History
+                                doc.content.splice(0, 0,
+                                    {
+                                        text: 'Rahishop',
+                                        fontSize: 18,
+                                        bold: true,
+                                        alignment: 'center',
+                                        margin: [0, 15, 0, 0]
+                                    },
+                                    {
+                                        text: 'Seller Payment History',
+                                        fontSize: 14,
+                                        bold: true,
+                                        alignment: 'center',
+                                        margin: [0, 0, 0, 15]
+                                    }
+                                );
+
+                                // Generated On & Total Entries
+                                doc.content.splice(2, 0, {
+                                    columns: [
+                                        { width: '*', text: '' },
+                                        {
+                                            stack: [
+                                                { text: `Generated On: ${now}`, fontSize: 10, alignment: 'right', margin: [0, 0, 0, 2] },
+                                                { text: `Total Entries: ${totalSelected}`, fontSize: 10, alignment: 'right', bold: true }
+                                            ],
+                                            width: 220,
+                                            margin: [0, 0, 20, 10]
+                                        }
+                                    ]
+                                });
+
+                                // Footer with page numbers
+                                doc.footer = function (page, pages) {
+                                    return {
+                                        columns: [{ text: `Page ${page} of ${pages}`, alignment: 'center', fontSize: 10 }],
+                                        margin: [40, 10, 40, 0]
+                                    };
+                                };
+
+                                doc.pageMargins = [40, 100, 40, 60];
+                                doc.pageSize = 'A4';
+                                doc.pageOrientation = 'landscape';
+
+                                // Table layout & styling
+                                const objLayout = {
+                                    hLineWidth: () => 0,
+                                    vLineWidth: () => 0,
+                                    hLineColor: () => '#aaa',
+                                    vLineColor: () => '#aaa',
+                                    paddingLeft: () => 5,
+                                    paddingRight: () => 5,
+                                    dontBreakRows: true
+                                };
+
+                                doc.content.forEach(contentItem => {
+                                    if (contentItem.table) {
+                                        contentItem.layout = objLayout;
+                                        contentItem.table.widths = ['8%', '8%', '12%', '25%', '8%', '8%', '8%', '8%', '15%'];
+
+                                        // Header row styling
+                                        const headerRow = contentItem.table.body[0];
+                                        if (headerRow) {
+                                            headerRow.forEach(cell => {
+                                                cell.fillColor = '#2E86C1';
+                                                cell.color = 'white';
+                                                cell.bold = true;
+                                                cell.alignment = 'center';
+                                                cell.fontSize = 10;
+                                            });
+                                        }
+
+                                        // Alternate row background shading
+                                        for (let i = 1; i < contentItem.table.body.length; i++) {
+                                            if (i % 2 === 0) {
+                                                contentItem.table.body[i].forEach(cell => {
+                                                    cell.fillColor = '#F2F3F4';
+                                                });
+                                            }
+                                        }
+                                    }
+                                });
+
+                                doc.defaultStyle.fontSize = 8;
+                            };
+                        })(totalSelected);
+                    }
+
+                    const btnAction = $.fn.dataTable.ext.buttons[`${type}Html5`] || $.fn.dataTable.ext.buttons[type];
+                    btnAction.action.call(this, e, dt, button, config);
+                }
+            };
+        }
+
+        // Initialize DataTable with enhanced export buttons
+        let table = $('#table1').DataTable({
+            responsive: true,
+            searching: true,
+            scrollX: false,
+            autoWidth: false,
+            ordering: false,
+            paging: true,
+            lengthChange: false,
+            pageLength: 10,
+            lengthMenu: [5, 10, 25, 50, 100],
+            info: true,
+            dom: '<"top"<"float-left"l><"float-right"<"dtb-wrap"B><"dtf-wrap"f>>>rt<"bottom"ip><"clear">',
+            buttons: [
+                exportBtnConfig('copy', 'Copy.png', 'btn-info', 'Seller_Payment_History_', 'Copy to clipboard'),
+                exportBtnConfig('csv', 'CSV.png', 'btn-success', 'Seller_Payment_History_', 'Export as CSV file'),
+                exportBtnConfig('excel', 'XLS.png', 'btn-primary', 'Seller_Payment_History_', 'Export as Excel file'),
+                exportBtnConfig('pdf', 'PDFicon.png', 'btn-danger', 'Seller_Payment_History_', 'Export as PDF file', true),
+                exportBtnConfig('print', 'Print.png', 'btn-warning', '', 'Print')
+            ],
+            columnDefs: [
+                { targets: [0], orderable: false, searchable: false }
+            ]
+        });
+
+        // Add placeholder to search box
+        $('#table1_filter input').attr('placeholder', 'Type to search...');
+
+        // Initialize Date Range Picker with Validations
+        $('#dateRangeInfo').text(`Available: ${minDate.format('DD-MM-YYYY')} to ${maxDate.format('DD-MM-YYYY')}`);
+
+        $('.input-daterange-datepicker').daterangepicker({
+            opens: 'right',
+            locale: {
+                format: 'MM/DD/YYYY',
+                separator: ' - ',
+                applyLabel: 'Apply',
+                cancelLabel: 'Cancel',
+                fromLabel: 'From',
+                toLabel: 'To',
+                customRangeLabel: 'Custom Range'
+            },
+            startDate: minDate,
+            endDate: maxDate,
+            minDate: minDate,
+            maxDate: maxDate,
+            autoUpdateInput: false,
+            ranges: {
+                'Available Range': [minDate, maxDate],
+                'Today': [moment(), moment()],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            },
+            alwaysShowCalendars: true,
+            showCustomRangeLabel: true
+        });
+
+        // Date Range Validation on Apply
+        $('.input-daterange-datepicker').on('apply.daterangepicker', function (ev, picker) {
+            var selectedStart = picker.startDate;
+            var selectedEnd = picker.endDate;
+
+            // Check if dates are within available range
+            if (selectedStart.isBefore(minDate) || selectedEnd.isAfter(maxDate)) {
+                showErrorToast(`Please select dates within available range: ${minDate.format('DD-MM-YYYY')} to ${maxDate.format('DD-MM-YYYY')}`);
+                picker.setStartDate(minDate);
+                picker.setEndDate(maxDate);
+                $(this).val(`${minDate.format('MM/DD/YYYY')} - ${maxDate.format('MM/DD/YYYY')}`);
+                return false;
+            }
+
+            // Check if start date is after end date
+            if (selectedStart.isAfter(selectedEnd)) {
+                showErrorToast('Start date cannot be after end date');
+                picker.setStartDate(minDate);
+                picker.setEndDate(maxDate);
+                $(this).val(`${minDate.format('MM/DD/YYYY')} - ${maxDate.format('MM/DD/YYYY')}`);
+                return false;
+            }
+
+            // Check for future dates
+            if (selectedStart.isAfter(moment()) || selectedEnd.isAfter(moment())) {
+                showErrorToast('Future dates are not allowed');
+                picker.setStartDate(minDate);
+                picker.setEndDate(maxDate);
+                $(this).val(`${minDate.format('MM/DD/YYYY')} - ${maxDate.format('MM/DD/YYYY')}`);
+                return false;
+            }
+
+            // Set input value manually
+            $(this).val(`${selectedStart.format('MM/DD/YYYY')} - ${selectedEnd.format('MM/DD/YYYY')}`);
+
+            // Filter Automatically on Apply
+            $.fn.dataTable.ext.search = [];
+            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                var paymentDateStr = data[5]; // Payment Date column
+                if (!paymentDateStr || paymentDateStr.trim() === '') {
+                    return false; // Hide rows with no payment date
+                }
+                var paymentDate = moment(paymentDateStr, 'YYYY-MM-DD');
+                if (!paymentDate.isValid()) {
+                    return false;
+                }
+                return paymentDate.isBetween(selectedStart, selectedEnd, null, '[]');
+            });
+
+            table.draw();
+
+            showSuccessToast(`Date range selected: ${selectedStart.format('DD-MM-YYYY')} to ${selectedEnd.format('DD-MM-YYYY')}`);
+        });
+
+        // Clear on Cancel
+        $('.input-daterange-datepicker').on('cancel.daterangepicker', function (ev, picker) {
+            // Reset input box
+            $(this).val('');
+
+            // Remove all search filters
+            $.fn.dataTable.ext.search = [];
+            table.draw();
+
+            let totalCount = table.rows().count();
+            showSuccessToast(`Filter cleared! Showing all ${totalCount} records`);
+        });
+
+        // Select/Deselect All checkboxes
+        $('#selectAll').on('change', function () {
+            const checked = $(this).is(':checked');
+            table.rows({ filter: 'applied' }).every(function () {
+                const rowNode = this.node();
+                $(rowNode).find('.payment-checkbox').prop('checked', checked);
+                if (checked) selectedRows.add(rowNode);
+                else selectedRows.delete(rowNode);
+            });
+            updateSelectAllCheckbox();
+        });
+
+        $(document).on('change', '.payment-checkbox', function () {
+            const $row = $(this).closest('tr');
+            if ($(this).is(':checked')) selectedRows.add($row[0]);
+            else {
+                selectedRows.delete($row[0]);
+                $('#selectAll').prop('checked', false).prop('indeterminate', false);
+            }
+            updateSelectAllCheckbox();
+        });
+
+        function updateSelectAllCheckbox() {
+            const visibleRows = table.rows({ filter: 'applied' }).count();
+            const selectedVisibleCount = table.rows({ filter: 'applied' }).nodes().toArray().filter(row =>
+                $(row).find('.payment-checkbox').is(':checked')
+            ).length;
+
+            if (selectedVisibleCount === 0) $('#selectAll').prop('indeterminate', false).prop('checked', false);
+            else if (selectedVisibleCount === visibleRows) $('#selectAll').prop('indeterminate', false).prop('checked', true);
+            else $('#selectAll').prop('indeterminate', true);
+        }
+
+        // Update select all checkbox when table is redrawn (after filtering)
+        table.on('draw', function () {
+            updateSelectAllCheckbox();
+        });
+
+        // Order Count Click Event → Load Modal
+        $(document).on("click", ".order-count-link", function (e) {
+            e.preventDefault();
+
+            let transactionId = $(this).data("transaction");
+            let sellerName = $(this).data("seller");
+
+            $("#orderDetailsModal").modal("show");
+            $("#orderDetailsContent").html("<p class='text-muted'>Loading order details...</p>");
+
+            $.ajax({
+                url: "/Admin/ClientOrderListHistoryHK",
+                type: "GET",
+                data: { transactionId: transactionId, sellerName: sellerName },
+                success: function (response) {
+                    $("#orderDetailsContent").html(response);
+                },
+                error: function () {
+                    $("#orderDetailsContent").html("<p class='text-danger'>Failed to load details.</p>");
+                }
+            });
+        });
+    });
+</script>

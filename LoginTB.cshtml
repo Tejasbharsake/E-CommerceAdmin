@@ -1,0 +1,276 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    ViewBag.Title = "Admin Login";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login</title>
+    <link href="~/Content/Document/CSS/login.css" rel="stylesheet" />
+    <link href="~/Content/Document/CSS/Sidebarmenustrip.css" rel="stylesheet" />
+    <link href="~/Content/Document/CSS/login.css" rel="stylesheet" />
+    <link href="~/Content/Document/CSS/LoginRB.css" rel="stylesheet" />
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
+    <!-- Font Awesome for eye icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    @*<style>
+        /* Prevent unwanted scrolling */
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        /* Container center करायला */
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Password field with eye icon */
+        .password-container {
+            position: relative;
+            width: 100%;
+        }
+
+            .password-container input {
+                padding-right: 40px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Updated CSS for eye icon - matching friend's implementation */
+            .password-container .fa-eye,
+            .password-container .fa-eye-slash {
+                position: absolute;
+                top: 50%;
+                right: 15px;
+                transform: translateY(-50%);
+                cursor: pointer;
+                color: #777;
+            }
+
+        /* Remove outline from all inputs - more specific selectors */
+        input:focus,
+        input:active,
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border-color: inherit !important;
+        }
+
+        /* Remove outline from all buttons */
+        button:focus,
+        button:active {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Remove outline from all links */
+        a:focus,
+        a:active {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Remove outline from icons */
+        i:focus,
+        i:active {
+            outline: none !important;
+        }
+
+        /* Remove outline from any focusable element */
+        *:focus,
+        *:active {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Specific fix for form container inputs */
+        .form-container input:focus,
+        .form-container input:active {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+    </style>*@
+</head>
+<body>
+    <div class="container" id="container">
+
+        <!-- Forgot Password Form -->
+        <div class="form-container sign-up-container">
+            @using (Html.BeginForm("SendResetLink", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <h1>Forgot Password</h1>
+                @* ========== START OF BOLD TEXT CHANGE ========== *@
+                <p><strong>Enter your email to receive an OTP</strong></p>
+                @* ========== END OF BOLD TEXT CHANGE ========== *@
+
+                @Html.TextBox("ForgotEmailId", null, new
+           {
+               @type = "email",
+               @placeholder = "your@email.com",
+               required = "required",
+               maxlength = "64"
+
+           })
+
+                <button type="submit">Send Email</button>
+                <div class="back-link">
+                    <a href="#" id="backToLogin">← Back to Login</a>
+                </div>
+            }
+        </div>
+
+        <!-- Login Form -->
+        <div class="form-container sign-in-container">
+            @using (Html.BeginForm("LoginTB", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="text-center mb-3">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <img src="@Url.Content("~/Content/Document/Image/mainlogo.jpg")" alt="RahiShop Logo" height="50" />
+                        <span class="brand-name">RahiShop</span>
+                    </div>
+                </div>
+
+                <h1>Login</h1>
+
+                @Html.TextBoxFor(m => m.LoginMail, new { @placeholder = "Email", required = "required", maxlength = "64" })
+
+                <div class="password-container">
+                    @Html.PasswordFor(m => m.LoginPassword, new
+                    {
+                        @placeholder = "Password",
+                        required = "required",
+                        maxlength = "14",
+                        @id = "passwordField",
+                        @class = "password-input"
+                    })
+                    <i class="fas fa-eye-slash" id="togglePassword"></i>
+                </div>
+
+                <button type="submit">Login</button>
+
+                @*<a href="@Url.Action("RegisterAdminTB", "Admin")" style="margin: 10px 0;">Register a new account</a>*@
+
+                if (ViewBag.Error != null)
+                {
+                    <div style="color:red; margin-top:10px;">@ViewBag.Error</div>
+                }
+            }
+        </div>
+
+        <!-- Overlay Panels -->
+        <div class="overlay-container">
+            <div class="overlay">
+                <div class="overlay-panel overlay-left">
+                    <h1>Welcome Back!</h1>
+                    <p>Please login with your credentials</p>
+                    <button class="ghost" id="signIn">Login</button>
+                </div>
+                <div class="overlay-panel overlay-right">
+                    <h1>Hello User!</h1>
+                    @*<p>Forgot your password? Let us help you</p>*@
+                    <button class="ghost" id="forgotBtnOverlay">Forgot Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const forgotBtnOverlay = document.getElementById('forgotBtnOverlay');
+        const backToLogin = document.getElementById('backToLogin');
+        const signInButton = document.getElementById('signIn');
+
+        const container = document.getElementById('container');
+
+        // Replaced old password toggle with friend's implementation
+        document.addEventListener('DOMContentLoaded', function () {
+            function setupPasswordToggle(toggleId, passwordId) {
+                const toggle = document.querySelector(toggleId);
+                const password = document.querySelector(passwordId);
+                if (toggle && password) {
+                    toggle.addEventListener('click', function () {
+                        // पासवर्डचा type चेक करतो - password किंवा text
+                        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                        password.setAttribute('type', type);
+
+                        // योग्य class toggle करण्यासाठी
+                        if (type === 'text') {
+                            // Password visible आहे, तर open eye icon दाखवा
+                            this.classList.remove('fa-eye-slash');
+                            this.classList.add('fa-eye');
+                        } else {
+                            // Password hidden आहे, तर closed eye icon दाखवा
+                            this.classList.remove('fa-eye');
+                            this.classList.add('fa-eye-slash');
+                        }
+                    });
+                }
+            }
+
+            setupPasswordToggle('#togglePassword', '#passwordField');
+        });
+
+        if (forgotBtnOverlay) {
+            forgotBtnOverlay.addEventListener('click', () => {
+                container.classList.add("right-panel-active");
+            });
+        }
+        if (signInButton) {
+            signInButton.addEventListener('click', () => {
+                container.classList.remove("right-panel-active");
+            });
+        }
+        if (backToLogin) {
+            backToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                container.classList.remove("right-panel-active");
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // ✅ Messages from ChangePassword OR ForgotPassword
+            var message = '@(TempData["ToastrMessage"] ?? TempData["Message"] ?? TempData["ForgotPasswordMessage"])';
+            var messageType = '@(TempData["ToastrMessageType"] ?? TempData["ForgotPasswordMessageType"])';
+
+            if (message) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    icon: messageType || (message.includes("✅") ? "success" : "error"),
+                    title: message
+                }).then(() => {
+
+                    var redirectUrl = '@TempData["RedirectUrl"]';
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    }
+                });
+
+
+                if (message.includes("OTP") || message.includes("email")) {
+                    container.classList.add("right-panel-active");
+                }
+            }
+        });
+    </script>
+</body>
+</html>

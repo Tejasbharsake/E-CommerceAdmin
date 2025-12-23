@@ -1,0 +1,779 @@
+﻿@model List<GSTECommerceLibrary.Admin.Admin>
+
+@{
+    ViewBag.Title = "Product Approval";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active" aria-current="page">
+        <span style="color: #6c757d;">Notification </span> <strong> / Request For Product Approval</strong>
+    </li>
+
+
+}
+<link href="~/Content/Document/CSS/ProductApprovalSC.css" rel="stylesheet" />
+
+
+<!--<section class="section">
+    <div class="card">-->
+@*<div class="card-header"> Request For Product Approval</div>*@
+
+<!--<div class="card-body">
+    <div class="row mb-3">-->
+@*<div class="col-md-4">
+        <label class="form-label fw-semibold mb-1">Date Range Picker</label>
+        <input class="form-control input-daterange-datepicker" type="text" id="dateRangePicker" name="daterange" autocomplete="off" />
+    </div>*@
+<!--<div class="col-md-8 text-end">
+        <span id="selectedCount" class="selected-count"></span>
+    </div>
+</div>-->
+
+<table class="table table-striped table-bordered" id="productTable">
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="selectAllCheckbox"></th>
+            <th>Sr No</th>
+            <th>Product Code</th>
+            <th>Product Name</th>
+            <th>Category</th>
+            <th>Register Date</th>
+            <th>Stock(No.)</th>
+            <th>Buisness Name</th>
+            <th>Email</th>
+            <th>Mobile No</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td><input type="checkbox" class="row-checkbox"></td>
+                <td></td> <!-- For serial number -->
+                <td>@item.ProductCode</td>
+                <td>@item.ProductName</td>
+                <td>@item.MainCategoryName</td>
+                <td>@item.RegisterDate.ToString("dd-MM-yyyy")</td>
+                <td>@item.Stock</td>
+                <td>@item.SellerName</td>
+                <td>@item.Email</td>
+                <td>@($"+91 {item.MobileNo}")</td>
+                <td>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="javascript:void(0);"
+                           style="font-size: 1.2rem; color: black;"
+                           class="@*btn btn-info btn-sm*@"
+                           onclick="loadDetails('@item.ProductCode')"
+                           title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+
+                        <a href="javascript:void(0);"
+                           style="font-size: 1.2rem; color: black;"
+                           class="@*btn btn-success btn-sm rounded-pill*@"
+                           onclick="ApproveProductSC('@item.ProductCode')"
+                           title="Approve Product">
+                            <i class="bi bi-check-circle"></i>
+                        </a>
+
+                        <a href="javascript:void(0);"
+                           style="font-size: 1.2rem; color: black;"
+                           onclick="loadRejectForm('@item.ProductCode')"
+                           title="Rejected Product">
+                            <i class="bi bi-x-circle"></i>
+                        </a>
+
+
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+@*Toast Notification*@
+<div class="position-fixed end-0 p-3" style="z-index: 11; top: 80px;">
+    <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+@*</div>
+        </div>
+    </section>*@
+
+
+
+
+
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            @*<div class="modal-header">
+                    <h5 class="modal-title" id="detailsModalLabel">Product Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>*@
+
+            <div class="modal-header text-white" style="background: #2C3E50;">
+                <h5 class="modal-title">Product Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+
+
+
+            <div class="modal-body" id="detailsModalBody"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <!-- DataTables Buttons CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.bootstrap5.min.css">
+
+
+
+
+
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- DataTables Buttons -->
+    <script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.bootstrap5.min.js"></script>
+
+
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Downloaded CDN  -->
+    <script src="~/Content/Document/CustomJS/buttons.html5.min.js"></script>
+    <script src="~/Content/Document/CustomJS/buttons.print.min.js"></script>
+    <script src="~/Content/Document/CustomJS/jszip.min.js"></script>
+    <script src="~/Content/Document/CustomJS/pdfmake.min.js"></script>
+    <script src="~/Content/Document/CustomJS/vfs_fonts.js"></script>
+
+    <!-- Moment.js -->
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+
+    <script>
+        // Toast notification functions
+        function showErrorToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-success').addClass('bg-danger');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function showSuccessToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        let table;
+        let selectedRows = new Set();
+
+        $(document).ready(function () {
+            // Initialize DataTable with export buttons
+            table = $('#productTable').DataTable({
+                responsive: true,
+                searching: true,
+                paging: true,
+                ordering: false,
+                info: true,
+                lengthChange: false,
+                pageLength: 10,
+                destroy: true,
+                autoWidth: false,
+                scrollX: false,
+                lengthMenu: [5, 10, 25, 50, 100],
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Type to search"
+                },
+                dom: "<'row mb-2'<'col-md-6 d-flex align-items-center'l<'ms-2 filter-container'>><'col-md-6 text-end'B>>" +
+                    "<'row mb-2'<'col-md-12 text-end'f>>" +
+                    "rt" +
+                    "<'row mt-2'<'col-md-6'i><'col-md-6 text-end'p>>",
+
+
+                "buttons": [
+                    {
+                        extend: 'copy',
+                        text: '<img src="/Content/Document/Image/Copy.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Copy to clipboard' },
+                        // className: 'buttons-copy',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.copyHtml5.action.call(this, e, dt, button, config);
+                            /*showSuccessToast('Data copied to clipboard');*/
+                        },
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Export only these columns
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked'); // Only selected rows
+                            },
+                            format: {
+                                body: (function () {
+                                    let srNoCounter = 0; // reset for each copy action
+                                    return function (data, row, column, node) {
+                                        if (column === 0) {
+                                            srNoCounter++;
+                                            return srNoCounter; // Always sequential numbering 1,2,3...
+                                        }
+                                        return data;
+                                    };
+                                })()
+                            }
+                        }
+                    },
+
+                    {
+                        extend: 'csv',
+                        text: '<img src="/Content/Document/Image/CSV.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Export as CSV file' },
+                        // className: 'buttons-csv',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.csvHtml5.action.call(this, e, dt, button, config);
+                            //    showSuccessToast('CSV export started');
+                        },
+                        filename: 'Product_Approval_' + new Date().toISOString().slice(0, 10),
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Only required columns
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked'); // Only selected rows
+                            },
+                            format: {
+                                body: (function () {
+                                    let srNoCounter = 0; // Reset counter per export
+                                    return function (data, row, column, node) {
+                                        if (column === 0) {
+                                            srNoCounter++;
+                                            return srNoCounter; // Always sequential 1,2,3...
+                                        }
+                                        return data;
+                                    };
+                                })()
+                            }
+                        }
+                    },
+
+                    {
+                        extend: 'excel',
+                        text: '<img src="/Content/Document/Image/XLS.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Export as Excel file' },
+                        // className: 'buttons-excel',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.excelHtml5.action.call(this, e, dt, button, config);
+                            //    showSuccessToast('Excel export started');
+                        },
+                        filename: 'Product_Approval_' + new Date().toISOString().slice(0, 10),
+                        title: 'Product Approval List',
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Only required columns
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked'); // Only selected rows
+                            },
+                            format: {
+                                body: (function () {
+                                    let srNoCounter = 0; // Reset counter per export
+                                    return function (data, row, column, node) {
+                                        if (column === 0) {
+                                            srNoCounter++;
+                                            return srNoCounter; // Sequential Sr No 1,2,3…
+                                        }
+                                        return data;
+                                    };
+                                })()
+                            }
+                        }
+                    },
+
+                    {
+                        extend: 'pdf',
+                        text: '<img src="/Content/Document/Image/PDFicon.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Export as PDF' },
+                        //   className: 'buttons-pdf',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, config);
+                            // showSuccessToast('PDF export started');
+                        },
+                        filename: 'Product_Approval_' + new Date().toISOString().slice(0, 10),
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked');
+                            }
+                        },
+                        customize: function (doc) {
+                            // Remove default title
+                            doc.content.splice(0, 1);
+                            // ✅ Get DataTable reference
+                            var dt = $('#productTable').DataTable();
+
+                            // Generated date + total selected rows
+                            let now = new Date();
+                            let dateStr = now.getFullYear() + '-' +
+                                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(now.getDate()).padStart(2, '0') + ' ' +
+                                String(now.getHours()).padStart(2, '0') + ':' +
+                                String(now.getMinutes()).padStart(2, '0') + ':' +
+                                String(now.getSeconds()).padStart(2, '0');
+                            // Get all selected rows across all pages
+                            let totalRecords = dt.rows().nodes().to$().find('.row-checkbox:checked').length;
+
+                            // Custom header
+                            doc.content.unshift({
+                                margin: [0, 0, 0, 12],
+                                stack: [
+                                    { text: 'Rahishop', fontSize: 16, bold: true, alignment: 'center', margin: [0, 0, 0, 4] },
+                                    {
+                                        columns: [
+                                            { text: 'Product Approval List', fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 6] },
+                                            {
+                                                stack: [
+                                                    { text: 'Generated On: ' + dateStr, fontSize: 8, alignment: 'right' },
+                                                    { text: 'Total Records: ' + totalRecords, fontSize: 8, alignment: 'right' }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            });
+
+                            // Add serial numbers dynamically
+                            let tableNode = doc.content.find(node => node.table);
+                            if (tableNode) {
+                                let serialNumber = 1;
+                                tableNode.table.body.forEach(function (row, i) {
+                                    if (i > 0) row[0] = serialNumber++;
+                                });
+
+                                // Column widths (adjust as needed)
+                                tableNode.table.widths = ['5%', '10%', '15%', '15%', '10%', '10%', '10%', '10%', '10%'];
+                            }
+
+                            // Table header styles
+                            doc.styles.tableHeader = {
+                                fillColor: '#007bff',
+                                color: 'white',
+                                alignment: 'center',
+                                fontSize: 10,
+                                bold: true
+                            };
+
+                            doc.defaultStyle.fontSize = 8;
+                            doc.pageMargins = [20, 20, 20, 20];
+                        }
+                    },
+
+                    {
+                        extend: 'print',
+                        text: '<img src="/Content/Document/Image/Print.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Print' },
+                        //    className: 'buttons-print',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.print.action.call(this, e, dt, button, config);
+                            //    showSuccessToast('Print dialog opened');
+                        },
+                        title: 'Product Approval List',
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Only required columns
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked'); // Only selected rows
+                            },
+                            format: {
+                                body: (function () {
+                                    let srNoCounter = 0; // Reset counter per print
+                                    return function (data, row, column, node) {
+                                        if (column === 0) {
+                                            srNoCounter++;
+                                            return srNoCounter; // Sequential Sr No 1,2,3…
+                                        }
+                                        return data;
+                                    };
+                                })()
+                            }
+                        },
+                        customize: function (win) {
+                            $(win.document.body)
+                                .css('font-size', '10pt')
+                                .prepend(
+                                    '<div style="text-align:center; margin-bottom: 20px;"><h2>Product Approval List</h2><p>Generated on: ' + new Date().toLocaleDateString() + '</p></div>'
+                                );
+
+                            var $table = $(win.document.body).find('table')
+                                .addClass('compact')
+                                .css('font-size', '9pt');
+
+                            var serial = 1;
+                            $table.find('tbody tr').each(function () {
+                                if ($(this).find('.row-checkbox').is(':checked')) {
+                                    $(this).find('td:nth-child(2)').text(serial++);
+                                }
+                            });
+                        }
+                    }
+                ],
+                "columnDefs": [
+                    {
+                        "targets": 0,
+                        "orderable": false,
+                        "searchable": false
+                    },
+                    {
+                        "targets": 1,
+                        "orderable": false,
+                        "searchable": false,
+                        "render": function (data, type, row, meta) {
+                            return meta.row + 1;
+                        }
+                    },
+                    {
+                        "targets": 10,
+                        "orderable": false,
+                        "searchable": false
+                    }
+                ],
+                //dom: '<"row"<"col-sm-12 col-md-6 d-flex align-items-center"l<"paymentFilter">><"col-sm-12 col-md-6"f>>' +
+                //  '<"row"<"col-sm-12"tr>>' +
+                //    '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+
+                initComplete: function () {
+                    // ✅ Example: Category filter
+                    var column = this.api().column(4); // Category column index
+
+                    var select = $('<select class="form-select form-select-sm ms-2"><option value="">All Categories</option></select>')
+                        .appendTo($('.filter-container').empty()) // Add into filter container
+                        .on('change', function () {
+                            var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                            column.search(val ? '^' + val + '$' : '', true, false).draw();
+                        });
+
+                    column.data().unique().sort().each(function (d, j) {
+                        select.append('<option value="' + d + '">' + d + '</option>')
+                    });
+                }
+            });
+
+            // Update serial numbers when table is redrawn
+            table.on('draw.dt', function () {
+                table.column(1, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            });
+
+            // Make buttons with blue border + gap + rounded corners
+            function forceTransparentButtons() {
+                $('.dt-buttons button, .dt-buttons a').each(function () {
+                    $(this).removeClass('btn-secondary btn-primary btn-success btn-info btn-warning btn-danger');
+
+                    this.style.setProperty('background', 'transparent', 'important');
+                    this.style.setProperty('background-color', 'transparent', 'important');
+                    this.style.setProperty('background-image', 'none', 'important');
+
+                    // 🔵 Only border blue
+                    this.style.setProperty('border', '1px solid #007bff', 'important');
+
+                    this.style.setProperty('box-shadow', 'none', 'important');
+
+                    // ➡️ Add spacing between buttons
+                    this.style.setProperty('margin-right', '8px', 'important');
+
+                    // 🔄 Add rounded corners
+                    this.style.setProperty('border-radius', '6px', 'important');
+                });
+            }
+
+
+
+            forceTransparentButtons();
+            setTimeout(forceTransparentButtons, 100);
+            setTimeout(forceTransparentButtons, 500);
+            setTimeout(forceTransparentButtons, 1000);
+
+            // Select All checkbox functionality
+            $('#selectAllCheckbox').on('change', function () {
+                const isChecked = $(this).is(':checked');
+                table.$('.row-checkbox').prop('checked', isChecked);
+
+                if (isChecked) {
+                    table.rows().every(function () {
+                        const node = this.node();
+                        selectedRows.add(node);
+                    });
+                } else {
+                    selectedRows.clear();
+                }
+
+                updateSelectedCount();
+            });
+
+            // Row checkbox functionality
+            $(document).on('change', '.row-checkbox', function () {
+                const $row = $(this).closest('tr');
+
+                if ($(this).is(':checked')) {
+                    selectedRows.add($row[0]);
+                } else {
+                    selectedRows.delete($row[0]);
+                }
+
+                updateSelectAllCheckbox();
+                updateSelectedCount();
+            });
+
+            // Update Select All checkbox state
+            function updateSelectAllCheckbox() {
+                const totalRows = table.rows().count();
+                const selectedCount = selectedRows.size;
+
+                if (selectedCount === 0) {
+                    $('#selectAllCheckbox').prop('indeterminate', false).prop('checked', false);
+                } else if (selectedCount === totalRows) {
+                    $('#selectAllCheckbox').prop('indeterminate', false).prop('checked', true);
+                } else {
+                    $('#selectAllCheckbox').prop('indeterminate', true);
+                }
+            }
+
+            //function updateSelectedCount() {
+            //    const selectedCount = selectedRows.size;
+            //    $('#selectedCount').text(`${selectedCount} row${selectedCount !== 1 ? 's' : ''} selected`);
+            //}
+        });
+        function showLoader() { $('#globalLoader').fadeIn(200); }
+        function hideLoader() { $('#globalLoader').fadeOut(200); }
+
+        // Your existing functions with SweetAlert integration
+        function loadDetails(ProductCode) {
+            showLoader();
+            $.get('/Admin/ProductDetailsSC', { ProductCode: ProductCode }, function (data) {
+                $('#detailsModalBody').html(data);
+                $('#detailsModal').modal('show');
+                hideLoader();
+            }).fail(function () {
+                hideLoader();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load product details.',
+                    confirmButtonColor: '#3085d6'
+                });
+            });
+        }
+
+        function loadRejectForm(ProductCode) {
+            showLoader();
+            $.get('/Admin/RejectProductSC', { ProductCode: ProductCode }, function (data) {
+                $('#detailsModalBody').html(data);
+                $('#detailsModal').modal('show');
+                hideLoader();
+            }).fail(function (xhr) {
+                hideLoader();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load rejection form: ' + xhr.statusText,
+                    confirmButtonColor: '#3085d6'
+                });
+            });
+        }
+
+        //Reject Form swwet alert
+        $(document).on('submit', '#rejectForm', function (e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+
+            Swal.fire({
+                title: 'Confirm Rejection',
+                text: "Are you sure you want to reject this product?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, reject it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showLoader();
+                    $.post('/Admin/RejectProductSubmitSC', formData, function (res) {
+                        hideLoader();
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: 'Product rejected successfully.',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            }).then(() => {
+                                $('#detailsModal').modal('hide');
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: res.message || 'Rejection failed.',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            });
+                        }
+                    }).fail(function () {
+                        hideLoader();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error occurred during rejection.',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true
+                        });
+                    });
+                }
+            });
+        });
+
+        function ApproveProductSC(ProductCode) {
+            Swal.fire({
+                title: 'Confirm Approval',
+                text: "Are you sure you want to approve this product?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, approve it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showLoader();
+                    $.ajax({
+                        url: '/Admin/ApproveProductSC',
+                        type: 'POST',
+                        data: { ProductCode: ProductCode },
+                        success: function (response) {
+                            hideLoader();
+                            if (response && response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success',
+                                    text: response.message || "Product approved successfully.",
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    timerProgressBar: true
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success',
+                                    text: "Product approved successfully.",
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    timerProgressBar: true
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            }
+                        },
+                        error: function () {
+                            hideLoader();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Error occurred while approving the product.',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            });
+                        }
+                    });
+                }
+            });
+        }
+        function openRejectModal(ProductCode) {
+            showLoader();
+            $.get('/Admin/RejectProductPartial', { ProductCode: ProductCode }, function (html) {
+                $('#detailsModalBody').html(html);
+                $('#detailsModal').modal('show');
+                hideLoader();
+            }).fail(function () {
+                hideLoader();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load rejection form.',
+                    confirmButtonColor: '#3085d6'
+                });
+            });
+        }
+    </script>
+
+    <style>
+        /* Add gap between export buttons */
+        div.dt-buttons .dt-button {
+            margin-right: 6px !important; /* adjust spacing as you like */
+        }
+
+        /* Blue border for export buttons */
+        div.dt-buttons .dt-button {
+            border: 1px solid #007bff !important;
+            border-radius: 6px; /* optional: rounded look */
+            color: #007bff !important;
+            background: transparent !important;
+        }
+
+            /* On hover - light blue background */
+            div.dt-buttons .dt-button:hover {
+                background-color: rgba(0, 123, 255, 0.1) !important;
+            }
+    </style>
+}

@@ -1,0 +1,36 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+@functions {
+    // Helper to convert PascalCase to spaced words
+    public string SplitPascalCase(string input)
+    {
+        return System.Text.RegularExpressions.Regex.Replace(input, "(\\B[A-Z])", " $1");
+    }
+}
+
+<div class="offer-details row">
+    <dt class="col-sm-3 mb-2">@SplitPascalCase(nameof(Model.OfferCode)):</dt>
+    <dd class="col-sm-9 mb-2">@Html.DisplayFor(m => m.OfferCode)</dd>
+
+    <dt class="col-sm-3 mb-2">@SplitPascalCase(nameof(Model.OfferName)):</dt>
+    <dd class="col-sm-9 mb-2">@Html.DisplayFor(m => m.OfferName)</dd>
+
+    <dt class="col-sm-3 mb-2">@SplitPascalCase(nameof(Model.ProductCode)):</dt>
+    <dd class="col-sm-9 mb-2">@Html.DisplayFor(m => m.ProductCode)</dd>
+
+    <dt class="col-sm-3 mb-2">@SplitPascalCase(nameof(Model.ProductName)):</dt>
+    <dd class="col-sm-9 mb-2">@Html.DisplayFor(m => m.ProductName)</dd>
+
+    <dt class="col-sm-3 mb-2">@SplitPascalCase(nameof(Model.OfferStartDate)):</dt>
+    <dd class="col-sm-9 mb-2">@(Model.OfferStartDate.HasValue ? Model.OfferStartDate.Value.ToString("dd/MM/yyyy") : "")</dd>
+
+    <dt class="col-sm-3 mb-2">@SplitPascalCase(nameof(Model.OfferDiscountPercentage)):</dt>
+    <dd class="col-sm-9 mb-2">
+        @Html.DisplayFor(m => m.OfferDiscountPercentage)%
+    </dd>
+
+    <dt class="col-sm-3 mb-2">@SplitPascalCase(nameof(Model.OfferEndDate)):</dt>
+    <dd class="col-sm-9 mb-2">@(Model.OfferEndDate.HasValue ? Model.OfferEndDate.Value.ToString("dd/MM/yyyy") : "")</dd>
+</div>
+
+<link href="~/Content/Document/CSS/AddOfferSC.css" rel="stylesheet" />

@@ -1,0 +1,144 @@
+﻿@model System.Data.DataTable
+
+<div class="order-container">
+    <h5 class="order-title">Client Order Details</h5>
+
+    @if (Model != null && Model.Rows.Count > 0)
+    {
+        var firstRow = Model.Rows[0];
+        string sellerName = firstRow["Seller Name"].ToString();
+        int totalOrders = Model.Rows.Count;
+        decimal totalAmount = 0;
+
+        <div class="order-summary">
+            <p><span>Seller Name:</span> @sellerName</p>
+            <p><span>Total Orders:</span> @totalOrders</p>
+        </div>
+
+        <!-- Scrollable list -->
+        <div class="order-list">
+            @foreach (System.Data.DataRow row in Model.Rows)
+            {
+                decimal orderAmount = Convert.ToDecimal(row["Order Amount"]);
+                totalAmount += orderAmount;
+
+                <div class="order-card">
+                    <p><span>Order Code:</span> @row["OrderCode"]</p>
+                    <p><span>Order Date:</span> @Convert.ToDateTime(row["Order Date"]).ToString("dd-MM-yyyy")</p>
+                    <p><span>Order Amount:</span> ₹ @orderAmount</p>
+                </div>
+            }
+        </div>
+
+        <div class="order-footer">
+            <p><span>Total Orders:</span> @totalOrders</p>
+            <p><span>Total Amount:</span> ₹ @totalAmount</p>
+        </div>
+    }
+    else
+    {
+        <div class="no-orders">No orders found for this client.</div>
+    }
+</div>
+
+<!-- CSS -->
+<style>
+    .order-container {
+        background: #fff;
+        border-radius: 12px;
+        padding: 0;
+        margin: 0 auto;
+        max-width: 700px;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    /* Header */
+    .order-title {
+        background: linear-gradient(to right, #005bea, #00c6fb);
+        color: #fff;
+        padding: 12px 16px;
+        border-radius: 12px 12px 0 0;
+        font-size: 18px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .order-title::before {
+            content: "📦";
+            font-size: 18px;
+        }
+
+    /* Summary */
+    .order-summary {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+        .order-summary p {
+            margin: 6px 0;
+            font-size: 15px;
+            color: #333;
+        }
+
+        .order-summary span {
+            font-weight: 600;
+            color: #000;
+        }
+
+    /* Scrollable order list */
+    .order-list {
+        padding: 15px;
+        max-height: 300px; /* 👈 fixed height for scroll */
+        overflow-y: auto;
+    }
+
+    .order-card {
+        background: #fff;
+        border: 1px solid #e1e1e1;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        transition: transform 0.2s;
+    }
+
+        .order-card:hover {
+            transform: scale(1.02);
+        }
+
+        .order-card p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .order-card span {
+            font-weight: 600;
+            color: #000;
+        }
+
+    /* Footer */
+    .order-footer {
+        background: linear-gradient(to right, #005bea, #00c6fb);
+        color: #fff;
+        padding: 12px 16px;
+        border-radius: 0 0 12px 12px;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+        .order-footer p {
+            margin: 5px 0;
+        }
+
+    /* No orders */
+    .no-orders {
+        text-align: center;
+        color: red;
+        font-weight: 600;
+        padding: 20px;
+    }
+</style>

@@ -1,0 +1,1165 @@
+﻿@model System.Data.DataTable
+
+@if (!string.IsNullOrEmpty(ViewBag.Error as string))
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+else if (Model != null && Model.Rows.Count > 0)
+{
+    <!-- Customer Statistics Cards Row -->
+    <div class="row mb-4">
+        <!-- 🔹 Total Customers Card -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="cursor:pointer;" id="openTotalCustomers">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-users text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <h2 class="fw-bold text-primary mb-1" id="totalCustomersCount">@ViewBag.TotalCustomerAB</h2>
+                    <h6 class="text-muted mb-0">Total Customers</h6>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Customers Card -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="cursor:pointer;" id="openActiveCustomers">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-user-check text-success" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <h2 class="fw-bold text-success mb-1" id="activeCustomersCount">@ViewBag.ActiveCustomerAB</h2>
+                    <h6 class="text-muted mb-0">Active Customers</h6>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inactive Customers Card -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="cursor:pointer;" id="openInactiveCustomers">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="rounded-circle bg-danger bg-opacity-10 p-3">
+                            <i class="fas fa-user-times text-danger" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <h2 class="fw-bold text-danger mb-1" id="inactiveCustomersCount">@ViewBag.InactiveCustomerAB</h2>
+                    <h6 class="text-muted mb-0">Inactive Customers</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔹 Modal for showing customer list -->
+    <!-- Order Detail Modal -->
+    <!-- Order Detail Modal (Matched with Seller Detail Modal design) -->
+    <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header" style="background: #2C3E50; margin: 0; padding: 1rem 1.5rem;">
+                    <h4 class="modal-title text-white" id="orderDetailModalLabel">Order Details</h4>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="order-detail-content">
+                    <!-- Content will be loaded via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- Export Buttons Row -->
+    <div class="row mb-3 align-items-end">
+        <div class="col-md-5">
+            <!-- You can add filters here if needed -->
+        </div>
+        <div class="col-md-7 text-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end justify-content-start">
+            <button class="btn btn-outline-primary btn-sm" id="copyBtn" title="Copy">
+                <img src="~/Content/Document/Image/Copy.png" alt="Copy" width="16" height="16" />
+            </button>
+            <button class="btn btn-outline-info btn-sm" id="csvBtn" title="Export to CSV">
+                <img src="~/Content/Document/Image/CSV.png" alt="Copy" width="16" height="16" />
+            </button>
+            <button class="btn btn-outline-success btn-sm" id="excelBtn" title="Export to Excel">
+                <img src="~/Content/Document/Image/XLS.png" alt="Copy" width="16" height="16" />
+            </button>
+            <button class="btn btn-outline-danger btn-sm" id="pdfBtn" title="Export to PDF">
+                <img src="~/Content/Document/Image/PDFicon.png" alt="Copy" width="16" height="16" />
+            </button>
+            <button class="btn btn-outline-dark btn-sm" id="printBtn" title="Print">
+                <img src="~/Content/Document/Image/Print.png" alt="Copy" width="16" height="16" />
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Customer Data</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="reportTable" class="table table-striped table-bordered">
+                    <thead>
+                        <tr style="background: #2C3E50; color: white;">
+                            <th><input type="checkbox" id="selectAllTab1" /></th>
+                            <th>Sr No</th>
+                            @foreach (System.Data.DataColumn column in Model.Columns)
+                            {
+                                <th>@column.ColumnName</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var srNo = 1;
+                        }
+                        @foreach (System.Data.DataRow row in Model.Rows)
+                        {
+                            <tr>
+                                <td><input type="checkbox" class="row-checkbox" value="@srNo" /></td>
+                                <td>@srNo</td>
+                                @for (int i = 0; i < row.ItemArray.Length; i++)
+                                {
+                                    var item = row.ItemArray[i];
+                                    var columnName = Model.Columns[i].ColumnName.ToLower();
+
+                                    <td>
+                                        @if (columnName.Contains("status"))
+                                        {
+                                            if (item.ToString().ToLower() == "active")
+                                            {
+                                                <span class="badge bg-success">@item</span>
+                                            }
+                                            else if (item.ToString().ToLower() == "inactive")
+                                            {
+                                                <span class="badge bg-danger">@item</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">@item</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            @item
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                            srNo++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification HTML -->
+    <div class="position-fixed end-0 p-3" style="z-index: 11; top: 60px;">
+        <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <span id="toastMessage"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">No data found.</div>
+}
+
+<!-- Charts Container - Side by Side -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Customer Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div id="pieContainer" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Top Customers by Orders</h5>
+            </div>
+            <div class="card-body">
+                <div id="columnContainer" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Font Awesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<!-- Highcharts -->
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<!-- jsPDF CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- jsPDF AutoTable plugin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<!-- DataTables CSS & JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<style>
+    #reportTable thead th {
+        background-color: #2C3E50; /* Solid Navy */
+        color: #FFFFFF; /* White text */
+        font-weight: 600;
+        text-align: center;
+        padding: 5px;
+        border-bottom: 2px solid #ddd;
+        font-size: 14px; /* smaller text */
+        height: 8px !important; /* fixed header height */
+        font-family: 'Poppins', sans-serif; /* Added font */
+        vertical-align: middle;
+    }
+
+    /* Reduce body row height */
+    #reportTable tbody td {
+        padding: 2px 5px !important;
+        height: 5px !important;
+        line-height: 1;
+        font-size: 13px;
+        text-align: center;
+        font-family: 'Poppins', sans-serif; /* Added font */
+        vertical-align: middle;
+    }
+
+    /* Target DataTables pagination buttons */
+    #reportTable_paginate .pagination .page-link {
+        padding: 2px 10px; /* smaller height & width */
+        font-size: 12px; /* smaller text */
+        min-width: 33px; /* button width */
+    }
+    /* Export buttons - BLUE BORDER */
+    .btn-outline-primary,
+    .btn-outline-info,
+    .btn-outline-success,
+    .btn-outline-danger,
+    .btn-outline-dark {
+        border-color: #0d6efd !important; /* Blue border color */
+        color: #0d6efd !important; /* Blue text color */
+        transition: none !important;
+    }
+
+        /* Remove hover effect - keep blue border */
+        .btn-outline-primary:hover,
+        .btn-outline-info:hover,
+        .btn-outline-success:hover,
+        .btn-outline-danger:hover,
+        .btn-outline-dark:hover {
+            background-color: transparent !important;
+            border-color: #0d6efd !important; /* Keep blue border on hover */
+            color: #0d6efd !important; /* Keep blue text on hover */
+            box-shadow: none !important;
+        }
+
+    /* Your other existing styles remain the same... */
+    #reportTable thead th {
+        background-color: #2C3E50;
+        color: #FFFFFF;
+        font-weight: 600;
+        text-align: center;
+        padding: 5px;
+        border-bottom: 2px solid #ddd;
+        font-size: 14px;
+        height: 8px !important;
+        font-family: 'Poppins', sans-serif;
+        vertical-align: middle;
+    }
+
+
+
+
+
+
+
+    /* Remove hover effect from export buttons */
+    .btn-outline-primary, .btn-outline-info, .btn-outline-success, .btn-outline-danger, .btn-outline-dark {
+        transition: none !important; /* Disable all transitions */
+    }
+
+        .btn-outline-primary:hover, .btn-outline-info:hover, .btn-outline-success:hover, .btn-outline-danger:hover, .btn-outline-dark:hover {
+            background-color: transparent !important; /* Prevent background change */
+            border-color: inherit !important; /* Maintain original border color */
+            color: inherit !important; /* Maintain original text color */
+            box-shadow: none !important; /* Remove any shadow */
+        }
+
+    .selected-row {
+        background-color: #e3f2fd !important;
+    }
+
+    .row-checkbox {
+        cursor: pointer;
+    }
+
+    #selectAllTab1 {
+        cursor: pointer;
+    }
+
+    .card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+        }
+
+    .rounded-circle {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-body h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+
+    .card-body h6 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+</style>
+
+<script>
+    (function () {
+        // ===== NEW: Isolated variables for tab1 =====
+        var selectedRowIdsTab1 = new Set(); // Store selected row IDs for tab1
+        var allTableDataTab1 = []; // Store all row data for tab1
+        var tableHeaders = []; // Store table headers
+        var dataTable;
+
+        // ===== Modal AJAX calls with DYNAMIC TITLES =====
+        $("#openTotalCustomers").click(function () {
+            $("#orderDetailModalLabel").text("Total Customers");
+            $.ajax({
+                url: '@Url.Action("CardCustomerTotalListANB", "Admin")',
+                type: 'GET',
+                dataType: 'html',
+                beforeSend: function () {
+                    $("#order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+                },
+                success: function (result) {
+                    $("#order-detail-content").html(result);
+                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                    modal.show();
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error, xhr.responseText);
+                    $("#orderDetailModalLabel").text("Error Loading Total Customers");
+                    $("#order-detail-content").html("<div class='alert alert-danger'>Failed to load customer list: " + (xhr.responseText || "Unknown error") + "</div>");
+                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                    modal.show();
+                }
+            });
+        });
+
+        $("#openActiveCustomers").click(function () {
+            $("#orderDetailModalLabel").text("Active Customers");
+            $.ajax({
+                url: '@Url.Action("CardCustomerActiveListANB", "Admin")',
+                type: 'GET',
+                dataType: 'html',
+                cache: false,
+                beforeSend: function () {
+                    $("#order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+                },
+                success: function (result) {
+                    $("#order-detail-content").html(result);
+                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                    modal.show();
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error, xhr.responseText);
+                    $("#orderDetailModalLabel").text("Error Loading Active Customers");
+                    var serverMessage = xhr && xhr.responseText ? xhr.responseText : "Failed to load active customer list.";
+                    $("#order-detail-content").html("<div class='alert alert-danger'>" + serverMessage + "</div>");
+                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                    modal.show();
+                }
+            });
+        });
+
+        $("#openInactiveCustomers").click(function () {
+            $("#orderDetailModalLabel").text("Inactive Customers");
+            $.ajax({
+                url: '@Url.Action("CardCustomerInActiveListANB", "Admin")',
+                type: 'GET',
+                dataType: 'html',
+                cache: false,
+                beforeSend: function () {
+                    $("#order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+                },
+                success: function (result) {
+                    $("#order-detail-content").html(result);
+                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                    modal.show();
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", status, error, xhr.responseText);
+                    $("#orderDetailModalLabel").text("Error Loading Inactive Customers");
+                    var serverMessage = xhr && xhr.responseText ? xhr.responseText : "Failed to load inactive customer list.";
+                    $("#order-detail-content").html("<div class='alert alert-danger'>" + serverMessage + "</div>");
+                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                    modal.show();
+                }
+            });
+        });
+
+        // Function to calculate and update customer counts from database/table
+        function updateCustomerCounts() {
+            const table = document.querySelector("#reportTable");
+            const rows = table ? table.querySelectorAll("tbody tr") : [];
+            let totalCount = 0;
+            let activeCount = 0;
+            let inactiveCount = 0;
+
+            rows.forEach(row => {
+                totalCount++;
+                const cells = row.querySelectorAll('td');
+                cells.forEach(cell => {
+                    const badge = cell.querySelector('.badge');
+                    if (badge) {
+                        const status = badge.textContent.trim().toLowerCase();
+                        if (status === "active") {
+                            activeCount++;
+                        } else if (status === "inactive") {
+                            inactiveCount++;
+                        }
+                    }
+                });
+            });
+        }
+
+        // Toast notification functions
+        function showErrorToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-success').addClass('bg-danger');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function showSuccessToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        $(document).ready(function () {
+            storeAllTableData();
+            initializeDataTable();
+            updateCustomerCounts();
+            initializeCharts();
+        });
+
+        // ===== NEW: Function to store all table data =====
+        function storeAllTableData() {
+            tableHeaders = [];
+            $('#reportTable thead tr th').each(function (index) {
+                if (index > 0) {
+                    tableHeaders.push($(this).text().trim());
+                }
+            });
+
+            allTableDataTab1 = [];
+            $('#reportTable tbody tr').each(function () {
+                var rowData = [];
+                var rowId = $(this).find('.row-checkbox').val();
+
+                $(this).find('td').each(function (index) {
+                    if (index > 0) {
+                        var cellText = $(this).text().trim().replace(/\s+/g, ' ');
+                        rowData.push(cellText);
+                    }
+                });
+
+                if (rowData.length > 0) {
+                    allTableDataTab1.push({
+                        id: rowId,
+                        data: rowData
+                    });
+                }
+            });
+
+            console.log('Stored all table data:', allTableDataTab1.length, 'rows');
+            console.log('Headers:', tableHeaders);
+        }
+
+        function initializeDataTable() {
+            if ($.fn.DataTable.isDataTable('#reportTable')) {
+                dataTable.destroy();
+            }
+
+            dataTable = $('#reportTable').DataTable({
+                paging: true,
+                pageLength: 10,
+                lengthChange: true,
+                lengthMenu: [10, 25, 50, 100],
+                searching: true,
+                ordering: false,
+                info: true,
+                autoWidth: false,
+                responsive: true,
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Type to search",
+                    lengthMenu: "",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                },
+                drawCallback: function (settings) {
+                    initializeCheckboxes();
+                },
+                initComplete: function (settings, json) {
+                    initializeCheckboxes();
+                    $('.dataTables_length label').contents().filter(function () {
+                        return this.nodeType === 3;
+                    }).remove();
+                }
+            });
+        }
+
+        function initializeCheckboxes() {
+            var $mainTable = $('#reportTable');
+            $('#selectAllTab1').off('click').on('click', function () {
+                var isChecked = $(this).is(':checked');
+                $mainTable.find('.row-checkbox').prop('checked', isChecked);
+
+                if (isChecked) {
+                    allTableDataTab1.forEach(function (row) {
+                        selectedRowIdsTab1.add(row.id);
+                    });
+                    $mainTable.find('.row-checkbox').each(function () {
+                        $(this).closest('tr').addClass('selected-row');
+                    });
+                } else {
+                    selectedRowIdsTab1.clear();
+                    $mainTable.find('tr').removeClass('selected-row');
+                }
+
+                updateSelectAllCheckbox();
+            });
+
+            $mainTable.find('.row-checkbox').off('change').on('change', function () {
+                var row = $(this).closest('tr');
+                var rowId = $(this).val();
+                var isChecked = $(this).is(':checked');
+
+                if (isChecked) {
+                    selectedRowIdsTab1.add(rowId);
+                    row.addClass('selected-row');
+                } else {
+                    selectedRowIdsTab1.delete(rowId);
+                    row.removeClass('selected-row');
+                }
+
+                updateSelectAllCheckbox();
+            });
+
+            $mainTable.find('.row-checkbox').each(function () {
+                var rowId = $(this).val();
+                if (selectedRowIdsTab1.has(rowId)) {
+                    $(this).prop('checked', true);
+                    $(this).closest('tr').addClass('selected-row');
+                }
+            });
+
+            updateSelectAllCheckbox();
+        }
+
+        function updateSelectAllCheckbox() {
+            var totalRows = allTableDataTab1.length;
+            var selectedCount = selectedRowIdsTab1.size;
+
+            if (selectedCount === 0) {
+                $('#selectAllTab1').prop('checked', false).prop('indeterminate', false);
+            } else if (selectedCount === totalRows) {
+                $('#selectAllTab1').prop('checked', true).prop('indeterminate', false);
+            } else {
+                $('#selectAllTab1').prop('checked', false).prop('indeterminate', true);
+            }
+        }
+
+        function getSelectedRowsData() {
+            var selectedData = [];
+            allTableDataTab1.forEach(function (row) {
+                if (selectedRowIdsTab1.has(row.id)) {
+                    selectedData.push(row.data);
+                }
+            });
+            console.log('Selected Headers:', tableHeaders);
+            console.log('Selected Data from global store:', selectedData);
+            return { headers: tableHeaders, data: selectedData };
+        }
+
+        $('#copyBtn').on('click', function () {
+            var result = getSelectedRowsData();
+            if (result.data.length === 0) {
+                showErrorToast('Please select at least one row to copy.');
+                return;
+            }
+
+            var copyHeaders = ['Sr No'];
+            result.headers.forEach(function (header) {
+                if (header.toLowerCase() !== 'sr no' && header.toLowerCase() !== 'sr.no' && header.toLowerCase() !== 'serial number') {
+                    copyHeaders.push(header);
+                }
+            });
+
+            var copyText = copyHeaders.join('\t') + '\n';
+            result.data.forEach(function (row, index) {
+                var copyRow = [index + 1];
+                row.forEach(function (cell, cellIndex) {
+                    var headerName = result.headers[cellIndex];
+                    if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no' && headerName.toLowerCase() !== 'serial number') {
+                        copyRow.push(cell);
+                    }
+                });
+                copyText += copyRow.join('\t') + '\n';
+            });
+
+            navigator.clipboard.writeText(copyText).then(function () {
+                showSuccessToast('Data copied to clipboard! (' + result.data.length + ' rows)');
+            }).catch(function () {
+                showErrorToast('Copy failed. Please try again.');
+            });
+        });
+
+        $('#csvBtn').on('click', function () {
+            var result = getSelectedRowsData();
+            if (result.data.length === 0) {
+                showErrorToast('Please select at least one row to export.');
+                return;
+            }
+
+            var csvHeaders = ['Sr No'];
+            result.headers.forEach(function (header) {
+                if (header.toLowerCase() !== 'sr no' && header.toLowerCase() !== 'sr.no' && header.toLowerCase() !== 'serial number') {
+                    csvHeaders.push(header);
+                }
+            });
+
+            var csvContent = csvHeaders.join(',') + '\n';
+            result.data.forEach(function (row, index) {
+                var csvRow = [index + 1];
+                row.forEach(function (cell, cellIndex) {
+                    var headerName = result.headers[cellIndex];
+                    if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no' && headerName.toLowerCase() !== 'serial number') {
+                        csvRow.push('"' + cell.replace(/"/g, '""') + '"');
+                    }
+                });
+                csvContent += csvRow.join(',') + '\n';
+            });
+
+            var blob = new Blob([csvContent], { type: 'text/csv' });
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'customer_report_' + new Date().getTime() + '.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showSuccessToast('CSV file downloaded! (' + result.data.length + ' rows)');
+        });
+
+        $('#excelBtn').on('click', function () {
+            var result = getSelectedRowsData();
+            if (result.data.length === 0) {
+                showErrorToast('Please select at least one row to export.');
+                return;
+            }
+
+            var excelHeaders = ['Sr No'];
+            result.headers.forEach(function (header) {
+                if (header.toLowerCase() !== 'sr no' && header.toLowerCase() !== 'sr.no' && header.toLowerCase() !== 'serial number') {
+                    excelHeaders.push(header);
+                }
+            });
+
+            var excelContent = '<table border="1"><thead><tr>';
+            excelHeaders.forEach(function (header) {
+                excelContent += '<th>' + header + '</th>';
+            });
+            excelContent += '</tr></thead><tbody>';
+
+            result.data.forEach(function (row, index) {
+                excelContent += '<tr>';
+                excelContent += '<td>' + (index + 1) + '</td>';
+                row.forEach(function (cell, cellIndex) {
+                    var headerName = result.headers[cellIndex];
+                    if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no' && headerName.toLowerCase() !== 'serial number') {
+                        excelContent += '<td>' + cell + '</td>';
+                    }
+                });
+                excelContent += '</tr>';
+            });
+            excelContent += '</tbody></table>';
+
+            var blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'customer_report_' + new Date().getTime() + '.xls';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showSuccessToast('Excel file downloaded! (' + result.data.length + ' rows)');
+        });
+
+        $('#pdfBtn').on('click', function () {
+            var result = getSelectedRowsData();
+            if (result.data.length === 0) {
+                showErrorToast('Please select at least one row to export.');
+                return;
+            }
+
+            if (typeof window.jspdf === 'undefined') {
+                showErrorToast('jsPDF library is not loaded. Please include jsPDF library.');
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(24);
+                doc.setTextColor(0, 0, 0);
+                const pageWidth = doc.internal.pageSize.getWidth();
+                doc.text("RahiShop", pageWidth / 2, 25, { align: 'center' });
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(16);
+                doc.setTextColor(80, 80, 80);
+                doc.text("Customer Management", pageWidth / 2, 35, { align: 'center' });
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                const currentDateTime = new Date().toLocaleString('en-GB', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(',', '');
+                doc.text("Generated On: " + currentDateTime, pageWidth - 15, 35, { align: 'right' });
+                doc.text("Total Records: " + result.data.length, pageWidth - 15, 42, { align: 'right' });
+
+                if (typeof doc.autoTable === 'function') {
+                    var pdfData = [];
+                    var pdfHeaders = ['Sr No'];
+                    result.headers.forEach(function (header) {
+                        if (header.toLowerCase() !== 'sr no' && header.toLowerCase() !== 'sr.no' && header.toLowerCase() !== 'serial number') {
+                            pdfHeaders.push(header);
+                        }
+                    });
+
+                    result.data.forEach(function (row, index) {
+                        var pdfRow = [index + 1];
+                        row.forEach(function (cell, cellIndex) {
+                            var headerName = result.headers[cellIndex];
+                            if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no' && headerName.toLowerCase() !== 'serial number') {
+                                pdfRow.push(cell);
+                            }
+                        });
+                        pdfData.push(pdfRow);
+                    });
+
+                    doc.autoTable({
+                        head: [pdfHeaders],
+                        body: pdfData,
+                        startY: 55,
+                        styles: {
+                            fontSize: 8,
+                            cellPadding: 4,
+                            lineColor: [255, 255, 255],
+                            lineWidth: 0,
+                            textColor: [0, 0, 0],
+                            fontStyle: 'normal'
+                        },
+                        headStyles: {
+                            fillColor: [33, 150, 243],
+                            textColor: [255, 255, 255],
+                            fontStyle: 'bold',
+                            halign: 'center',
+                            fontSize: 9,
+                            cellPadding: 5,
+                            lineColor: [255, 255, 255],
+                            lineWidth: 0
+                        },
+                        bodyStyles: {
+                            halign: 'center',
+                            fontSize: 8,
+                            lineColor: [255, 255, 255],
+                            lineWidth: 0
+                        },
+                        alternateRowStyles: {
+                            fillColor: [248, 249, 250],
+                            lineColor: [255, 255, 255],
+                            lineWidth: 0
+                        },
+                        margin: {
+                            top: 10,
+                            right: 15,
+                            bottom: 15,
+                            left: 15
+                        },
+                        columnStyles: {
+                            0: {
+                                halign: 'center',
+                                cellWidth: 15,
+                                fontStyle: 'bold',
+                                lineColor: [255, 255, 255],
+                                lineWidth: 0
+                            }
+                        },
+                        theme: 'plain',
+                        tableLineColor: [255, 255, 255],
+                        tableLineWidth: 0
+                    });
+                } else {
+                    showErrorToast('autoTable plugin is not loaded.');
+                    return;
+                }
+
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+                const filename = 'RahiShop_CustomerReport_' + timestamp + '.pdf';
+                doc.save(filename);
+                showSuccessToast('PDF generated successfully! (' + result.data.length + ' records)');
+            } catch (error) {
+                console.error('PDF Generation Error:', error);
+                showErrorToast('Error generating PDF: ' + error.message);
+            }
+        });
+
+        $('#printBtn').on('click', function () {
+            var result = getSelectedRowsData();
+            if (result.data.length === 0) {
+                showErrorToast('Please select at least one row to print.');
+                return;
+            }
+
+            var printHeaders = ['Sr No'];
+            result.headers.forEach(function (header) {
+                if (header.toLowerCase() !== 'sr no' && header.toLowerCase() !== 'sr.no' && header.toLowerCase() !== 'serial number') {
+                    printHeaders.push(header);
+                }
+            });
+
+            var printContent = '<html><head><title>Customer Report</title>';
+            printContent += '<style>';
+            printContent += 'body{font-family:Arial,sans-serif;margin:20px;}';
+            printContent += 'table{border-collapse:collapse;width:100%;margin-top:20px;}';
+            printContent += 'th,td{border:1px solid #ddd;padding:8px;text-align:left;}';
+            printContent += 'th{background-color:#f2f2f2;font-weight:bold;text-align:center;}';
+            printContent += 'td:first-child{text-align:center;}';
+            printContent += '@@media print{body{margin:0;}}';
+            printContent += '</style>';
+            printContent += '</head><body>';
+            printContent += '<h2>Customer Report</h2>';
+            printContent += '<p>Generated on: ' + new Date().toLocaleDateString() + ' | Total Records: ' + result.data.length + '</p>';
+            printContent += '<table><thead><tr>';
+
+            printHeaders.forEach(function (header) {
+                printContent += '<th>' + header + '</th>';
+            });
+            printContent += '</tr></thead><tbody>';
+
+            result.data.forEach(function (row, index) {
+                printContent += '<tr>';
+                printContent += '<td>' + (index + 1) + '</td>';
+                row.forEach(function (cell, cellIndex) {
+                    var headerName = result.headers[cellIndex];
+                    if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no' && headerName.toLowerCase() !== 'serial number') {
+                        printContent += '<td>' + cell + '</td>';
+                    }
+                });
+                printContent += '</tr>';
+            });
+            printContent += '</tbody></table></body></html>';
+
+            var printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+            printWindow.close();
+            showSuccessToast('Print dialog opened! (' + result.data.length + ' rows)');
+        });
+
+        // Function to initialize both charts
+        function initializeCharts() {
+            (function (H) {
+                H.seriesTypes.pie.prototype.animate = function (init) {
+                    const series = this,
+                        chart = series.chart,
+                        points = series.points,
+                        { animation } = series.options,
+                        { startAngleRad } = series;
+
+                    function fanAnimate(point, startAngleRad) {
+                        const graphic = point.graphic,
+                            args = point.shapeArgs;
+
+                        if (graphic && args) {
+                            graphic
+                                .attr({
+                                    start: startAngleRad,
+                                    end: startAngleRad,
+                                    opacity: 1
+                                })
+                                .animate({
+                                    start: args.start,
+                                    end: args.end
+                                }, {
+                                    duration: animation.duration / points.length
+                                }, function () {
+                                    if (points[point.index + 1]) {
+                                        fanAnimate(points[point.index + 1], args.end);
+                                    }
+                                    if (point.index === series.points.length - 1) {
+                                        series.dataLabelsGroup.animate({
+                                            opacity: 1
+                                        },
+                                            void 0,
+                                            function () {
+                                                points.forEach(point => {
+                                                    point.opacity = 1;
+                                                });
+                                                series.update({
+                                                    enableMouseTracking: true
+                                                }, false);
+                                                chart.update({
+                                                    plotOptions: {
+                                                        pie: {
+                                                            innerSize: '40%',
+                                                            borderRadius: 8
+                                                        }
+                                                    }
+                                                });
+                                            });
+                                    }
+                                });
+                        }
+                    }
+
+                    if (init) {
+                        points.forEach(point => {
+                            point.opacity = 0;
+                        });
+                    } else {
+                        fanAnimate(points[0], startAngleRad);
+                    }
+                };
+            }(Highcharts));
+
+            const totalCustomers = parseInt($('#totalCustomersCount').text().trim()) || 0;
+            const activeCustomers = parseInt($('#activeCustomersCount').text().trim()) || 0;
+            const inactiveCustomers = parseInt($('#inactiveCustomersCount').text().trim()) || 0;
+
+            if (activeCustomers > 0 || inactiveCustomers > 0) {
+                Highcharts.chart('pieContainer', {
+                    chart: {
+                        type: 'pie'
+                    },
+                    title: {
+                        text: 'Customer Distribution Report'
+                    },
+                    credits: { enabled: false },
+                    subtitle: {
+                        text: 'Active vs Inactive'
+                    },
+                    tooltip: {
+                        headerFormat: '',
+                        pointFormat:
+                            '<span style="color:{point.color}">\u25cf</span> ' +
+                            '{point.name}: <b>{point.y}</b> ({point.percentage:.1f}%)'
+                    },
+                    accessibility: {
+                        point: {
+                            valueSuffix: '%'
+                        }
+                    },
+                    plotOptions: {
+                        pie: {
+                            allowPointSelect: true,
+                            borderWidth: 2,
+                            cursor: 'pointer',
+                            dataLabels: {
+                                enabled: true,
+                                format: '<b>{point.name}</b><br>{point.y} ({point.percentage:.1f}%)',
+                                distance: 20
+                            },
+                            point: {
+                                events: {
+                                    click: function (event) {
+                                        $("#orderDetailModalLabel").text(this.name);
+                                        if (this.name === 'Active Customers') {
+                                            $.ajax({
+                                                url: '@Url.Action("CardCustomerActiveListANB", "Admin")',
+                                                type: 'GET',
+                                                dataType: 'html',
+                                                cache: false,
+                                                beforeSend: function () {
+                                                    $("#order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+                                                },
+                                                success: function (result) {
+                                                    $("#order-detail-content").html(result);
+                                                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                                                    modal.show();
+                                                },
+                                                error: function (xhr, status, error) {
+                                                    console.error("AJAX Error:", status, error, xhr.responseText);
+                                                    $("#order-detail-content").html("<div class='alert alert-danger'>Failed to load active customer list.</div>");
+                                                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                                                    modal.show();
+                                                }
+                                            });
+                                        } else if (this.name === 'Inactive Customers') {
+                                            $.ajax({
+                                                url: '@Url.Action("CardCustomerInActiveListANB", "Admin")',
+                                                type: 'GET',
+                                                dataType: 'html',
+                                                cache: false,
+                                                beforeSend: function () {
+                                                    $("#order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+                                                },
+                                                success: function (result) {
+                                                    $("#order-detail-content").html(result);
+                                                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                                                    modal.show();
+                                                },
+                                                error: function (xhr, status, error) {
+                                                    console.error("AJAX Error:", status, error, xhr.responseText);
+                                                    $("#order-detail-content").html("<div class='alert alert-danger'>Failed to load inactive customer list.</div>");
+                                                    var modal = new bootstrap.Modal(document.getElementById("orderDetailModal"));
+                                                    modal.show();
+                                                }
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    series: [{
+                        enableMouseTracking: false,
+                        animation: {
+                            duration: 2000
+                        },
+                        colorByPoint: true,
+                        data: [
+                            {
+                                name: 'Active Customers',
+                                y: activeCustomers,
+                                color: '#28a745'
+                            },
+                            {
+                                name: 'Inactive Customers',
+                                y: inactiveCustomers,
+                                color: '#dc3545'
+                            }
+                        ]
+                    }]
+                });
+            }
+
+            Highcharts.chart('columnContainer', {
+                chart: {
+                    type: 'column'
+                },
+                title: {
+                    text: 'Top 5 Customers by Orders'
+                },
+                credits: { enabled: false },
+                xAxis: {
+                    type: 'category',
+                    labels: {
+                        rotation: -45,
+                        style: {
+                            fontSize: '13px',
+                            fontFamily: 'Verdana, sans-serif'
+                        }
+                    }
+                },
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: 'Total Orders'
+                    }
+                },
+                legend: {
+                    enabled: false
+                },
+                tooltip: {
+                    pointFormat: 'Total Orders: <b>{point.y}</b>'
+                },
+                series: [{
+                    name: 'Orders',
+                    colorByPoint: true,
+                    groupPadding: 0,
+                    data: [
+                        @if (ViewBag.TopCustomers != null && ((System.Data.DataTable)ViewBag.TopCustomers).Rows.Count > 0)
+                        {
+                            var rows = ((System.Data.DataTable)ViewBag.TopCustomers).Rows;
+                            for (int i = 0; i < rows.Count; i++)
+                            {
+                                var row = rows[i];
+                                var customerName = row["CustomerName"].ToString().Replace("'", "");
+                                var totalOrders = Convert.ToInt32(row["TotalOrders"]);
+                                <text>['@customerName', @totalOrders]</text>
+                                if (i < rows.Count - 1)
+                                {
+                                    <text>,</text>
+                                }
+                            }
+                        }
+                    ],
+                    dataLabels: {
+                        enabled: true,
+                        rotation: -90,
+                        color: '#FFFFFF',
+                        inside: true,
+                        verticalAlign: 'top',
+                        format: '{point.y}',
+                        y: 10,
+                        style: {
+                            fontSize: '13px',
+                            fontFamily: 'Verdana, sans-serif'
+                        }
+                    }
+                }]
+            });
+        }
+    })();
+</script>

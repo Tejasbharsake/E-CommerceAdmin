@@ -1,0 +1,142 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    var reasons = ViewBag.ReasonList as System.Data.DataTable;
+}
+
+<div class="container-fluid">
+    <!-- Product Details Section -->
+    <div class="row mb-3">
+        <div class="col-12">
+            @*<h5 class="border-bottom pb-2">Product Details</h5>*@
+        </div>
+    </div>
+
+
+
+    <div class="row">
+        <div class="col-md-6">
+            <dl class="row">
+                <dt class="col-sm-5">Product Code:</dt>
+                <dd class="col-sm-7">@Model.ProductCode</dd>
+
+                <dt class="col-sm-5">Product Name:</dt>
+                <dd class="col-sm-7">@Model.ProductName</dd>
+
+                <dt class="col-sm-5">Category:</dt>
+                <dd class="col-sm-7">@Model.MainCategoryName</dd>
+
+                <dt class="col-sm-5">Brand:</dt>
+                <dd class="col-sm-7">@Model.BrandName</dd>
+
+                <dt class="col-sm-5">Manufacturer:</dt>
+                <dd class="col-sm-7">@Model.ManufacturerName</dd>
+            </dl>
+        </div>
+
+        <div class="col-md-6">
+            <dl class="row">
+                <dt class="col-sm-5">MRP:</dt>
+                <dd class="col-sm-7">@Model.ProductMRP.ToString("C")</dd>
+
+                <dt class="col-sm-5">Selling Price:</dt>
+                <dd class="col-sm-7">@Model.ActualProductPrice.ToString("C")</dd>
+
+                <dt class="col-sm-5">Weight:</dt>
+                <dd class="col-sm-7">@Model.ProductWeight kg</dd>
+
+                <dt class="col-sm-5">Stock:</dt>
+                <dd class="col-sm-7">@Model.Stock </dd>
+
+
+                <dt class="col-sm-5">HSN Code:</dt>
+                <dd class="col-sm-7">@Model.HSNCode</dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Rejection Form Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <h5 class="border-bottom pb-2">Rejection Reason</h5>
+        </div>
+    </div>
+
+    <form id="rejectForm">
+        <input type="hidden" name="ProductCode" value="@Model.ProductCode" />
+
+        <div class="form-group">
+            <label>Select Rejection Reason:</label>
+            <select class="form-control" name="ReasonId" required>
+                <option value="">-- Select Reason --</option>
+                @if (reasons != null)
+                {
+                    foreach (System.Data.DataRow row in reasons.Rows)
+                    {
+                        <option value="@row["ReasonId"]">@row["Reason"]</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-danger">Submit Rejection</button>
+            @*<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>*@
+        </div>
+    </form>
+</div>
+
+<script>
+    $("#rejectForm").submit(function (e) {
+        e.preventDefault();
+
+        var form = $(this);
+
+        Swal.fire({
+            title: 'Confirm Rejection',
+            text: "Are you sure you want to reject this product?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',      // 🔴 Reject button
+            cancelButtonColor: '#3085d6',    // 🔵 Cancel button
+            confirmButtonText: 'Yes, reject it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    type: "POST",
+                    url: "/Admin/RejectProductSubmitSC",
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Rejected!',
+                                text: res.message || "Product rejected successfully.",
+                                confirmButtonColor: '#3085d6'
+                            }).then(() => {
+                                $("#detailsModal").modal('hide');
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: res.message || "Failed to reject product.",
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Internal error occurred while rejecting the product.',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+</script>

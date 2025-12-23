@@ -1,0 +1,343 @@
+﻿@model GSTECommerceLibrary.Admin.OtpVerificationViewModel
+@{
+    ViewBag.Title = "OTP Verification";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify OTP</title>
+
+    <link href="~/Content/Document/CSS/login.css" rel="stylesheet" />
+    <link href="~/Content/Document/CSS/VerifyOTPTB.css" rel="stylesheet" />
+
+
+    @*<style>
+            /* This style ensures the single form is centered on the page */
+            /*body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                font-family: 'Poppins', sans-serif;*/ /* A more modern font */
+                /*background-color: #f6f5f7;
+            }
+
+            .container {
+                max-width: 420px;*/ /* Set a max-width for the form */
+                /*width: 100%;
+                padding: 20px;*/ /* Added some padding for smaller screens */
+                /*box-shadow: none;*/ /* Remove box-shadow from the main container if any */
+            /*}
+
+            .form-container {
+                position: static;*/ /* Removes absolute positioning from login.css */
+                /*height: auto;
+                opacity: 1;
+                transition: none;
+                width: 100%;
+                border-radius: 10px;*/ /* Add border-radius for a modern look */
+                /*box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);*/ /* Add shadow to the form itself */
+                /*padding: 40px;
+                box-sizing: border-box;
+                background: #fff;
+            }*/
+
+                /* --- UI & Alignment Fixes Start --- */
+                /*.form-container form {
+                    display: flex;
+                    flex-direction: column;
+                    width: 100%;
+                }
+
+                .form-container h1 {
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 2.2em;
+                    margin-bottom: 20px;
+                }
+
+                .form-container p {
+                    text-align: center;
+                    color: #555;
+                    font-size: 15px;
+                    line-height: 1.5;
+                }
+
+                .form-container #timer, .form-container .back-link {
+                    text-align: center;
+                }
+
+                .form-container input[type="text"] {
+                    background-color: #eee;
+                    border: none;
+                    padding: 12px 15px;
+                    margin: 8px 0;
+                    width: 100%;
+                    border-radius: 5px;
+                    text-align: center;
+                    font-size: 16px;
+                }
+
+                .form-container button {
+                    width: 100%;
+                    box-sizing: border-box;*/ /* Ensures padding doesn't affect the width */
+                    /*border-radius: 20px;
+                    border: 1px solid #ff4b2b;
+                    color: #ffffff;
+                    font-size: 12px;
+                    font-weight: bold;
+                    padding: 12px 45px;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    transition: transform 80ms ease-in;
+                    cursor: pointer;
+                }
+
+            #verify-btn {
+                background-color: #ff4b2b;
+            }*/
+
+            /* Consistent spacing for form elements */
+            /*.form-container form > * {
+                margin-bottom: 15px;
+            }
+
+                .form-container form > *:last-child {
+                    margin-bottom: 0;
+                }
+
+            .back-link a {
+                text-decoration: none;
+                color: #555;
+                font-size: 14px;
+            }*/
+            /* --- UI & Alignment Fixes End --- */
+
+
+            /* Toast Message Style */
+            /*.toast {
+                visibility: hidden;
+                min-width: 250px;
+                background-color: #333;
+                color: #fff;
+                text-align: center;
+                border-radius: 5px;
+                padding: 16px;
+                position: fixed;
+                z-index: 1000;
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 30px;
+                font-size: 17px;
+                opacity: 0;
+                transition: visibility 0s, opacity 0.5s linear;
+            }
+
+                .toast.show {
+                    visibility: visible;
+                    opacity: 1;
+                }*/
+
+            /* Resend OTP button style */
+            /*#resend-otp-btn {
+                background-color: #eee;
+                border: 1px solid #ddd;
+                color: #555;
+            }
+
+                #resend-otp-btn:disabled {
+                    background-color: #ccc;
+                    border-color: #ccc;
+                    cursor: not-allowed;
+                    color: #fff;
+                }*/
+        </style>*@
+</head>
+<body>
+    <div class="container">
+        <!-- OTP Verification Panel -->
+        <div class="form-container">
+            @using (Html.BeginForm("VerifyOTPTB", "Admin", FormMethod.Post, new { id = "otp-form" }))
+            {
+                @Html.AntiForgeryToken()
+                <h1>Verify OTP</h1>
+                <p>An OTP has been sent to<br /><strong>@(Model?.Email ?? "your email")</strong></p>
+
+                <!-- Hidden field to pass the email to the controller -->
+                @Html.HiddenFor(m => m.Email)
+
+                <!-- OTP Input -->
+                @Html.TextBoxFor(m => m.OtpCode, new
+                {
+                    placeholder = "Enter OTP",
+                    maxlength = "6",
+                    required = "required",
+                    autocomplete = "off",
+                    id = "OtpCode" // Added ID for JS selection
+                })
+
+                <!-- Validation Messages -->
+                @Html.ValidationMessageFor(m => m.OtpCode, "", new { @class = "text-danger", style = "color:red; text-align:center;" })
+                @Html.ValidationSummary(true, "", new { @class = "text-danger", style = "color:red; text-align:center;" })
+
+                if (ViewBag.Message != null)
+                {
+                    <div style="color:red; text-align:center;">@ViewBag.Message</div>
+                }
+                if (TempData["Message"] != null)
+                {
+                    <div id="tempDataMessage" style="color:green; text-align:center;">@TempData["Message"]</div>
+                }
+
+                <!-- Timer Display -->
+                <div id="timer" style="font-weight: bold; color: #555;"></div>
+
+                <button type="submit" id="verify-btn">Verify OTP</button>
+
+                <!-- Resend OTP Button  -->
+                <button type="button" id="resend-otp-btn">Resend OTP</button>
+
+                <div class="back-link">
+                    <a href="@Url.Action("LoginTB", "Admin")">← Back to Login</a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Toast message container -->
+    <div id="toast-message" class="toast"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+    const timerElement = document.getElementById('timer');
+    const verifyBtn = document.getElementById('verify-btn');
+    const resendBtn = document.getElementById('resend-otp-btn');
+    const toastElement = document.getElementById('toast-message');
+    const tempDataMessage = document.getElementById('tempDataMessage');
+    const otpForm = document.getElementById('otp-form');
+
+    let isSubmitting = false;
+    let timerInterval;
+
+    // ✅ Retrieve previous time from sessionStorage if available
+    let timeLeft = parseInt(sessionStorage.getItem("otpTimeLeft")) || 60;
+
+    function startTimer() {
+        // Don’t start if already running
+        if (timerInterval) return;
+
+        verifyBtn.disabled = false;
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Resend OTP';
+        timerElement.style.display = 'block';
+
+        timerInterval = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                sessionStorage.removeItem("otpTimeLeft");
+                timerElement.innerHTML = "OTP expired!";
+                verifyBtn.disabled = true;
+                resendBtn.disabled = false;
+                showToast("OTP has expired, please request a new one.");
+            } else {
+                const seconds = String(timeLeft).padStart(2, '0');
+                timerElement.innerHTML = `OTP expires in: 00:${seconds}`;
+                timeLeft -= 1;
+                // ✅ Save current time every second
+                sessionStorage.setItem("otpTimeLeft", timeLeft);
+            }
+        }, 1000);
+    }
+
+    function showToast(message) {
+        toastElement.textContent = message;
+        toastElement.className = "toast show";
+        setTimeout(() => {
+            toastElement.className = toastElement.className.replace("show", "");
+        }, 3000);
+    }
+
+    // 🔁 When user clicks “Resend OTP”
+    resendBtn.addEventListener('click', function () {
+        const email = document.getElementById('Email').value;
+        showToast('Sending a new OTP...');
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Sending...';
+
+        fetch(`@Url.Action("ResendOTP", "Admin")?email=${encodeURIComponent(email)}`)
+            .then(response => response.json())
+            .then(data => {
+                showToast(data.message);
+                if (data.success) {
+                    if (tempDataMessage) {
+                        tempDataMessage.style.display = 'none';
+                    }
+                    // ✅ Reset timer only when new OTP is successfully sent
+                    clearInterval(timerInterval);
+                    timeLeft = 60;
+                    sessionStorage.setItem("otpTimeLeft", timeLeft);
+                    timerInterval = null;
+                    startTimer();
+                } else {
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Resend OTP';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast("An error occurred. Please check your connection.");
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'Resend OTP';
+            });
+    });
+
+    // ✅ Prevent double-submit
+    otpForm.addEventListener('submit', function (event) {
+        if (isSubmitting) return;
+        const otpInput = document.getElementById('OtpCode');
+        if (otpInput.value.trim().length > 0) {
+            isSubmitting = true;
+        }
+    });
+
+    // ✅ Start the timer
+    startTimer();
+
+
+            //// ✅ Listener for the form's 'submit' event
+            //otpForm.addEventListener('submit', function(event) {
+            //    // If we are already handling the submission, let it proceed.
+            //    if (isSubmitting) {
+            //        return;
+            //    }
+
+            //    const otpInput = document.getElementById('OtpCode');
+            //    // Check if the user has entered something in the OTP box.
+            //    if (otpInput.value.trim().length > 0) {
+            //        // 1. Stop the form from submitting right away.
+            //        event.preventDefault();
+
+            //        // 2. Show a "Verifying..." message to the user.
+            //        showToast('Verifying OTP...');
+
+            //        // 3. Set a flag to indicate we are now handling the submission.
+            //        isSubmitting = true;
+
+            //        // 4. After a brief delay (to let the user see the toast), submit the form.
+            //        setTimeout(function() {
+            //            otpForm.submit(); // This submits the form for real.
+            //        }, 500); // 0.5 second delay
+            //    }
+            //    // If the input is empty, the browser's built-in 'required' validation will show an error.
+            //});
+
+            //// Start the timer when the page loads
+            //startTimer();
+        });
+    </script>
+</body>
+</html>

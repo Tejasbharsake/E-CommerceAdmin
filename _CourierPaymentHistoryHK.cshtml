@@ -1,0 +1,535 @@
+﻿@model IEnumerable<GSTECommerceLibrary.Admin.Admin>
+
+<!-- CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.dataTables.min.css" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+
+<!-- Daterangepicker CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" />
+
+<head>
+    <link href="~/Content/Document/CSS/custom-datatables.css" rel="stylesheet" />
+    <link href="~/Content/Document/CSS/PaymentHistoryCourier.css" rel="stylesheet" />
+    <!-- External PaymentHistory CSS -->
+    <link href="~/Content/Document/CSS/PaymentHistory.css" rel="stylesheet" />
+</head>
+
+<div class="row mb-3">
+    <div class="col-md-6 d-flex align-items-center">
+        @*<h4 class="fw-bold mb-0">Payment History</h4>*@
+    </div>
+    <div class="col-md-6 text-end"></div>
+</div>
+
+<!-- Date Range Filter Section - Auto Width -->
+<div class="row mb-4 align-items-end">
+    <div class="col-md-auto">
+        <!-- Auto width column -->
+        <label class="form-label fw-semibold mb-1">Date Range Filter</label>
+        <input class="form-control input-daterange-datepicker" type="text" name="daterange" autocomplete="off" placeholder="Select Date Range" />
+        @*<small class="text-muted" id="dateRangeInfo">Available range calculated from data</small>*@
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table id="table1" class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="selectAllCheckbox" /></th>
+                <th>Sr No</th>
+                <th>Client Code</th>
+                <th>Seller Name</th>
+                <th>Transaction ID</th>
+                <th>Payment Date</th>
+                <th>Paid Amount ₹</th>
+                <th>Paid From Date</th>
+                <th>Paid To Date</th>
+                <th>Order Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td><input type="checkbox" class="row-checkbox" /></td>
+                    <td></td> <!-- Sr No handled by DataTables render -->
+                    <td>@item.ClientCode</td>
+                    <td>@item.SellerName</td>
+                    <td>@item.TransactionId</td>
+                    <td data-payment-date="@(item.PaymentDate.HasValue ? item.PaymentDate.Value.ToString("yyyy-MM-dd") : "")">
+                        @(item.PaymentDate.HasValue ? item.PaymentDate.Value.ToString("dd-MM-yyyy") : "N/A")
+                    </td>
+                    <td>@item.PaidAmount</td>
+                    <td>@(!string.IsNullOrEmpty(item.PaidDateFrom) ? DateTime.Parse(item.PaidDateFrom).ToString("dd-MM-yyyy") : "")</td>
+                    <td>@(!string.IsNullOrEmpty(item.PaidDateTo) ? DateTime.Parse(item.PaidDateTo).ToString("dd-MM-yyyy") : "")</td>
+                    <td>
+                        <a href="javascript:void(0);"
+                           class="order-count-link text-dark"
+                           data-transaction="@item.TransactionId"
+                           data-seller="@item.SellerName">
+                            @item.OrderCount
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for Order Details -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Order Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="orderDetailsContent" class="p-2">
+                    <p class="text-muted">Select an order count to view details...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification HTML -->
+<div class="position-fixed end-0 p-3" style="z-index: 1055; top: 60px;">
+    <div id="liveToast" class="toast align-items-center text-white bg-danger border-0"
+         role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+<!-- DataTables core -->
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+<!-- DataTables Buttons core -->
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+
+<!-- Export dependencies -->
+<script src="~/Content/Document/CustomJS/jszip.min.js"></script>
+<script src="~/Content/Document/CustomJS/pdfmake.min.js"></script>
+<script src="~/Content/Document/CustomJS/vfs_fonts.js"></script>
+
+<!-- Export buttons -->
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
+
+<!-- Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Date Range Picker JS -->
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        // Initialize Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl, {
+                placement: 'top',
+                trigger: 'hover'
+            });
+        });
+
+        const selectedRows = new Set();
+        let srNoCounter = 0;
+
+        // Date Range Variables - Calculate from actual data
+        let minDate, maxDate;
+
+        // Calculate min/max dates from Payment Date column
+        function calculateDateRange() {
+            let dates = [];
+            $('#table1 tbody tr').each(function () {
+                let paymentDateStr = $(this).find('td[data-payment-date]').attr('data-payment-date');
+                if (paymentDateStr && paymentDateStr !== '') {
+                    let paymentDate = moment(paymentDateStr, 'YYYY-MM-DD');
+                    if (paymentDate.isValid()) {
+                        dates.push(paymentDate);
+                    }
+                }
+            });
+
+            if (dates.length > 0) {
+                minDate = moment.min(dates);
+                maxDate = moment.max(dates);
+            } else {
+                minDate = moment().subtract(1, 'year');
+                maxDate = moment();
+            }
+        }
+
+        // Initialize date range
+        calculateDateRange();
+
+        function showErrorToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-success').addClass('bg-danger');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function showSuccessToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function exportBtnConfig(type, icon, btnClass, filenamePrefix = '', tooltipText = '', isPdf = false) {
+            let exportSrCounter = 0;
+
+            return {
+                extend: type,
+                text: `<img src="/Content/Document/Image/${icon}" class="btn-icon" style="height:18px;vertical-align:middle;" />`,
+                className: `btn ${btnClass} ${type === 'print' ? 'text-dark' : 'text-white'}`,
+                title: 'Payment History Report',
+                filename: filenamePrefix ? filenamePrefix + new Date().toISOString().slice(0, 10) : undefined,
+                attr: {
+                    'data-bs-toggle': 'tooltip',
+                    'title': tooltipText
+                },
+                orientation: isPdf ? 'landscape' : undefined,
+                pageSize: isPdf ? 'A4' : undefined,
+                exportOptions: {
+                    columns: ':not(:first)',
+                    rows: function (idx, data, node) {
+                        return $(node).find('.row-checkbox').is(':checked');
+                    },
+                    format: {
+                        body: function (data, row, column, node) {
+                            if (column === 0) {
+                                exportSrCounter++;
+                                return exportSrCounter;
+                            }
+                            return $('<div>').html(data).text().trim();
+                        }
+                    }
+                },
+                action: function (e, dt, button, config) {
+                    if (table.$('.row-checkbox:checked').length === 0) {
+                        showErrorToast(`Please select at least one row to ${config.extend || type}.`);
+                        return;
+                    }
+                    exportSrCounter = 0;
+
+                    const candidate = `${config.extend || type}Html5`;
+                    const builtin = $.fn.dataTable.ext.buttons[candidate] ||
+                        $.fn.dataTable.ext.buttons[config.extend] ||
+                        $.fn.dataTable.ext.buttons[type];
+                    if (builtin && builtin.action) {
+                        builtin.action.call(this, e, dt, button, config);
+                    }
+                },
+                customize: isPdf ? function (doc) {
+                    var shopName = 'Rahishop';
+                    var heading = 'Payment History';
+                    var now = moment().format('DD-MM-YYYY HH:mm:ss');
+                    var selectedEntries = table.$('.row-checkbox:checked').length;
+
+                    if (doc.content.length && typeof doc.content[0].text === 'string') {
+                        doc.content.splice(0, 1);
+                    }
+
+                    doc.content.unshift({
+                        stack: [
+                            { text: shopName, alignment: 'center', fontSize: 16, bold: true, margin: [0, 10, 0, 5] },
+                            { text: heading, alignment: 'center', fontSize: 13, bold: true, margin: [0, 0, 0, 5] },
+                            { text: 'Generated On: ' + now, alignment: 'right', fontSize: 9, margin: [0, 0, 20, 5] },
+                            { text: 'Total Entries: ' + selectedEntries, alignment: 'right', fontSize: 9, margin: [0, 0, 20, 10] }
+                        ]
+                    });
+
+                    doc['header'] = function () {
+                        return {};
+                    };
+
+                    doc.pageMargins = [10, 20, 10, 20];
+
+                    var objLayout = {};
+                    objLayout['hLineWidth'] = function () { return 0; };
+                    objLayout['vLineWidth'] = function () { return 0; };
+                    objLayout['hLineColor'] = function () { return '#aaa'; };
+                    objLayout['vLineColor'] = function () { return '#aaa'; };
+                    objLayout['paddingLeft'] = function () { return 5; };
+                    objLayout['paddingRight'] = function () { return 5; };
+
+                    doc.content.forEach(function (contentItem) {
+                        if (contentItem.table) {
+                            contentItem.layout = objLayout;
+                            contentItem.table.widths = ['auto', '*', '*', '*', '*', '*', '*', '*', 'auto'];
+                            contentItem.table.bodyHeights = undefined;
+                            contentItem.table.dontBreakRows = true;
+                            contentItem.table.margin = [0, 5, 0, 0];
+                            contentItem.table.layout = {
+                                fillColor: function (rowIndex) {
+                                    return (rowIndex % 2 === 0) ? '#F2F3F4' : null;
+                                }
+                            };
+                        }
+                    });
+
+                    doc.defaultStyle.fontSize = 9;
+                    doc.styles.tableHeader.fontSize = 10;
+                    doc.styles.tableHeader.fillColor = '#2E86C1';
+                    doc.styles.tableHeader.color = 'white';
+                    doc.styles.tableHeader.bold = true;
+                } : undefined
+            };
+        }
+
+        const table = $('#table1').DataTable({
+            responsive: true,
+            scrollX: false,
+            ordering: false,
+            paging: true,
+            lengthChange: false,
+            pageLength: 10,
+            lengthMenu: [5, 10, 25, 50, 100],
+            info: true,
+            dom: '<"top"<"float-left"l><"float-right"<"dtb-wrap"B><"dtf-wrap"f>>>rt<"bottom"ip><"clear">',
+            buttons: [
+                exportBtnConfig('copy', 'Copy.png', 'btn-info', '', 'Copy to clipboard'),
+                exportBtnConfig('csv', 'CSV.png', 'btn-success', 'Payment_History_', 'Export as CSV file'),
+                exportBtnConfig('excel', 'XLS.png', 'btn-primary', 'Payment_History_', 'Export as Excel file'),
+                exportBtnConfig('pdf', 'PDFicon.png', 'btn-danger', 'Payment_History_', 'Export as PDF file', true),
+                exportBtnConfig('print', 'Print.png', 'btn-warning', '', 'Print')
+            ],
+            columnDefs: [
+                { targets: 0, orderable: false, searchable: false },
+                {
+                    targets: 1,
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row, meta) {
+                        return meta.row + 1 + meta.settings._iDisplayStart;
+                    }
+                }
+            ],
+            drawCallback: function () {
+                $('#table1 tbody tr').removeClass('table-primary');
+            }
+        });
+
+        // Apply custom styles
+        function applyCustomStyles() {
+            $('#table1 thead th').css({
+                'font-size': '14px',
+                'text-align': 'center',
+                'background-color': '#2C3E50',
+                'color': '#FFFFFF',
+                'font-weight': '600',
+                'padding': '4px 8px',
+                'vertical-align': 'middle',
+                'border-bottom': '2px solid #ddd'
+            });
+
+            $('#table1 tbody td').css({
+                'text-align': 'center',
+                'font-size': '10px',
+                'padding': '4px 8px',
+                'vertical-align': 'middle'
+            });
+
+            $('.dataTables_info').css('display', 'block !important');
+        }
+
+        // Apply styles immediately after DataTable initialization
+        applyCustomStyles();
+
+        // Re-apply styles after every draw event
+        table.on('draw', function () {
+            applyCustomStyles();
+        });
+
+        // Add placeholder to search box
+        $('#table1_filter input').attr('placeholder', 'Type to search...');
+
+        // Initialize Date Range Picker with Validations
+        $('#dateRangeInfo').text(`Available: ${minDate.format('DD-MM-YYYY')} to ${maxDate.format('DD-MM-YYYY')}`);
+
+        $('.input-daterange-datepicker').daterangepicker({
+            opens: 'right',
+            locale: {
+                format: 'MM/DD/YYYY',
+                separator: ' - ',
+                applyLabel: 'Apply',
+                cancelLabel: 'Cancel',
+                fromLabel: 'From',
+                toLabel: 'To',
+                customRangeLabel: 'Custom Range'
+            },
+            startDate: minDate,
+            endDate: maxDate,
+            minDate: minDate,
+            maxDate: maxDate,
+            autoUpdateInput: false,
+            ranges: {
+                'Available Range': [minDate, maxDate],
+                'Today': [moment(), moment()],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            },
+            alwaysShowCalendars: true,
+            showCustomRangeLabel: true
+        });
+
+        // Date Range Validation on Apply
+        $('.input-daterange-datepicker').on('apply.daterangepicker', function (ev, picker) {
+            var selectedStart = picker.startDate;
+            var selectedEnd = picker.endDate;
+
+            if (selectedStart.isBefore(minDate) || selectedEnd.isAfter(maxDate)) {
+                showErrorToast(`Please select dates within available range: ${minDate.format('DD-MM-YYYY')} to ${maxDate.format('DD-MM-YYYY')}`);
+                picker.setStartDate(minDate);
+                picker.setEndDate(maxDate);
+                $(this).val(`${minDate.format('MM/DD/YYYY')} - ${maxDate.format('MM/DD/YYYY')}`);
+                return false;
+            }
+
+            if (selectedStart.isAfter(selectedEnd)) {
+                showErrorToast('Start date cannot be after end date');
+                picker.setStartDate(minDate);
+                picker.setEndDate(maxDate);
+                $(this).val(`${minDate.format('MM/DD/YYYY')} - ${maxDate.format('MM/DD/YYYY')}`);
+                return false;
+            }
+
+            if (selectedStart.isAfter(moment()) || selectedEnd.isAfter(moment())) {
+                showErrorToast('Future dates are not allowed');
+                picker.setStartDate(minDate);
+                picker.setEndDate(maxDate);
+                $(this).val(`${minDate.format('MM/DD/YYYY')} - ${maxDate.format('MM/DD/YYYY')}`);
+                return false;
+            }
+
+            $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+
+            $.fn.dataTable.ext.search = [];
+
+            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                var $row = table.row(dataIndex).node();
+                var paymentDateStr = $($row).find('td[data-payment-date]').attr('data-payment-date');
+
+                if (!paymentDateStr) return false;
+
+                var paymentDate = moment(paymentDateStr, 'YYYY-MM-DD');
+                return paymentDate.isBetween(selectedStart, selectedEnd, null, '[]');
+            });
+
+            table.draw();
+
+            let filteredCount = table.rows({ filter: 'applied' }).count();
+            showSuccessToast(`Filter applied: ${filteredCount} records found for ${selectedStart.format('DD-MM-YYYY')} to ${selectedEnd.format('DD-MM-YYYY')}`);
+        });
+
+        // Cancel → Clear Filter
+        $('.input-daterange-datepicker').on('cancel.daterangepicker', function (ev, picker) {
+            $(this).val('');
+            $.fn.dataTable.ext.search = [];
+            table.draw();
+
+            let totalCount = table.rows().count();
+            showSuccessToast(`Filter cleared! Showing all ${totalCount} records`);
+        });
+
+        // Select All Checkbox functionality
+        $('#selectAllCheckbox').on('change', function () {
+            const checked = $(this).is(':checked');
+            table.rows().every(function () {
+                const rowNode = this.node();
+                $(rowNode).find('.row-checkbox').prop('checked', checked);
+                if (checked) selectedRows.add(rowNode);
+                else selectedRows.delete(rowNode);
+                $(rowNode).removeClass('table-primary selected highlight');
+                $(rowNode).find('td').css('background-color', '');
+            });
+            table.draw(false);
+            updateSelectAllCheckbox();
+        });
+
+        $(document).on('change', '.row-checkbox', function () {
+            const $tr = $(this).closest('tr');
+            if ($(this).is(':checked')) {
+                selectedRows.add($tr[0]);
+            } else {
+                selectedRows.delete($tr);
+                $('#selectAllCheckbox').prop('checked', false).prop('indeterminate', false);
+            }
+            $tr.removeClass('table-primary selected highlight');
+            $tr.find('td').css('background-color', '');
+            updateSelectAllCheckbox();
+        });
+
+        function updateSelectAllCheckbox() {
+            const total = table.rows().count();
+            const sel = selectedRows.size;
+            $('#selectAllCheckbox')
+                .prop('indeterminate', sel > 0 && sel < total)
+                .prop('checked', sel === total);
+        }
+
+        // Order Count Click Event → Load Modal
+        $(document).on("click", ".order-count-link", function (e) {
+            e.preventDefault();
+
+            let transactionId = $(this).data("transaction");
+            let sellerName = $(this).data("seller");
+
+            $("#orderDetailsModal").modal("show");
+            $("#orderDetailsContent").html("<p class='text-muted'>Loading order details...</p>");
+
+            $.ajax({
+                url: "/Admin/ClientOrderListHistoryHK",
+                type: "GET",
+                data: {
+                    transactionId: transactionId,
+                    sellerName: sellerName
+                },
+                success: function (response) {
+                    $("#orderDetailsContent").html(response);
+                },
+                error: function () {
+                    $("#orderDetailsContent").html("<p class='text-danger'>Failed to load details.</p>");
+                }
+            });
+        });
+
+        // Initialize row states
+        $('#table1 tbody tr').each(function () {
+            const $tr = $(this);
+            if ($tr.find('.row-checkbox').is(':checked')) {
+                selectedRows.add(this);
+            }
+            $tr.removeClass('table-primary selected highlight');
+            $tr.find('td').css('background-color', '');
+        });
+
+        // Final style application on page load
+        setTimeout(function () {
+            applyCustomStyles();
+        }, 100);
+    });
+</script>

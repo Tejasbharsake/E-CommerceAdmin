@@ -1,0 +1,906 @@
+﻿@model List<GSTECommerceLibrary.Admin.Admin>
+
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active" aria-current="page">
+        Commission Management
+    </li>
+}
+
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Export Buttons Row -->
+            <div class="row mb-3 align-items-end">
+                <div class="col-md-5">
+                    <button class="btn btn-primary" onclick="loadAddCommissionForm()">
+                        <i class="bi bi-plus-circle"></i> Add Commission
+                    </button>
+                </div>
+                <div class="col-md-7 text-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end justify-content-start">
+                    @*<button class="btn btn-outline-primary btn-sm" id="copyBtn">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" id="csvBtn">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" id="excelBtn">
+                            <i class="bi bi-file-earmark-excel"></i> Excel
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" id="pdfBtn">
+                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                        </button>
+                        <button class="btn btn-outline-dark btn-sm" id="printBtn">
+                            <i class="bi bi-printer"></i> Print
+                        </button>*@
+
+
+                    <button class="btn border-primary btn-sm" id="copyBtn">
+                        <img src="~/Content/Document/Image/Copy.png" alt="Copy" title="Copy to clipboard" style="width:16px; margin-right:4px;">
+                    </button>
+                    <button class="btn border-primary btn-sm" id="csvBtn">
+                        <img src="~/Content/Document/Image/CSV.png" alt="CSV" title="Export as CSV file" style="width:16px; margin-right:4px;">
+                    </button>
+                    <button class="btn border-primary btn-sm" id="excelBtn">
+                        <img src="~/Content/Document/Image/XLS.png" alt="Excel" title="Export as Excel file" style="width:16px; margin-right:4px;">
+                    </button>
+                    <button class="btn border-primary btn-sm" id="pdfBtn">
+                        <img src="~/Content/Document/Image/PDFicon.png" alt="PDF" title="Export as PDF" style="width:16px; margin-right:4px;">
+                    </button>
+                    <button class="btn border-primary btn-sm" id="printBtn">
+                        <img src="~/Content/Document/Image/Print.png" alt="Print" title="Print" style="width:16px; margin-right:4px;">
+                    </button>
+
+                </div>
+            </div>
+
+            <div class="modal fade" id="commissionModal" tabindex="-1" aria-labelledby="commissionModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content" id="commissionModalContent">
+                        <!-- Partial view will load here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal HTML structure -->
+            <div class="modal fade" id="commissionModal" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content" id="commissionModalContent">
+                        <!-- Partial view loads here -->
+                    </div>
+                </div>
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table id="table1" class="table table-striped table-bordered dataTable">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAll" /></th>
+                                <th>Sr No</th>
+                                <th>Category Name</th>
+                                <th>Sub Category Name</th>
+                                <th>Commission (%)</th>
+                                <th>Action</th>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td><input type="checkbox" class="commission-checkbox" value="@item.SrNo" /></td>
+                                    <td>@item.SrNo</td>
+                                    <td>@item.MainCategory</td>
+                                    <td>@item.SubCategoryName</td>
+                                    <td>@item.AdminCommissionDisplay</td>
+                                    <td>
+                                        @using System.Web
+
+                                        <!-- Edit Commission -->
+                                        <button type="button" class="btn btn-link p-0 edit-commission-btn"
+                                                style="font-size: 1.2rem;"
+                                                onclick="editCommission('@Html.Raw(HttpUtility.JavaScriptStringEncode(item.MainCategoryCode ?? ""))',
+                                '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.Sub1CategoryCode ?? ""))')"
+                                                title="Edit Commission">
+                                            <i class="bi bi-pencil-square text-dark"></i>
+                                        </button>
+
+                                        <!-- Delete Commission -->
+                                        @*<button type="button" class="btn btn-link p-0 delete-commission-btn"
+                                                style="font-size: 1.2rem;"
+                                                onclick="deleteCommission('@item.MainCategoryCode', '@item.Sub1CategoryCode')"
+                                                title="Delete Commission">
+                                            <i class="bi bi-trash text-dark"></i>
+                                        </button>*@
+
+                                    </td>
+
+
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning text-center">
+                    <i class="bi bi-exclamation-triangle"></i> No commission records found.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<link href="~/Content/Document/CSS/TableheadCommission.css" rel="stylesheet" />
+
+<!-- Toast Notification HTML -->
+<div class="position-fixed end-0 p-3" style="z-index: 11; top: 60px;">
+    <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+
+<!-- Toast Notification HTML -->
+<div class="position-fixed end-0 p-3" style="z-index: 11; top: 60px;">
+    <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+<!-- DataTables Bootstrap 5 CSS -->
+<link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet"     />
+
+<!-- jsPDF CDN -->
+
+<script src="~/Content/Document/CustomJS/jspdf.umd.min.js"></script>
+<!-- jsPDF AutoTable plugin -->
+<script src="~/Content/Document/CustomJS/jspdf.plugin.autotable.min.js"></script>
+
+<link href="~/Content/Document/CSS/PDFPK.css" rel="stylesheet" />
+@section Styles {
+    <!-- DataTables Bootstrap 5 CSS -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet"     />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <link href="~/Content/Document/custom-datatables/CSS" rel="stylesheet" />
+    <link href="~/Content/Document/CSS/PDFPK.css" rel="stylesheet" />
+}
+@section Scripts {
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+
+
+    <script>
+
+
+        // Toast notification functions
+        function showErrorToast(message) {
+            $('#toastMessage').text(message);
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function showSuccessToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function loadAddCommissionForm() {
+            $.ajax({
+                url: '/Admin/LoadAddCommissionFormPK',
+                type: 'GET',
+                success: function (html) {
+                    $('#commissionModalContent').html(html);
+                    $('#commissionModal').modal('show');
+                },
+                error: function () {
+                    alert("Failed to load commission form.");
+                }
+            });
+        }
+
+        //function deleteCommission(mainCategoryCode, sub1CategoryCode) {
+        //    if (confirm('Are you sure you want to delete this commission?')) {
+        //        // You can implement delete functionality here
+        //        alert('Delete functionality - MainCategory: ' + mainCategoryCode + ', SubCategory: ' + sub1CategoryCode);
+        //    }
+        //}
+
+
+     function deleteCommission(mainCategoryCode, sub1CategoryCode, button) {
+    var $button = $(button);
+    var $row = $button.closest("tr");
+
+    Swal.fire({
+        title: "Are you sure?",
+        text: "This commission will be permanently deleted!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // AJAX call to delete from backend
+            $.ajax({
+                url: '@Url.Action("DeleteCommissionPK", "Admin")',
+                type: "POST",
+                data: {
+                    mainCategoryCode: mainCategoryCode,   // ✅ correct casing
+                    sub1CategoryCode: sub1CategoryCode   // ✅ correct casing
+                },
+                success: function (response) {
+                    if (response.success) {
+                        // Fade out and remove row from table
+                        $row.fadeOut(500, function () {
+                            $(this).remove();
+                            // Optional: reload page after deletion
+                            setTimeout(function () {
+                                location.reload();
+                            }, 1000);
+                        
+
+                            // If no rows left, show "No data" message
+                            if ($("#commissionTable tbody tr").length === 0) {
+                                $("#commissionTable tbody").html(
+                                    '<tr><td colspan="100%" class="text-center">No commissions found</td></tr>'
+                                );
+                            }
+                        });
+
+                        Swal.fire("Deleted!", "Commission has been deleted.", "success");
+                    } else {
+                        Swal.fire("Error!", "Failed to delete commission.", "error");
+                    }
+                },
+                error: function () {
+                    Swal.fire("Error!", "Something went wrong while deleting.", "error");
+                }
+            });
+        }
+    });
+}
+
+
+
+        function editCommission(mainCategoryCode, sub1CategoryCode) {
+            console.log("MAIN:", mainCategoryCode);
+            console.log("SUB:", sub1CategoryCode);
+
+            if (!mainCategoryCode || !sub1CategoryCode) {
+                alert("Missing category codes.");
+                return;
+            }
+
+            $.ajax({
+                url: '/Admin/EditCommissionPK',
+                type: 'GET',
+                data: {
+                    mainCategoryCode: mainCategoryCode,
+                    sub1CategoryCode: sub1CategoryCode
+                },
+                success: function (html) {
+                    $('#commissionModalContent').html(html);
+                    $('#commissionModal').modal('show');
+                },
+                error: function (xhr) {
+                    alert("Error loading commission details. Server says: " + xhr.status + " - " + xhr.statusText);
+                }
+            });
+        }
+
+        // Submit Update Form
+        $(document).on('submit', '#editCommissionForm', function (e) {
+            e.preventDefault();
+            $.ajax({
+                url: '/Admin/UpdateCommissionPK',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function (response) {
+                    // Inside your AJAX success for updating commission
+                    if (response.success) {
+                        $('#commissionModal').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Commission updated successfully!',
+                            timer: 2000,
+                            showConfirmButton: false,
+                            timerProgressBar: true
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to update commission.'
+                        });
+                    }
+
+                }
+            });
+        });
+
+        $(document).ready(function () {
+            // Global variable to store selected rows across all pages
+            var selectedRows = new Set();
+
+            // Check if required libraries are loaded
+            if (typeof $.fn.DataTable === 'undefined') {
+                console.error('DataTables library is not loaded!');
+                alert('DataTables library missing. Please include DataTables JS file.');
+                return;
+            }
+
+            // Initialize DataTable with export functionality
+            setTimeout(function () {
+                if ($.fn.DataTable.isDataTable('#table1')) {
+                    $('#table1').DataTable().destroy();
+                }
+
+                var dataTable = $('#table1').DataTable({
+                    responsive: true,
+                    searching: true,
+                    paging: true,
+                    ordering: false,
+                    info: true,
+                    lengthChange: false,
+                    pageLength: 10,
+                    destroy: true,
+                    autoWidth: false,
+                    scrollX: false,
+                    lengthMenu: [5, 10, 25, 50, 100],
+                    language: {
+                        search: "Search:",
+                        searchPlaceholder: "Type to search..."
+                    },
+                    columnDefs: [
+                        { orderable: false, targets: [0, 5] },
+                        {
+                            targets: 1, // Sr.No column index
+                            render: function (data, type, row, meta) {
+                                // Continuous serial number across pages
+                                return meta.row + meta.settings._iDisplayStart + 1;
+                            }
+                        }
+                    ],
+                    drawCallback: function () {
+                        var api = this.api();
+
+                        // Update Sr.No after search/pagination
+                        var start = api.page.info().start;
+                        api.column(1, { page: 'current' }).nodes().each(function (cell, i) {
+                            cell.innerHTML = start + i + 1;
+                        });
+
+                        // Restore checkbox states (if you use them)
+                        if (typeof restoreCheckboxStates === "function") restoreCheckboxStates();
+                        if (typeof updateSelectAllState === "function") updateSelectAllState();
+                    }
+                });
+            
+
+
+                // Dynamic width assignment
+                dataTable.columns().every(function (index) {
+                    if (index === 0) {
+                        $(this.header()).css("width", "1%");
+                    } else if (index === dataTable.columns().nodes().length - 1) {
+                        $(this.header()).css("width", "10%");
+                    } else {
+                        $(this.header()).css("width", "auto");
+                    }
+                });
+
+                // Function to restore checkbox states on page change
+                function restoreCheckboxStates() {
+                    $('.commission-checkbox').each(function () {
+                        var srNo = $(this).val();
+                        var isSelected = selectedRows.has(srNo);
+                        $(this).prop('checked', isSelected);
+                        $(this).closest('tr').toggleClass('selected-row', isSelected);
+                    });
+                }
+
+                // Function to update Select All checkbox state
+                function updateSelectAllState() {
+                    var currentPageCheckboxes = $('.commission-checkbox:visible');
+                    var currentPageChecked = currentPageCheckboxes.filter(':checked');
+
+                    if (currentPageCheckboxes.length === 0) {
+                        $('#selectAll').prop('checked', false).prop('indeterminate', false);
+                    } else if (currentPageChecked.length === currentPageCheckboxes.length) {
+                        $('#selectAll').prop('checked', true).prop('indeterminate', false);
+                    } else if (currentPageChecked.length > 0) {
+                        $('#selectAll').prop('checked', false).prop('indeterminate', true);
+                    } else {
+                        $('#selectAll').prop('checked', false).prop('indeterminate', false);
+                    }
+                }
+
+                // Enhanced Select All checkbox functionality - works across all pages
+                $('#selectAll').off('click').on('click', function () {
+                    var isChecked = $(this).is(':checked');
+
+                    if (isChecked) {
+                        // Select ALL rows across all pages (including filtered ones)
+                        dataTable.rows({ search: 'applied' }).every(function () {
+                            var row = this.node();
+                            var checkbox = $(row).find('.commission-checkbox');
+                            var srNo = checkbox.val();
+
+                            // Add to selected set
+                            selectedRows.add(srNo);
+
+                            // Update UI for current page
+                            checkbox.prop('checked', true);
+                            $(row).addClass('selected-row');
+                        });
+                    } else {
+                        // Deselect ALL rows across all pages
+                        dataTable.rows({ search: 'applied' }).every(function () {
+                            var row = this.node();
+                            var checkbox = $(row).find('.commission-checkbox');
+                            var srNo = checkbox.val();
+
+                            // Remove from selected set
+                            selectedRows.delete(srNo);
+
+                            // Update UI for current page
+                            checkbox.prop('checked', false);
+                            $(row).removeClass('selected-row');
+                        });
+                    }
+
+                    updateSelectAllState();
+                });
+
+                // Individual checkbox row highlight - updated to work with global selection
+                $('#table1 tbody').off('change', '.commission-checkbox').on('change', '.commission-checkbox', function () {
+                    var row = $(this).closest('tr');
+                    var srNo = $(this).val();
+                    var isChecked = $(this).is(':checked');
+
+                    // Update global selection state
+                    if (isChecked) {
+                        selectedRows.add(srNo);
+                    } else {
+                        selectedRows.delete(srNo);
+                    }
+
+                    // Update row highlighting
+                    row.toggleClass('selected-row', isChecked);
+
+                    // Update select all checkbox state
+                    updateSelectAllState();
+                });
+
+                // EXPORT FUNCTIONALITY
+                function getSelectedRowsData() {
+                    var selectedData = [];
+                    var serialNo = 1; // Start from 1 for export
+
+                    dataTable.rows().every(function () {
+                        var row = this.node();
+                        var checkbox = $(row).find('.commission-checkbox');
+                        var srNo = checkbox.val();
+
+                        if (selectedRows.has(srNo)) {
+                            var rowData = [];
+
+                            // Push NEW serial number instead of table's Sr No
+                            rowData.push(serialNo.toString());
+
+                            // Get data from each cell except checkbox, original Sr No, edit & delete
+                            $(row).find('td').each(function (index) {
+                                if (index > 1 && index < 5) {
+                                    rowData.push($(this).text().trim());
+                                }
+                            });
+
+                            selectedData.push(rowData);
+                            serialNo++; // Increment counter
+                        }
+                    });
+
+                    return selectedData;
+                }
+
+                // Updated function for PDF export - excludes Action columns and adds Serial No
+                function getSelectedRowsDataForPDF() {
+                    var selectedData = [];
+                    var serialNo = 1;
+
+                    // Get data for all selected rows (across all pages)
+                    dataTable.rows().every(function () {
+                        var row = this.node();
+                        var checkbox = $(row).find('.commission-checkbox');
+                        var srNo = checkbox.val();
+
+                        if (selectedRows.has(srNo)) {
+                            var rowData = [];
+                            // Add serial number first
+                            rowData.push(serialNo.toString());
+
+                            // Get data from each cell (excluding checkbox, edit and delete columns)
+                            $(row).find('td').each(function (index) {
+                                if (index > 1 && index < 5) { // Skip checkbox (0), Sr No (1), edit (5) and delete (6)
+                                    rowData.push($(this).text().trim());
+                                }
+                            });
+
+                            if (rowData.length > 0) {
+                                selectedData.push(rowData);
+                                serialNo++;
+                            }
+                        }
+                    });
+
+                    return selectedData;
+                }
+
+                function getTableHeaders() {
+                    var headers = ['Sr No']; // Our new numbering
+                    $('#table1 thead th').each(function (index) {
+                        if (index > 1 && index < 5) {
+                            headers.push($(this).text().trim());
+                        }
+                    });
+                    return headers;
+                }
+
+                // Updated function for PDF headers - excludes Action columns
+                function getTableHeadersForPDF() {
+                    var headers = ['Sr No']; // Start with Serial Number
+                    $('#table1 thead th').each(function (index) {
+                        if (index > 1 && index < 5) { // Skip checkbox (0), original Sr No (1), edit (5) and delete (6)
+                            headers.push($(this).text().trim());
+                        }
+                    });
+                    return headers;
+                }
+
+                // Copy functionality
+                $('#copyBtn').off('click').on('click', function () {
+                    var selectedData = getSelectedRowsData();
+                    if (selectedData.length === 0) {
+                        showErrorToast('Please select at least one row to export.');
+                        return;
+                    }
+
+                    var headers = getTableHeaders();
+                    var copyText = headers.join('\t') + '\n';
+                    selectedData.forEach(function (row) {
+                        copyText += row.join('\t') + '\n';
+                    });
+
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(copyText).then(function () {
+                       /* alert('Commission data copied to clipboard! (' + selectedData.length + ' rows)');*/
+                    }).catch(function () {
+                       /* alert('Copy failed. Please try again.');*/
+                    });
+                });
+
+                // CSV Export
+                $('#csvBtn').off('click').on('click', function () {
+                    var selectedData = getSelectedRowsData();
+                    if (selectedData.length === 0) {
+                        showErrorToast('Please select at least one row to export.');
+                        return;
+                    }
+
+                    var headers = getTableHeaders();
+                    var csvContent = headers.join(',') + '\n';
+                    selectedData.forEach(function (row) {
+                        csvContent += row.map(function (cell) {
+                            return '"' + cell.replace(/"/g, '""') + '"';
+                        }).join(',') + '\n';
+                    });
+
+                    // Download CSV
+                    var blob = new Blob([csvContent], { type: 'text/csv' });
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'commission_management_' + new Date().getTime() + '.csv';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                    /*alert('CSV file downloaded! (' + selectedData.length + ' rows)');*/
+                });
+
+                // Excel Export (HTML format)
+                $('#excelBtn').off('click').on('click', function () {
+                    var selectedData = getSelectedRowsData();
+                    if (selectedData.length === 0) {
+                        showErrorToast('Please select at least one row to export.');
+                        return;
+                    }
+
+                    var headers = getTableHeaders();
+                    var excelContent = '<table border="1"><thead><tr>';
+                    headers.forEach(function (header) {
+                        excelContent += '<th>' + header + '</th>';
+                    });
+                    excelContent += '</tr></thead><tbody>';
+
+                    selectedData.forEach(function (row) {
+                        excelContent += '<tr>';
+                        row.forEach(function (cell) {
+                            excelContent += '<td>' + cell + '</td>';
+                        });
+                        excelContent += '</tr>';
+                    });
+                    excelContent += '</tbody></table>';
+
+                    // Download Excel
+                    var blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'commission_management_' + new Date().getTime() + '.xls';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                    /* alert('Excel file downloaded! (' + selectedData.length + ' rows)');*/
+                });
+
+                //// Updated PDF Export - with Serial Numbers and excluding Action columns
+                //$('#pdfBtn').off('click').on('click', function () {
+                //    var selectedData = getSelectedRowsDataForPDF();
+                //    if (selectedData.length === 0) {
+                //        showErrorToast('Please select at least one row to export.');
+                //        return;
+                //    }
+
+                //    var headers = getTableHeadersForPDF();
+
+                //    // Format data for autoTable
+                //    var formattedData = selectedData.map(function (row) {
+                //        return row.map(function (cell) {
+                //            return cell;
+                //        });
+                //    });
+
+                //    // jsPDF initialization
+                //    const { jsPDF } = window.jspdf;
+                //    const doc = new jsPDF();
+
+                //    // Title
+                //    doc.setFontSize(16);
+                //    doc.text("Commission Management Report", 14, 15);
+                //    doc.setFontSize(10);
+                //    doc.text("Generated on: " + new Date().toLocaleString(), 14, 22);
+                //    doc.text("Total Records: " + selectedData.length, 14, 28);
+
+                //    // AutoTable Plugin
+                //    doc.autoTable({
+                //        head: [headers],
+                //        body: formattedData,
+                //        startY: 35,
+                //        styles: {
+                //            fontSize: 9,
+                //            cellPadding: 3
+                //        },
+                //        headStyles: {
+                //            fillColor: [51, 122, 183],
+                //            textColor: 255,
+                //            fontStyle: 'bold',
+                //            halign: 'center'
+                //        },
+                //        columnStyles: {
+                //            0: { halign: 'center', cellWidth: 15 }, // Sr No
+                //            1: { halign: 'left', cellWidth: 50 },   // Category Name
+                //            2: { halign: 'left', cellWidth: 50 },   // Sub Category Name
+                //            3: { halign: 'right', cellWidth: 30 }   // Commission (%)
+                //        },
+                //        alternateRowStyles: {
+                //            fillColor: [248, 249, 250]
+                //        }
+                //    });
+
+                //    // Save as PDF
+                //    doc.save('commission_management_' + new Date().getTime() + '.pdf');
+
+                //    /* alert('PDF downloaded successfully! (' + selectedData.length + ' rows)');*/
+                //});
+
+
+                // Replace your existing PDF export function with this updated version
+                $('#pdfBtn').off('click').on('click', function () {
+                    var selectedData = getSelectedRowsData();
+                    if (selectedData.length === 0) {
+                        showErrorToast('Please select at least one row to export.');
+                        return;
+                    }
+
+                    // Check if jsPDF is available
+                    if (typeof window.jspdf === 'undefined') {
+                        showErrorToast('jsPDF library is not loaded');
+                        return;
+                    }
+
+                    var headers = getTableHeaders();
+
+                    try {
+                        const { jsPDF } = window.jspdf;
+                        const doc = new jsPDF({
+                            orientation: 'landscape',
+                            unit: 'pt',
+                            format: 'a4'
+                        });
+
+                        // === BASIC SETTINGS ===
+                        doc.setFont("helvetica");
+                        var pageWidth = doc.internal.pageSize.getWidth();
+
+                        // === MAIN TITLE ===
+                        doc.setFontSize(22);
+                        doc.setTextColor(0, 0, 0); // Black
+                        var rahishopTitle = "RahiShop";
+                        var titleWidth = doc.getTextWidth(rahishopTitle);
+                        var centerX = pageWidth / 2 - titleWidth / 2;
+                        doc.text(rahishopTitle, centerX, 40); // Centered at y=40
+
+                        // === SUBTITLE ===
+                        doc.setFontSize(18);
+                        doc.setTextColor(0, 0, 0); // Black subtitle (same style as your friend)
+                        var exportTitle = "Commission Management";
+                        var exportWidth = doc.getTextWidth(exportTitle);
+                        var exportCenterX = pageWidth / 2 - exportWidth / 2;
+                        doc.text(exportTitle, exportCenterX, 65); // Centered below title
+
+                        // === METADATA (right-aligned, same Y-level as subtitle) ===
+                        var now = new Date();
+                        doc.setFontSize(11);
+                        doc.setTextColor(100, 100, 100); // Gray
+                        var rightMargin = 40;
+                        doc.text("Generated on: " + now.toLocaleDateString() + " at " + now.toLocaleTimeString(),
+                            pageWidth - rightMargin, 65, { align: 'right' });
+                        doc.text("Total Records: " + selectedData.length,
+                            pageWidth - rightMargin, 80, { align: 'right' });
+
+                        // === TABLE ===
+                        if (typeof doc.autoTable === 'function') {
+                            var marginLeft = 30;
+                            var marginRight = 30;
+                            var availableWidth = pageWidth - marginLeft - marginRight;
+
+                            doc.autoTable({
+                                head: [headers],
+                                body: selectedData,
+                                startY: 100, // Starts just after metadata
+                                tableWidth: availableWidth,
+                                margin: { left: marginLeft, right: marginRight },
+                                styles: {
+                                    fontSize: 9,
+                                    cellPadding: 4,
+                                    valign: 'middle',
+                                    overflow: 'linebreak'
+                                },
+                                headStyles: {
+                                    fillColor: '#007bff',
+                                    textColor: 255, // White text
+                                    fontSize: 10,
+                                    fontStyle: 'bold',
+                                    halign: 'center'
+                                },
+                                bodyStyles: {
+                                    fillColor: [255, 255, 255]
+                                },
+                                alternateRowStyles: {
+                                    fillColor: [248, 249, 250] // Light gray alternate rows
+                                },
+                                columnStyles: {
+                                    0: { halign: 'center', cellWidth: 35 },   // Sr No
+                                    1: { halign: 'center', cellWidth: 249 },  // Main Category
+                                    2: { halign: 'center', cellWidth: 249 },  // Sub Category
+                                    3: { halign: 'center', cellWidth: 249 }   // Commission
+                                },
+                                tableLineColor: [200, 200, 200],
+                                tableLineWidth: 0.5
+                            });
+                        }
+
+                        // === FILENAME ===
+                        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+                        const filename = 'Commission_Export_' + timestamp + '.pdf';
+                        doc.save(filename);
+
+                    } catch (error) {
+                        console.error('PDF Generation Error:', error);
+                        showErrorToast('Error generating PDF: ' + error.message);
+                    }
+                });
+
+
+                // Print functionality
+                $('#printBtn').off('click').on('click', function () {
+                    var selectedData = getSelectedRowsData();
+                    if (selectedData.length === 0) {
+                        showErrorToast('Please select at least one row to export.');
+                        return;
+                    }
+
+                    var headers = getTableHeaders();
+                    var printContent = '<html><head><title>Commission Management Report</title>';
+                    printContent += '<style>table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background-color:#f2f2f2;}@@media print{body{margin:0;}}</style>';
+                    printContent += '</head><body>';
+                    printContent += '<h2>Commission Management Report - ' + new Date().toLocaleDateString() + '</h2>';
+                    printContent += '<table><thead><tr>';
+
+                    headers.forEach(function (header) {
+                        printContent += '<th>' + header + '</th>';
+                    });
+                    printContent += '</tr></thead><tbody>';
+
+                    selectedData.forEach(function (row) {
+                        printContent += '<tr>';
+                        row.forEach(function (cell) {
+                            printContent += '<td>' + cell + '</td>';
+                        });
+                        printContent += '</tr>';
+                    });
+                    printContent += '</tbody></table></body></html>';
+
+                    // Print
+                    var printWindow = window.open('', '_blank');
+                    printWindow.document.write(printContent);
+                    printWindow.document.close();
+                    printWindow.print();
+                    printWindow.close();
+
+                    /*alert('Print dialog opened! (' + selectedData.length + ' rows)');*/
+                });
+
+            }, 100);
+        });
+    </script>
+}

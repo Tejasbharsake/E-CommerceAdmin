@@ -1,0 +1,372 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - @Model.InvoiceNumber</title>
+
+    <!-- Bootstrap + Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .invoice-container {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px auto;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            max-width: 900px;
+            overflow: hidden;
+        }
+
+        .brand-header {
+            background: /*linear-gradient(90deg,#0d6efd,#0dcaf0)*/ #2C3E50;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: -15px -15px 10px -15px;
+        }
+
+            .brand-header h2 {
+                margin: 0;
+                font-weight: 700;
+                letter-spacing: 1px;
+                font-size: 1.5rem;
+            }
+
+        .invoice-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 5px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+            .info-card h6 {
+                font-size: 13px;
+                font-weight: 600;
+                color: #0d6efd;
+                margin-bottom: 5px;
+            }
+
+            .info-card p {
+                font-size: 13px;
+                line-height: 1.3;
+                margin-bottom: 0;
+            }
+
+        table th {
+            background: #f8f9fa;
+            font-size: 13px;
+            padding: 8px;
+        }
+
+        table td {
+            font-size: 13px;
+            padding: 6px;
+        }
+
+        .summary-box {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+            .summary-box table th {
+                width: 70%;
+                text-align: right;
+                font-size: 13px;
+            }
+
+            .summary-box table td {
+                font-size: 13px;
+            }
+
+        .total-amount {
+            font-size: 16px;
+            font-weight: 700;
+            color: #198754;
+        }
+
+        .footer-note {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+
+        .row {
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .col-md-6, .col-md-12 {
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+
+        .table-responsive {
+            margin-bottom: 10px;
+        }
+
+        .mb-4 {
+            margin-bottom: 15px !important;
+        }
+
+        .mb-3 {
+            margin-bottom: 10px !important;
+        }
+
+        .mt-4 {
+            margin-top: 15px !important;
+        }
+
+        .g-3 {
+            --bs-gutter-x: 0.5rem;
+            --bs-gutter-y: 0.5rem;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        /* Downloaded Date Style */
+        .download-date {
+            font-size: 11px;
+            color: #6c757d;
+            text-align: right;
+            margin-top: 5px;
+            border-top: 1px solid #dee2e6;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="invoice-container" id="invoiceContent">
+
+        <!-- Brand Header -->
+        <div class="brand-header">
+            <h2><i class="bi bi-bag-check-fill me-2"></i> Rahishop</h2>
+            <span class="small">Admin Invoice</span>
+        </div>
+
+        <!-- Invoice Header -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <h1 class="invoice-title">Invoice</h1>
+                <p class="mb-1"><i class="bi bi-receipt-cutoff me-2"></i><b>Invoice No: @Model.InvoiceNumber</b></p>
+                <p class="mb-1"><i class="bi bi-calendar-event me-2"></i><b>Date:</b> @Model.InvoiceDate.ToString("dd-MM-yyyy")</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <p class="mb-1"><i class="bi bi-cart-check me-2"></i><b>Order Code:</b> @Model.OrderCode</p>
+                <p class="mb-1"><i class="bi bi-clock-history me-2"></i><b>Order Date:</b> @Model.OrderDate.ToString("dd-MM-yyyy")</p>
+                <p class="mb-1"><i class="bi bi-credit-card-2-front me-2"></i><b>Transaction Id:</b> @(string.IsNullOrEmpty(Model.TransactionId) ? "N/A" : Model.TransactionId)</p>
+            </div>
+        </div>
+
+        <!-- Client & Seller Details -->
+        <div class="row g-2 mb-3">
+            <div class="col-md-6">
+                <div class="info-card">
+                    <h6>Client Details</h6>
+                    <p>
+                        <b>@Model.CustomerName</b><br>
+                        @Model.Address, @Model.Landmark<br>
+                        @Model.CustomerCityName - @Model.CustomerPincode<br>
+                        @Model.CustomerState, India<br>
+                        <i class="bi bi-envelope-at"></i> @Model.CustomerEmailId<br>
+                        <i class="bi bi-telephone"></i>+91 @Model.CustomerMobileNo
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-card">
+                    <h6>Seller Details</h6>
+                    <p>
+                        <b>@Model.ClientBusinessName</b><br>
+                        @Model.ClientName<br>
+                        @Model.ClientAddress, @Model.ClientLandmark<br>
+                        @Model.ClientCityName - @Model.ClientPincode<br>
+                        @Model.ClientState, India<br>
+                        <i class="bi bi-envelope-at"></i> @Model.ClientEmailId<br>
+                        <i class="bi bi-telephone"></i>+91 @Model.ClientMobileNo<br>
+                        <i class="bi bi-upc-scan"></i> GSTIN: @Model.ClientGSTIN
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Details -->
+        <div class="table-responsive mb-3">
+            <table class="table table-bordered align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity No.</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>@Model.ProductName</td>
+                        <td>@Model.Quantity</td>
+                        <td>₹@Model.ActualProductPrice</td>
+                        <td>₹@Model.Total</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary -->
+        <div class="row">
+            <div class="col-md-6"></div>
+            <div class="col-md-6">
+                <div class="summary-box">
+                    <table class="table table-borderless mb-0">
+                        <tr><th>Subtotal</th><td>₹@Model.Total</td></tr>
+                        @if (Model.SGSTTaxAmount > 0 && Model.CGSTTaxAmount > 0)
+                        {
+                            <tr><th>SGST (@Model.SGSTTaxPercentage%)</th><td>₹@Model.SGSTTaxAmount</td></tr>
+                            <tr><th>CGST (@Model.CGSTTaxPercentage%)</th><td>₹@Model.CGSTTaxAmount</td></tr>
+                        }
+                        else if (Model.IGSTTaxAmount > 0)
+                        {
+                            <tr><th>IGST (@Model.IGSTTaxPercentage%)</th><td>₹@Model.IGSTTaxAmount</td></tr>
+                        }
+                        @if (Model.TotalTaxAmount > 0)
+                        {
+                            <tr><th>Total Tax</th><td>₹@Model.TotalTaxAmount</td></tr>
+                        }
+                        @if (Model.ShippingCharges > 0)
+                        {
+                            <tr><th>Shipping</th><td>₹@Model.ShippingCharges</td></tr>
+                        }
+                        <tr class="table-success"><th>Total</th><td class="total-amount">₹@Model.FinalTotalAmount</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Downloaded Date (will be added by JavaScript) -->
+        <div class="download-date" id="downloadDate" style="display: none;">
+            Downloaded on: <span id="currentDateTime"></span>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-3">
+            <button id="downloadInvoiceBtn" class="btn btn-primary">
+                <i class="bi bi-download"></i> Download Invoice
+            </button>
+            <p class="footer-note">Thank you for shopping with <b>Rahishop</b>. For support, contact support@rahishop.com</p>
+        </div>
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- PDF Export -->
+    <script>
+        document.getElementById('downloadInvoiceBtn').addEventListener('click', function () {
+            // Show loading message
+            var btn = this;
+            var originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generating...';
+            btn.disabled = true;
+
+            // Get invoice number from the page
+            var invoiceNumber = '@Model.InvoiceNumber';
+            var fileName = invoiceNumber + '.pdf';
+
+            // Add current date and time
+            var now = new Date();
+            var dateTimeString = now.toLocaleString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+
+            document.getElementById('currentDateTime').textContent = dateTimeString;
+            document.getElementById('downloadDate').style.display = 'block';
+
+            // Wait a moment for DOM to update
+            setTimeout(function() {
+                var element = document.getElementById('invoiceContent');
+
+                // Hide the button for PDF
+                btn.style.display = 'none';
+
+                // Simple and reliable PDF options
+                var opt = {
+                    margin: 0.5,
+                    filename: fileName,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 2,
+                        logging: false,
+                        useCORS: true
+                    },
+                    jsPDF: {
+                        unit: 'in',
+                        format: 'letter',
+                        orientation: 'portrait'
+                    }
+                };
+
+                // Generate PDF
+                html2pdf().from(element).set(opt).save().then(function() {
+                    // Restore button after PDF is generated
+                    btn.style.display = 'inline-block';
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    // Hide the download date after PDF generation
+                    document.getElementById('downloadDate').style.display = 'none';
+
+                    console.log('PDF generated successfully: ' + fileName);
+                }).catch(function(error) {
+                    console.error('PDF generation error:', error);
+
+                    // Restore button even if there's an error
+                    btn.style.display = 'inline-block';
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    // Hide the download date
+                    document.getElementById('downloadDate').style.display = 'none';
+
+                    alert('Error generating PDF. Please try again.');
+                });
+            }, 100);
+        });
+    </script>
+</body>
+</html>

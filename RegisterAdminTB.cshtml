@@ -1,0 +1,876 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    ViewBag.Title = "Register Admin";
+    Layout = null;
+    // Calculate the maximum allowed date of birth (18 years ago from today)
+    var maxDate = DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - RahiShop</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="~/Content/Document/CSS/RegisterAdminTB.css" rel="stylesheet" />
+
+
+    
+    <style>
+        /*body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #e9e9e9;*/ /* Light grey background */
+            /*display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .registration-container {
+            display: flex;
+            max-width: 1200px;*/ /* Increased max-width for better layout */
+            /*width: 100%;
+            background-color: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }*/
+
+        .registration-image {
+            flex: 1 1 50%;
+            background-color: #000; /* Added black background to match image */
+            /* Corrected the URL syntax and path */
+            background-image: url('@Url.Content("~/Content/Document/Image/Rahishop (2).png")');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain; /* Changed to 'contain' to ensure full image visibility */
+        }
+
+/*        .registration-form {
+            flex: 1 1 50%;
+            padding: 3rem 4rem;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        .form-header {
+            text-align: left;
+            margin-bottom: 2.5rem;
+            font-weight: 600;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+         Custom Input Styles 
+        .form-control, .form-select {
+            background-color: transparent;
+            border: none;
+            border-bottom: 1px solid #ced4da;
+            border-radius: 0;
+            padding: 0.5rem 0.1rem;
+            box-shadow: none !important;
+            transition: border-color 0.2s ease-in-out;
+            font-size: 0.9rem;
+        }
+
+            .form-control:focus, .form-select:focus {
+                border-color: #333;
+            }
+
+        .form-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        .input-group .form-control {
+            border-right: none;
+        }
+
+        .input-group .btn {
+            border: none;
+            border-bottom: 1px solid #ced4da;
+            background-color: transparent;
+        }
+
+            .input-group .btn:focus {
+                box-shadow: none;
+            }
+
+        .form-check-input {
+            margin-top: 0.4rem;
+        }
+
+         Button Styles 
+        .btn-primary {
+            background-color: #212529;
+            border-color: #212529;
+            border-radius: 5px;
+            padding: 0.6rem 2rem;
+            font-weight: 500;
+            transition: background-color 0.2s, border-color 0.2s;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+            .btn-primary:hover {
+                background-color: #000;
+                border-color: #000;
+            }
+
+        .btn-outline-secondary {
+            border-color: #ced4da;
+            border-radius: 5px;
+            padding: 0.6rem 2rem;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+         Validation Feedback 
+        .invalid-feedback {
+            font-size: 0.8rem;
+            text-align: left;
+        }
+
+        .form-control.is-invalid, .form-select.is-invalid {
+            border-color: #dc3545;
+        }
+
+        .form-control.is-valid, .form-select.is-valid {
+            border-color: #198754;
+        }
+
+        .file-info {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: block;
+        }
+
+         Scrollbar styling 
+        .registration-form::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .registration-form::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .registration-form::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+            .registration-form::-webkit-scrollbar-thumb:hover {
+                background: #555;
+            }
+
+         Toast Notification Styles 
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .custom-toast {
+            min-width: 300px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideInRight 0.3s ease-out;
+            margin-bottom: 10px;
+        }
+
+            .custom-toast.success {
+                background-color: #28a745;
+            }
+
+            .custom-toast.error {
+                background-color: #dc3545;
+            }
+
+        .toast-icon {
+            font-size: 18px;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        @@keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @@keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+
+         Responsive adjustments 
+        @@media (max-width: 992px) {
+            .registration-container {
+                flex-direction: column;
+            }
+
+            .registration-image {
+                display: none;  Hide image on smaller screens 
+            }
+
+            .registration-form {
+                padding: 2rem;
+                max-height: none;
+            }
+
+            body {
+                padding: 1rem;
+            }
+        }*/
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="registration-container">
+        <div class="registration-image"></div>
+        <div class="registration-form">
+            <h2 class="form-header">REGISTRATION FORM</h2>
+
+            @using (Html.BeginForm("RegisterAdminTB", "Admin", FormMethod.Post, new { enctype = "multipart/form-data", id = "registrationForm", novalidate = "novalidate" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+                @Html.HiddenFor(m => m.ClientCode)
+
+                <!-- Personal Information Section -->
+                <div class="form-section">
+                    <h3 class="section-header">Personal Information</h3>
+                    <div class="row g-4">
+                        <div class="col-12">
+                            @Html.LabelFor(m => m.UserName, "Full Name", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.UserName, new { @class = "form-control" })
+                        </div>
+                        <div class="col-12">
+                            @Html.LabelFor(m => m.EmailId, new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.EmailId, new { @class = "form-control", type = "email" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.Label("Country", new { @class = "form-label" })
+                            @Html.DropDownListFor(m => m.Country, Enumerable.Empty<SelectListItem>(), "Select Country", new { @class = "form-select", id = "countryDropdown" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.Label("State", new { @class = "form-label" })
+                            <span class="spinner-border spinner-border-sm" id="state-loader" style="display: none;" role="status" aria-hidden="true"></span>
+                            @Html.DropDownListFor(m => m.State, Enumerable.Empty<SelectListItem>(), "Select State", new { @class = "form-select", id = "stateDropdown", disabled = "disabled" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.Label("City", new { @class = "form-label" })
+                            <span class="spinner-border spinner-border-sm" id="city-loader" style="display: none;" role="status" aria-hidden="true"></span>
+                            @Html.DropDownListFor(m => m.CityId, Enumerable.Empty<SelectListItem>(), "Select City", new { @class = "form-select", id = "cityDropdown", disabled = "disabled" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.MobileNo, new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.MobileNo, new { @class = "form-control", type = "tel", maxlength = "15" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.AlternateMobileNo, "Alternate Mobile No", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.AlternateMobileNo, new { @class = "form-control", type = "tel", maxlength = "15" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.DOB, "Birth Date", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.DOB, "{0:yyyy-MM-dd}", new { type = "date", @class = "form-control", max = maxDate })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.UserPassword, "Password", new { @class = "form-label" })
+                            <div class="input-group">
+                                @Html.PasswordFor(m => m.UserPassword, new { @class = "form-control" })
+                                <button class="btn" type="button" id="toggleUserPassword"><i id="eyeIconUser" class="bi bi-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="ConfirmPassword" class="form-label">Confirm Password</label>
+                            <div class="input-group">
+                                <input type="password" id="ConfirmPassword" name="ConfirmPassword" class="form-control" />
+                                <button class="btn" type="button" id="toggleConfirmPassword"><i id="eyeIconConfirm" class="bi bi-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            @Html.Label("Gender", new { @class = "form-label" })
+                            <div class="pt-2">
+                                <div class="form-check form-check-inline">@Html.RadioButtonFor(m => m.Gender, "Male", new { id = "genderMale", @class = "form-check-input" }) <label class="form-check-label" for="genderMale">Male</label></div>
+                                <div class="form-check form-check-inline">@Html.RadioButtonFor(m => m.Gender, "Female", new { id = "genderFemale", @class = "form-check-input" }) <label class="form-check-label" for="genderFemale">Female</label></div>
+                                <div class="form-check form-check-inline">@Html.RadioButtonFor(m => m.Gender, "Other", new { id = "genderOther", @class = "form-check-input" }) <label class="form-check-label" for="genderOther">Other</label></div>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.Gender, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Details Section -->
+                <div class="form-section mt-4">
+                    <h3 class="section-header">Business Details</h3>
+                    <div class="row g-4">
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.BusinessName, "Business Name", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.BusinessName, new { @class = "form-control" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.GSTIN, "GSTIN", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.GSTIN, new { @class = "form-control" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.PanCardNo, "PAN Card No", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.PanCardNo, new { @class = "form-control", style = "text-transform:uppercase" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.BusinessPincode, "Business Pincode", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.BusinessPincode, new { @class = "form-control", maxlength = "6" })
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address Details Section -->
+                <div class="form-section mt-4">
+                    <h3 class="section-header">Address Details</h3>
+                    <div class="row g-4">
+                        <div class="col-12">
+                            @Html.LabelFor(m => m.Address, "Permanent Address", new { @class = "form-label" })
+                            @Html.TextAreaFor(m => m.Address, new { @class = "form-control", rows = "2" })
+                        </div>
+                        <div class="col-12">
+                            @Html.Label("CurrentAddress", "Current Address (if different)", new { @class = "form-label" })
+                            @Html.TextAreaFor(m => m.CurrentAddress, new { @class = "form-control", rows = "2" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.Landmark, new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.Landmark, new { @class = "form-control" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.Pincode, new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.Pincode, new { @class = "form-control", maxlength = "6" })
+                        </div>
+                        <div class="col-12">
+                            @Html.LabelFor(m => m.AddressType, new { @class = "form-label" })
+                            <div class="pt-2">
+                                <div class="form-check form-check-inline">@Html.RadioButtonFor(m => m.AddressType, "Home", new { id = "typeHome", @class = "form-check-input" }) <label class="form-check-label" for="typeHome">Home</label></div>
+                                <div class="form-check form-check-inline">@Html.RadioButtonFor(m => m.AddressType, "Office", new { id = "typeOffice", @class = "form-check-input" }) <label class="form-check-label" for="typeWork">Office</label></div>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.AddressType, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bank Account Section -->
+                <div class="form-section mt-4">
+                    <h3 class="section-header">Bank Account</h3>
+                    <div class="row g-4">
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.BankHolderName, "Account Holder Name", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.BankHolderName, new { @class = "form-control" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.BankAccountNo, "Account Number", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.BankAccountNo, new { @class = "form-control" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.IFSCCode, new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.IFSCCode, new { @class = "form-control", oninput = "this.value = this.value.toUpperCase();" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="BankName" class="form-label">Bank Name</label>
+                            <input type="text" id="BankName" name="BankName" class="form-control" readonly />
+                            <span class="spinner-border spinner-border-sm" id="bank-loader" style="display: none;" role="status" aria-hidden="true"></span>
+                        </div>
+                        <div class="col-12">
+                            @Html.LabelFor(m => m.AccountType, new { @class = "form-label" })
+                            @Html.DropDownListFor(m => m.AccountType, new SelectList(new[] { "Saving", "Current" }), "Select Account Type", new { @class = "form-select" })
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Identity & Documents Section -->
+                <div class="form-section mt-4">
+                    <h3 class="section-header">Identity & Documents</h3>
+                    <div class="row g-4 align-items-center">
+                        <div class="col-12 col-md-6">
+                            @Html.LabelFor(m => m.AadhaarCardNo, "Aadhaar No", new { @class = "form-label" })
+                            @Html.TextBoxFor(m => m.AadhaarCardNo, new { @class = "form-control", maxlength = "14" })
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.Label("UploadAadharFile", "Upload Aadhaar Card", new { @class = "form-label" })
+                            <input type="file" name="UploadAadharFile" id="UploadAadharFile" class="form-control" />
+                            <small id="aadharFileDetails" class="form-text text-muted file-info"></small>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.Label("UploadPanCardFile", "Upload PAN Card", new { @class = "form-label" })
+                            <input type="file" name="UploadPanCardFile" id="UploadPanCardFile" class="form-control" />
+                            <small id="panCardFileDetails" class="form-text text-muted file-info"></small>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.Label("UploadPhotoFile", "Upload Photo", new { @class = "form-label" })
+                            <input type="file" name="UploadPhotoFile" id="UploadPhotoFile" class="form-control" />
+                            <small id="photoFileDetails" class="form-text text-muted file-info"></small>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            @Html.Label("UploadBusinessLicenceFile", "Upload Business Licence (Optional)", new { @class = "form-label" })
+                            <input type="file" name="UploadBusinessLicenceFile" id="UploadBusinessLicenceFile" class="form-control" />
+                            <small id="businessLicenceFileDetails" class="form-text text-muted file-info"></small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-5">
+                    <button id="submitBtn" type="submit" class="btn btn-primary btn-lg px-5 me-2">
+                        <span id="btn-text">
+                            Register &rarr;
+                        </span>
+                        <span id="btn-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display:none;"></span>
+                    </button>
+                    <button type="button" id="clearBtn" class="btn btn-outline-secondary btn-lg px-5">Clear</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/additional-methods.min.js"></script>
+
+    <script>
+        // All existing JavaScript functionality is preserved here. No changes were made.
+        $(document).ready(function () {
+            // --- START: Toast Notification Function ---
+            function showToast(message, type) {
+                const toastContainer = $('#toastContainer');
+                const icon = type === 'success' ? '✔️' : '⚠️';
+
+                const toast = $(`
+                                <div class="custom-toast ${type}">
+                                    <span class="toast-icon">${icon}</span>
+                                    <span class="toast-message">${message}</span>
+                                </div>
+                            `);
+
+                toastContainer.append(toast);
+
+                // Auto remove after 3 seconds
+                setTimeout(function () {
+                    toast.css('animation', 'slideOutRight 0.3s ease-in');
+                    setTimeout(function () {
+                        toast.remove();
+                    }, 300);
+                }, 3000);
+            }
+            // --- END: Toast Notification Function ---
+
+            // --- START: API and Dropdown Logic ---
+            const API_KEY = 'MHlrYUFTTjZFQnMxTjdxQWpRY1RDNzhXd1kxOFB0SWdLWGUxSGF3RQ=='; // Replace with your actual API key
+            const headers = { 'X-CSCAPI-KEY': API_KEY };
+
+            const countryDropdown = $('#countryDropdown');
+            const stateDropdown = $('#stateDropdown');
+            const cityDropdown = $('#cityDropdown');
+            const stateLoader = $('#state-loader');
+            const cityLoader = $('#city-loader');
+            const bankLoader = $('#bank-loader');
+            const ifscCodeInput = $('#IFSCCode');
+            const bankNameInput = $('#BankName');
+
+            function resetDropdown(dropdown, defaultOptionText) {
+                dropdown.empty().append(`<option value="">${defaultOptionText}</option>`).prop('disabled', true);
+            }
+
+            function loadCountries() {
+                $.ajax({
+                    url: 'https://api.countrystatecity.in/v1/countries',
+                    method: 'GET',
+                    headers: headers,
+                    success: function (data) {
+                        countryDropdown.empty().append('<option value="">Select Country</option>');
+                        $.each(data, function (_, country) {
+                            const isSelected = country.iso2 === 'IN';
+                            countryDropdown.append($('<option></option>').val(country.iso2).text(country.name).prop('selected', isSelected).data('dial-code', '+' + country.phonecode));
+                        });
+                        if (countryDropdown.val()) {
+                            countryDropdown.trigger('change');
+                        }
+                    },
+                    error: function () { console.error("Failed to load countries."); }
+                });
+            }
+
+            countryDropdown.on('change', function () {
+                const countryIso2 = $(this).val();
+                const selectedOption = $(this).find('option:selected');
+                const dialCode = selectedOption.data('dial-code');
+
+                if (dialCode) {
+                    $('#MobileNo').val(dialCode);
+                    $('#AlternateMobileNo').val(dialCode);
+                } else {
+                    $('#MobileNo').val('');
+                    $('#AlternateMobileNo').val('');
+                }
+
+                resetDropdown(stateDropdown, 'Select State');
+                resetDropdown(cityDropdown, 'Select City');
+                if (countryIso2) {
+                    stateLoader.show();
+                    $.ajax({
+                        url: `https://api.countrystatecity.in/v1/countries/${countryIso2}/states`,
+                        method: 'GET', headers: headers,
+                        success: function (data) {
+                            if (data && data.length > 0) {
+                                stateDropdown.empty().append('<option value="">Select State</option>');
+                                $.each(data, function (_, state) {
+                                    stateDropdown.append($('<option></option>').val(state.iso2).text(state.name));
+                                });
+                                stateDropdown.prop('disabled', false);
+                            }
+                        },
+                        error: function () { console.error("Failed to load states."); },
+                        complete: function () { stateLoader.hide(); }
+                    });
+                }
+            });
+
+            stateDropdown.on('change', function () {
+                const countryIso2 = countryDropdown.val();
+                const stateIso2 = $(this).val();
+                resetDropdown(cityDropdown, 'Select City');
+                if (countryIso2 && stateIso2) {
+                    cityLoader.show();
+                    $.ajax({
+                        url: `https://api.countrystatecity.in/v1/countries/${countryIso2}/states/${stateIso2}/cities`,
+                        method: 'GET', headers: headers,
+                        success: function (data) {
+                            if (data && data.length > 0) {
+                                cityDropdown.empty().append('<option value="">Select City</option>');
+                                $.each(data, function (_, city) {
+                                    cityDropdown.append($('<option></option>').val(city.id).text(city.name));
+                                });
+                                cityDropdown.prop('disabled', false);
+                            }
+                        },
+                        error: function () { console.error("Failed to load cities."); },
+                        complete: function () { cityLoader.hide(); }
+                    });
+                }
+            });
+
+            loadCountries();
+            // --- END: API and Dropdown Logic ---
+
+
+            // --- START: Bank IFSC Logic ---
+            ifscCodeInput.on('blur', function () {
+                const ifscCode = $(this).val().toUpperCase();
+                bankNameInput.val('');
+                const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+
+                if (ifscCode && ifscRegex.test(ifscCode)) {
+                    bankLoader.show();
+                    $.ajax({
+                        url: `https://ifsc.razorpay.com/${ifscCode}`,
+                        method: 'GET',
+                        success: function (data) {
+                            if (data && data.BANK) {
+                                bankNameInput.val(data.BANK);
+                                ifscCodeInput.removeClass('is-invalid').addClass('is-valid');
+                            } else {
+                                ifscCodeInput.removeClass('is-valid').addClass('is-invalid');
+                                showToast('अवैध IFSC कोड. बँकेचे तपशील सापडले नाहीत.', 'error');
+                            }
+                        },
+                        error: function () {
+                            ifscCodeInput.removeClass('is-valid').addClass('is-invalid');
+                            showToast('बँकेचे तपशील मिळवण्यात अयशस्वी. कृपया IFSC कोड आणि इंटरनेट कनेक्शन तपासा.', 'error');
+                        },
+                        complete: function () {
+                            bankLoader.hide();
+                        }
+                    });
+                } else if (ifscCode) {
+                    ifscCodeInput.removeClass('is-valid').addClass('is-invalid');
+                    bankNameInput.val('');
+                    const validator = $("#registrationForm").validate();
+                    validator.showErrors({
+                        "IFSCCode": "Invalid IFSC Code format."
+                    });
+                }
+            });
+            // --- END: Bank IFSC Logic ---
+
+
+            // --- START: Input Sanitization ---
+            $('#MobileNo, #AlternateMobileNo').on('input', function () {
+                const dialCode = $('#countryDropdown').find('option:selected').data('dial-code') || '';
+                let currentValue = $(this).val();
+                if (dialCode) {
+                    if (!currentValue.startsWith(dialCode)) {
+                        $(this).val(dialCode);
+                    } else {
+                        let numberPart = currentValue.substring(dialCode.length);
+                        let sanitizedNumberPart = numberPart.replace(/[^0-9]/g, '');
+                        $(this).val(dialCode + sanitizedNumberPart);
+                    }
+                } else {
+                    $(this).val(currentValue.replace(/[^0-9]/g, ''));
+                }
+            });
+
+            $('#UserName, #BankHolderName').on('input', function () {
+                let sanitized = $(this).val()
+                    .replace(/[^a-zA-Z\s.-]/g, '')
+                    .replace(/\s\s+/g, ' ')
+                    .replace(/--+/g, '-')
+                    .replace(/\.\.+/g, '.');
+                $(this).val(sanitized);
+            });
+
+            $('#Pincode, #BusinessPincode').on('input', function () {
+                let sanitized = $(this).val().replace(/[^0-9]/g, '');
+                $(this).val(sanitized);
+            });
+
+            $('#AadhaarCardNo').on('input', function () {
+                var value = $(this).val();
+                var plainValue = value.replace(/\s/g, '').replace(/[^0-9]/g, '');
+                if (plainValue.length > 12) {
+                    plainValue = plainValue.substring(0, 12);
+                }
+                var formattedValue = plainValue.replace(/(\d{4})(?=\d)/g, '$1 ');
+                if (value !== formattedValue) {
+                    $(this).val(formattedValue);
+                }
+            });
+            // --- END: Input Sanitization ---
+
+
+            // --- START: Custom Validation Methods ---
+            $.validator.addMethod("minimumAge", function (value, element, minAge) {
+                if (!value) return true;
+                var birthDate = new Date(value);
+                var today = new Date();
+                var age = today.getFullYear() - birthDate.getFullYear();
+                var m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                return age >= minAge;
+            }, "You must be at least 18 years old to register.");
+
+            $.validator.addMethod("aadhaarID", function (value, element) {
+                value = value.replace(/\s/g, "");
+                var is12digits = /^\d{12}$/.test(value);
+                return this.optional(element) || is12digits;
+            }, "Please enter a valid 12-digit Aadhaar number.");
+
+            $.validator.addMethod("indianPAN", function (value, element) {
+                return this.optional(element) || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value);
+            }, "Please enter a valid PAN number.");
+
+            $.validator.addMethod("indianPincode", function (value, element) {
+                return this.optional(element) || /^[1-9][0-9]{5}$/.test(value);
+            }, "Please enter a valid 6-digit Pincode.");
+
+            $.validator.addMethod("indianMobile", function (value, element) {
+                const dialCode = $('#countryDropdown').find('option:selected').data('dial-code') || '';
+                if (dialCode !== '+91') return true; // Only validate for India
+                const number = value.substring(dialCode.length);
+                return this.optional(element) || /^[6-9][0-9]{9}$/.test(number);
+            }, "Please enter a valid 10-digit Indian mobile number.");
+
+            $.validator.addMethod("fileType", function (value, element, param) {
+                return this.optional(element) || (element.files[0] && param.indexOf(element.files[0].type) !== -1);
+            }, "Please select a valid file type.");
+
+            $.validator.addMethod("fileSize", function (value, element, param) {
+                return this.optional(element) || (element.files[0] && element.files[0].size <= param);
+            }, "File size must be less than {0} bytes.");
+
+            $.validator.addMethod("ifscCode", function (value, element) {
+                return this.optional(element) || /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value);
+            }, "Please enter a valid IFSC code.");
+            // --- END: Custom Validation Methods ---
+
+
+            // --- START: jQuery Validation Initialization ---
+            $("#registrationForm").validate({
+                rules: {
+                    UserName: { required: true, minlength: 3, maxlength: 50 },
+                    EmailId: { required: true, email: true },
+                    MobileNo: { required: true, indianMobile: true },
+                    AlternateMobileNo: { indianMobile: true },
+                    DOB: { required: true, date: true, minimumAge: 18 },
+                    Gender: { required: true },
+                    UserPassword: { required: true, minlength: 8 },
+                    ConfirmPassword: { required: true, equalTo: "#UserPassword" },
+                    BusinessName: { required: true, minlength: 3, maxlength: 100 },
+                    BusinessPincode: { required: true, indianPincode: true },
+                    Address: { required: true, minlength: 10, maxlength: 200 },
+                    CurrentAddress: { minlength: 10, maxlength: 200 },
+                    Landmark: { minlength: 3, maxlength: 100 },
+                    Country: { required: true },
+                    State: { required: true },
+                    CityId: { required: true },
+                    Pincode: { required: true, indianPincode: true },
+                    AddressType: { required: true },
+                    BankHolderName: { required: true, minlength: 3, maxlength: 50 },
+                    BankAccountNo: { required: true, digits: true, minlength: 9, maxlength: 18 },
+                    IFSCCode: { required: true, ifscCode: true },
+                    AccountType: { required: true },
+                    AadhaarCardNo: { required: true, aadhaarID: true },
+                    PanCardNo: { required: true, indianPAN: true },
+                    UploadAadharFile: { required: true },
+                    UploadPanCardFile: { required: true },
+                    UploadPhotoFile: { required: true },
+                    UploadBusinessLicenceFile: { required: false }
+                },
+                messages: {
+                    ConfirmPassword: {
+                        equalTo: "Passwords do not match."
+                    }
+                },
+                errorElement: "div",
+                errorPlacement: function (error, element) {
+                    error.addClass("invalid-feedback");
+                    if (element.prop("type") === "radio") {
+                        error.insertAfter(element.closest("div.pt-2"));
+                    } else if (element.closest('.input-group').length) {
+                        error.insertAfter(element.closest('.input-group'));
+                    } else {
+                        error.insertAfter(element);
+                    }
+                },
+                highlight: function (element, errorClass, validClass) {
+                    $(element).addClass("is-invalid").removeClass("is-valid");
+                },
+                unhighlight: function (element, errorClass, validClass) {
+                    $(element).addClass("is-valid").removeClass("is-invalid");
+                },
+                submitHandler: function (form) {
+                    Swal.fire({
+                        title: 'Confirm Registration',
+                        text: "Please review your details before submitting. Continue?",
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, Submit!',
+                        confirmButtonColor: '#343a40',
+                        cancelButtonColor: '#6c757d'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $('#submitBtn').prop('disabled', true);
+                            $('#btn-text').hide();
+                            $('#btn-spinner').show();
+
+                            // ✅ Direct form submit (controller will redirect)
+                            form.submit();
+                        }
+                    });
+                    return false;
+                },
+                invalidHandler: function (event, validator) {
+                    // Show error toast for incomplete form
+                    showToast('कृपया सर्व फॉर्म फील्ड भरा', 'error');
+                }
+            });
+            // --- END: jQuery Validation Initialization ---
+
+
+            // --- START: CLEAR BUTTON Logic ---
+            $('#clearBtn').on('click', function (e) {
+                e.preventDefault();
+                var validator = $("#registrationForm").validate();
+                validator.resetForm();
+                $('#registrationForm')[0].reset();
+                $('#registrationForm .is-invalid, #registrationForm .is-valid').removeClass('is-invalid is-valid');
+                resetDropdown(stateDropdown, 'Select State');
+                resetDropdown(cityDropdown, 'Select City');
+                countryDropdown.val('IN').trigger('change');
+                $('.file-info').empty();
+            });
+            // --- END: CLEAR BUTTON Logic ---
+
+            // --- START: Password Eye Toggle Logic ---
+            function togglePasswordVisibility(buttonId, inputId, iconId) {
+                $(buttonId).on('click', function () {
+                    const passwordInput = $(inputId);
+                    const icon = $(iconId);
+                    const type = passwordInput.attr('type') === 'password' ? 'text' : 'password';
+                    passwordInput.attr('type', type);
+                    icon.toggleClass('bi-eye bi-eye-slash');
+                });
+            }
+            togglePasswordVisibility('#toggleConfirmPassword', '#ConfirmPassword', '#eyeIconConfirm');
+            togglePasswordVisibility('#toggleUserPassword', '#UserPassword', '#eyeIconUser');
+            // --- END: Password Eye Toggle Logic ---
+
+            // --- START: File Upload Display Logic ---
+            $('input[type="file"]').on('change', function () {
+                const fileInput = $(this);
+                const fileInfoSpan = fileInput.next('.file-info');
+
+                const oldUrl = fileInfoSpan.find('a').attr('href');
+                if (oldUrl && oldUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(oldUrl);
+                }
+
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    const fileUrl = URL.createObjectURL(file);
+                    const fileName = file.name;
+                    const previewHtml = `<a href="${fileUrl}" target="_blank" class="text-decoration-none" title="Preview ${fileName}"><i class="bi bi-paperclip me-1"></i>${fileName} <i class="bi bi-box-arrow-up-right ms-1 small"></i></a>`;
+                    fileInfoSpan.html(previewHtml);
+                } else {
+                    fileInfoSpan.empty();
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
+

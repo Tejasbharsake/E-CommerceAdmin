@@ -1,0 +1,99 @@
+﻿@using System.Data
+@using System.Linq
+@model System.Data.DataTable
+
+<link href="~/Content/Document/CSS/CourierOrderListHK.css" rel="stylesheet" />
+
+<div class="orders-container container my-4">
+    @if (Model != null && Model.Rows.Count > 0)
+    {
+        // 🔹 Group by OrderCode
+        var groupedOrders = Model.AsEnumerable()
+            .GroupBy(r => r["OrderCode"].ToString())
+            .Select(g => new
+            {
+                OrderCode = g.Key,
+                OrderDate = Convert.ToDateTime(g.First()["Order Date"]).ToString("dd-MM-yyyy"),
+                CourierName = g.First()["CourierName"].ToString(),
+                BusinessName = g.First()["BusinessName"].ToString(),
+                DateRange = g.First()["DateRangeDisplay"].ToString(),
+                TotalAmount = g.Sum(x => Convert.ToDecimal(x["CourierPayableAmount"]))
+            }).ToList();
+
+        var courierName = groupedOrders.First().CourierName;
+        var businessName = groupedOrders.First().BusinessName;
+        var dateRange = groupedOrders.First().DateRange;
+
+        <!-- 🔹 Header Card -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-primary text-white fw-bold">
+                📦 Courier Order Details
+            </div>
+            <div class="card-body">
+                <p><strong>Courier:</strong> @courierName</p>
+                <p><strong>Business:</strong> @businessName</p>
+                <p><strong>Date Range:</strong> @dateRange</p>
+            </div>
+        </div>
+
+        <!-- 🔹 Scrollable Order Cards -->
+        <div class="order-list">
+            @foreach (var order in groupedOrders)
+            {
+                <div class="card shadow-sm mb-2">
+                    <div class="card-body p-2">
+                        <p class="mb-1"><strong>Order Code:</strong> @order.OrderCode</p>
+                        <p class="mb-1"><strong>Order Date:</strong> @order.OrderDate</p>
+                        <p class="mb-0"><strong>Order Amount:</strong> ₹ @order.TotalAmount.ToString("N2")</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- 🔹 Footer Summary -->
+        <div class="card shadow-sm mt-3">
+            <div class="card-body bg-primary text-white fw-bold p-2">
+                <p class="mb-1">Total Orders: @groupedOrders.Count</p>
+                <p class="mb-0">Total Amount: ₹ @groupedOrders.Sum(x => x.TotalAmount).ToString("N2")</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center mt-3">
+            No orders found for this period.
+        </div>
+    }
+</div>
+
+<style>
+    /* Scrollable order list (modal size कमी केली) */
+    .order-list {
+        max-height: 300px; /* आधी 400px होती, कमी केली */
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+        /* Scrollbar नीट दिसायला */
+        .order-list::-webkit-scrollbar {
+            width: 6px; /* thinner scrollbar */
+        }
+
+        .order-list::-webkit-scrollbar-thumb {
+            background: #888; /* हलका grey */
+            border-radius: 4px;
+        }
+
+            .order-list::-webkit-scrollbar-thumb:hover {
+                background: #555; /* hover effect */
+            }
+
+        .order-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+    /* Card padding/margin कमी */
+    .card-body p {
+        margin-bottom: 4px;
+    }
+</style>

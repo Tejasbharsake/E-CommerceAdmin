@@ -1,0 +1,140 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    var reasons = ViewBag.ReasonList as System.Data.DataTable;
+}
+
+<div class="container-fluid">
+    <!-- Seller Details Section -->
+    <div class="row mb-3">
+        <div class="col-12">
+            @*<h6 class="border-bottom pb-2">Seller Details</h6>*@
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <dl class="row">
+                <dt class="col-sm-4">Seller Name:</dt>
+                <dd class="col-sm-8">@Model.SellerName</dd>
+
+                <dt class="col-sm-4">Email:</dt>
+                <dd class="col-sm-8">@Model.Email</dd>
+
+                <dt class="col-sm-4">Mobile No:</dt>
+                <dd class="col-sm-8">@Model.MobileNo</dd>
+
+                <dt class="col-sm-4">Business Name:</dt>
+                <dd class="col-sm-8">@Model.BusinessName</dd>
+
+                <dt class="col-sm-4">GSTIN:</dt>
+                <dd class="col-sm-8">@Model.GSTIN</dd>
+            </dl>
+        </div>
+
+        <div class="col-md-6">
+            <dl class="row">
+                <dt class="col-sm-4">Bank Holder Name:</dt>
+                <dd class="col-sm-8">@Model.BankHolderName</dd>
+
+                <dt class="col-sm-4">Account No:</dt>
+                <dd class="col-sm-8">@Model.BankAccountNo</dd>
+
+                <dt class="col-sm-4">IFSC Code:</dt>
+                <dd class="col-sm-8">@Model.IFSCCode</dd>
+
+                <dt class="col-sm-4">City:</dt>
+                <dd class="col-sm-8">@Model.ClientCityName</dd>
+
+                <dt class="col-sm-4">State:</dt>
+                <dd class="col-sm-8">@Model.ClientState</dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Rejection Form Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            @*<h5 class="border-bottom pb-2">Rejection Reason</h5>*@
+        </div>
+    </div>
+
+    <form id="rejectForm">
+        <input type="hidden" name="clientcode" value="@Model.ClientCode" />
+
+        <div class="form-group">
+            <label>Select Rejection Reason:</label>
+            <select class="form-control" name="ReasonId" required>
+                <option value="">-- Select Reason --</option>
+                @if (reasons != null)
+                {
+                    foreach (System.Data.DataRow row in reasons.Rows)
+                    {
+                        <option value="@row["ReasonId"]">@row["Reason"]</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-danger">Submit Rejection</button>
+            @*<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>*@
+        </div>
+    </form>
+</div>
+
+<script>
+    $("#rejectForm").submit(function (e) {
+        e.preventDefault();
+
+        var form = $(this);
+
+        Swal.fire({
+            title: 'Confirm Rejection',
+            text: "Are you sure you want to reject this seller?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',       // 🔴 Reject button
+            cancelButtonColor: '#3085d6',     // 🔵 Cancel button
+            confirmButtonText: 'Yes, reject!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    type: "POST",
+                    url: "/Admin/RejectedSellerUpdateSC",
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Rejected!',
+                                text: res.message || "Seller rejected successfully.",
+                                confirmButtonColor: '#3085d6'
+                            }).then(() => {
+                                $("#rejectModal").modal('hide');
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: res.message || "Failed to reject seller.",
+                                confirmButtonColor: '#3085d6'
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Internal error occurred while rejecting the seller.',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+</script>
+<link href="~/Content/Document/CSS/SellerRegistrationSC.css" rel="stylesheet" />

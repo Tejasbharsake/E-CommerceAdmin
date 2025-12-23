@@ -1,0 +1,710 @@
+﻿@model List<GSTECommerceLibrary.Admin.Admin>
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Refund Completed History</title>
+
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+    <!-- DataTables Buttons CSS -->
+    <link href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.bootstrap5.min.css" rel="stylesheet" />
+
+
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
+
+
+    <!-- Daterangepicker CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" />
+
+
+    <link href="~/Content/Document/CSS/RefundCompletedHistorySG.css" rel="stylesheet" />
+    <style>
+        #refundHistoryTable tbody tr {
+            height: 40px; /* desired row height */
+        }
+
+        #refundHistoryTable tbody td {
+            padding: 2px 5px !important;
+            font-size: 13px;
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            vertical-align: middle;
+            line-height: 1; /* allow natural height */
+            height: auto; /* remove fixed height */
+        }
+    
+
+    </style>
+
+</head>
+<body>
+    @*<div class="container mt-4">*@
+    @*<h2 class="mb-4">Refund Completed History </h2>*@
+
+
+    <div class="controls-container d-flex align-items-center justify-content-between flex-wrap mb-3">
+        <!-- Left side: Date + Dropdown -->
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="date-filter d-flex align-items-center gap-2">
+                <label class="form-label fw-semibold mb-0">Date Range Picker</label>
+                <input class="form-control input-daterange-datepicker" type="text" name="daterange" placeholder="Select Date Range" autocomplete="off" style="width: 250px;" />
+            </div>
+            <!-- Payment Method dropdown will be appended here dynamically by JS -->
+        </div>
+
+        <!-- Middle: Selected count -->
+        <div>
+            <span id="selectedCount" class="selected-count"></span>
+        </div>
+
+        <!-- Right side: Export buttons -->
+        <div id="exportButtons"></div>
+    </div>
+
+    <div class="container-fluid px-0">
+        <div class="table-responsive-custom">
+            <table class="table table-bordered table-striped" id="refundHistoryTable">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" class="select-checkbox" id="selectAllCheckbox">
+                        </th>
+                        <th>Sr No</th>
+                        <th>Order Code</th>
+                        <th>Customer Name</th>
+                        <th>Product Name</th>
+                        <th>Payment Method</th>
+                        <th>Refund Amount (₹)</th>
+                        <th>Refund ID</th>
+                        <th>Refund Date</th>
+
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        int serialNumber = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr data-order="@item.OrderCode">
+                                <td>
+                                    <input type="checkbox" class="select-checkbox row-checkbox">
+                                </td>
+                                <td>@serialNumber</td>
+                                <td>@item.OrderCode</td>
+                                <td>@item.CustomerName</td>
+                                <td>@item.ProductName</td>
+                                <td>@item.PaymentMethod</td>
+                                <td>@item.TransactionAmount</td>
+                                <td>@item.TransactionId</td>
+                                <td data-order="@(item.RefundDate?.ToString("yyyy-MM-dd") ?? "1900-01-01")">
+                                    @(item.RefundDate?.ToString("d-M-yyyy") ?? "N/A")
+                                </td>
+
+
+
+                            </tr>
+                            serialNumber++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center">No refund history found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @*</div>*@
+        </div>
+    </div>
+
+    <div class="position-fixed end-0 p-3" style="z-index: 11; top: 60px;">
+        <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <span id="toastMessage"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- jQuery & Moment.js -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+
+    <!-- Daterangepicker JS -->
+    <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- DataTables Buttons JS -->
+    <script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.bootstrap5.min.js"></script>
+
+
+    <!-- Downloaded CDN -->
+    <script src="~/Content/Document/CustomJS/buttons.print.min.js"></script>
+    <script src="~/Content/Document/CustomJS/buttons.html5.min.js"></script>
+    <script src="~/Content/Document/CustomJS/jszip.min.js"></script>
+    <script src="~/Content/Document/CustomJS/pdfmake.min.js"></script>
+    <script src="~/Content/Document/CustomJS/vfs_fonts.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <script>
+
+
+        function showErrorToast(message) {
+            var toastMessage = parent.document.getElementById('toastMessage');
+            toastMessage.innerText = message;
+
+            var toastEl = parent.document.getElementById('liveToast');
+            toastEl.classList.remove('bg-success');
+            toastEl.classList.add('bg-danger');
+
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function showSuccessToast(message) {
+            var toastMessage = parent.document.getElementById('toastMessage');
+            toastMessage.innerText = message;
+
+            var toastEl = parent.document.getElementById('liveToast');
+            toastEl.classList.remove('bg-danger');
+            toastEl.classList.add('bg-success');
+
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+
+
+
+        let table;
+        let selectedRows = new Set();
+
+        $(document).ready(function () {
+
+            $('.input-daterange-datepicker').daterangepicker({
+                opens: 'right',
+                autoUpdateInput: false,
+                locale: {
+                    format: 'MM/DD/YYYY',
+                    cancelLabel: 'Clear',
+                    applyLabel: 'Apply'
+                },
+                startDate: moment().subtract(30, 'days'),
+                endDate: moment()
+            });
+
+
+            $('.input-daterange-datepicker').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+                filterByDate(picker.startDate, picker.endDate);
+            });
+
+
+            $('.input-daterange-datepicker').on('cancel.daterangepicker', function (ev, picker) {
+                $(this).val('');
+                clearDateFilter();
+            });
+
+
+            function filterByDate(startDate, endDate) {
+
+                $.fn.dataTable.ext.search = [];
+
+
+                $.fn.dataTable.ext.search.push(
+                    function (settings, data, dataIndex) {
+                        if (settings.nTable.id !== 'refundHistoryTable') return true;
+
+
+                        var cell = table.row(dataIndex).nodes().to$().find('td:eq(8)');
+
+                        var dateStr = cell.attr('data-order');
+
+                        if (!dateStr || dateStr === '1900-01-01') return false;
+
+
+                        var rowDate = moment(dateStr, 'YYYY-MM-DD');
+                        return rowDate.isBetween(startDate, endDate, 'day', '[]');
+                    }
+                );
+                table.draw();
+            }
+
+
+            function clearDateFilter() {
+                $.fn.dataTable.ext.search.pop();
+                table.draw();
+            }
+
+
+            let table = $('#refundHistoryTable').DataTable({
+                //paging: true,
+                //searching: true,
+                //ordering: true,
+                //pageLength: 10,
+
+
+                responsive: true,
+                searching: true,
+                paging: true,
+                ordering: false,
+                info: true,
+                lengthChange: false,
+                pageLength: 10,
+                destroy: true,
+                autoWidth: false,
+                scrollX: false,
+                lengthMenu: [5, 10, 25, 50, 100],
+                drawCallback: function () {
+
+                    var pageInfo = this.api().page.info();
+                    this.api().column(1, { page: 'current' }).nodes().each(function (cell, i) {
+                        cell.innerHTML = pageInfo.start + i + 1;
+                    });
+
+                },
+
+                order: [[8, 'desc']],
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Type to search"
+                },
+
+                dom: '<"row"<"col-sm-12 col-md-6 d-flex align-items-center"l<"paymentFilter">><"col-sm-12 col-md-6"B>><"row"<"col-sm-12"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                buttons: [
+                    {
+                        extend: 'copy',
+                        text: '<img src="/Content/Document/Image/Copy.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Copy to Clipboard' }, 
+                        /* className: 'btn btn-primary btn-sm',*/
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.copyHtml5.action.call(this, e, dt, button, config);
+                        },
+                        exportOptions: {
+                            columns: ':not(:first-child)',
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked');
+                            },
+                            format: {
+                                body: function (data, row, column, node) {
+                                    // Handle date column (Refund Date - column 7 after removing first column)
+                                    if (column === 7) {
+                                        const $td = $(node).closest('td');
+                                        if ($td.attr('data-order')) {
+                                            return $td.text().trim() || data;
+                                        }
+                                    }
+                                    return data;
+                                }
+                            }
+                        },
+                        customize: function (data, config) {
+                            // Fix serial numbers for copy
+                            var lines = data.split('\n');
+                            var serialNumber = 1;
+
+                            for (var i = 1; i < lines.length; i++) {
+                                if (lines[i].trim() !== '') {
+                                    var columns = lines[i].split('\t');
+                                    if (columns.length > 0) {
+                                        columns[0] = serialNumber++;
+                                        lines[i] = columns.join('\t');
+                                    }
+                                }
+                            }
+                            return lines.join('\n');
+                        }
+                    },
+                    {
+                        extend: 'csv',
+                        text: '<img src="/Content/Document/Image/CSV.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Export as CSV file' }, 
+                        /*className: 'btn btn-info btn-sm',*/
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.csvHtml5.action.call(this, e, dt, button, config);
+                        },
+                        filename: 'Buyer_Refund_Completed_' + new Date().toISOString().slice(0, 10),
+                        exportOptions: {
+                            columns: ':not(:first-child)',
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked');
+                            },
+                            format: {
+                                body: function (data, row, column, node) {
+                                    // Handle date column (Refund Date - column 7 after removing first column)
+                                    if (column === 7) {
+                                        const $td = $(node).closest('td');
+                                        if ($td.attr('data-order')) {
+                                            return $td.text().trim() || data;
+                                        }
+                                    }
+                                    return data;
+                                }
+                            }
+                        },
+                        customize: function (csv, config) {
+                            // Fix serial numbers in CSV
+                            var lines = csv.split('\n');
+                            var serialNumber = 1;
+
+                            for (var i = 1; i < lines.length; i++) {
+                                if (lines[i].trim() !== '') {
+                                    var columns = lines[i].split(',');
+                                    if (columns.length > 0) {
+                                        columns[0] = serialNumber++;
+                                        lines[i] = columns.join(',');
+                                    }
+                                }
+                            }
+                            return lines.join('\n');
+                        }
+                    },
+                    {
+                        extend: 'excel',
+                        text: '<img src="/Content/Document/Image/XLS.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Export as Excel file' }, 
+                        /* className: 'btn btn-success btn-sm',*/
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.excelHtml5.action.call(this, e, dt, button, config);
+                        },
+                        filename: 'Buyer_Refund_Completed' + new Date().toISOString().slice(0, 10),
+                        title: 'Buyer_Refund_Completed',
+                        exportOptions: {
+                            columns: ':not(:first-child)',
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked');
+                            },
+                            format: {
+                                body: function (data, row, column, node) {
+
+                                    if (column === 5) {
+                                        const $td = $(node).closest('td');
+                                        if ($td.attr('data-order')) {
+                                            const displayText = $td.text().trim();
+                                            return displayText || data;
+                                        }
+                                    }
+                                    return data;
+                                }
+                            }
+                        },
+                        customize: function (xlsx) {
+                            var sheet = xlsx.xl.worksheets['sheet1.xml'];
+                            $('row c[r^="A"]', sheet).each(function (i) {
+                                if (i === 1) $(this).find('v').text(1);
+                                else if (i > 1) $(this).find('v').text(i - 1);
+                            });
+                        }
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<img src="/Content/Document/Image/PDFicon.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Export as PDF' }, 
+                        /* className: 'btn btn-danger btn-sm',*/
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+
+                            // ✅ Pass DataTable API instance into config
+                            config.customizeDataTable = dt;
+
+                            $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, config);
+                        },
+                        filename: 'Buyer_Refund_Completed' + new Date().toISOString().slice(0, 10),
+                        title: 'Buyer_Refund_Completed',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: {
+                            columns: ':not(:first-child)',
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked');
+                            },
+                            format: {
+                                body: function (data, row, column, node) {
+                                    // Serial number
+                                    if (column === 0) {
+                                        return $('#refundHistoryTable tbody tr').index(node.parentNode) + 1;
+                                    }
+                                    // TransactionDate column
+                                    if (column === 5) {
+                                        const $td = $(node).closest('td');
+                                        if ($td.attr('data-order')) {
+                                            const displayText = $td.text().trim();
+                                            return displayText || data;
+                                        }
+                                    }
+                                    return data;
+                                }
+                            }
+                        },
+                        customize: function (doc, config) {
+                            // ✅ get DataTable instance back
+                            var dt = config.customizeDataTable;
+
+                            doc.content.splice(0, 1); // remove default title
+
+                            // ✅ Count selected rows across ALL pages
+                            var totalRecords = dt.rows().nodes().to$()
+                                .find('.row-checkbox:checked').length;
+
+                            // === HEADER ===
+                            doc.content.unshift({
+                                margin: [0, 0, 0, 12],
+                                table: {
+                                    widths: ['*', '*', '*'],
+                                    body: [
+                                        [
+                                            { text: '', border: [false, false, false, false] },
+                                            { text: 'RahiShop', alignment: 'center', fontSize: 18, bold: true, border: [false, false, false, false] },
+                                            { text: '', border: [false, false, false, false] }
+                                        ],
+                                        [
+                                            { text: '', border: [false, false, false, false] },
+                                            { text: 'Online Refund List', alignment: 'center', fontSize: 14, bold: true, border: [false, false, false, false] },
+                                            { text: `Generated On: ${new Date().toLocaleString()} \nTotal Records: ${totalRecords}`, alignment: 'right', fontSize: 10, italics: true, border: [false, false, false, false] }
+                                        ]
+                                    ]
+                                },
+                                layout: 'noBorders'
+                            });
+
+                            // Table full width
+                            var table = doc.content[1].table;
+                            table.widths = Array(table.body[0].length).fill('*');
+
+                            // Header styling
+                            doc.styles.tableHeader.fillColor = '#007bff';
+                            doc.styles.tableHeader.color = 'white';
+                            doc.styles.tableHeader.alignment = 'center';
+                            doc.styles.tableHeader.fontSize = 10;
+
+                            // General font size
+                            doc.defaultStyle.fontSize = 9;
+
+                            // Sequential serial numbers
+                            var serial = 1;
+                            doc.content[1].table.body.forEach(function (row, i) {
+                                if (i > 0) { // skip header
+                                    row.forEach(function (cell, j) {
+                                        if (j === 0) {
+                                            cell.text = serial++;
+                                            cell.alignment = 'center';
+                                        } else {
+                                            cell.alignment = 'center';
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    },
+
+                    {
+                        extend: 'print',
+                        text: '<img src="/Content/Document/Image/Print.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Print' }, 
+                        /* className: 'btn btn-secondary btn-sm',*/
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.print.action.call(this, e, dt, button, config);
+                        },
+                        title: 'Buyer_Refund_Completed',
+                        exportOptions: {
+                            columns: ':not(:first-child)',
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked');
+                            },
+                            format: {
+                                body: function (data, row, column, node) {
+                                    // Handle date column (Refund Date - column 7 after removing first column)
+                                    if (column === 7) {
+                                        const $td = $(node).closest('td');
+                                        if ($td.is('[data-order]')) {
+                                            return $td.text().trim();
+                                        }
+                                    }
+                                    return data;
+                                }
+                            }
+                        },
+                        customize: function (win) {
+                            $(win.document.body)
+                                .css('font-size', '10pt')
+                                .prepend(
+                                    '<div style="text-align:center; margin-bottom: 20px;"><h2>Refund Completed History</h2><p>Generated on: ' + new Date().toLocaleDateString() + '</p></div>'
+                                );
+
+                            var $table = $(win.document.body).find('table');
+                            $table.addClass('compact').css('font-size', '9pt');
+
+                            // Fix serial numbers in print - sequential numbering for all exported rows
+                            var serialNumber = 1;
+                            $table.find('tbody tr').each(function () {
+                                $(this).find('td:first').text(serialNumber++);
+                            });
+                        }
+                    }
+                ],
+
+                initComplete: function () {
+                    var column = this.api().column(5); // Payment Method column
+
+                    // create wrapper div to hold title + dropdown
+                    var wrapper = $('<div class="d-flex align-items-center gap-1"></div>');
+
+                    // create title/label
+                    var label = $('<span class="me-2 fw-semibold">Payment Method:</span>');
+
+                    // create dropdown
+                    var select = $('<select class="form-select" style="width:auto;"><option value="">All Methods</option></select>');
+
+                    // append label and select to wrapper
+                    wrapper.append(label).append(select);
+
+                    // append wrapper after date filter
+                    $('.controls-container .date-filter').after(wrapper);
+
+                    // populate dropdown with unique values
+                    column.data().unique().sort().each(function (d) {
+                        if (d) {
+                            select.append('<option value="' + d + '">' + d + '</option>');
+                        }
+                    });
+
+                    // filter table on dropdown change
+                    select.on('change', function () {
+                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                        column.search(val ? '^' + val + '$' : '', true, false).draw();
+                    });
+                }
+
+
+
+            });
+            table.buttons().container().appendTo('#exportButtons');
+            function forceTransparentButtons() {
+                $('.dt-buttons button, .dt-buttons a').each(function () {
+
+                    $(this).removeClass('btn-secondary btn-primary btn-success btn-info btn-warning btn-danger');
+
+
+                    this.style.setProperty('background', 'transparent', 'important');
+                    this.style.setProperty('background-color', 'transparent', 'important');
+                    this.style.setProperty('background-image', 'none', 'important');
+                    this.style.setProperty('border', '1px solid #0d6efd', 'important');
+                    this.style.setProperty('border-radius', '4px', 'important');
+                    this.style.setProperty('color', '#0d6efd', 'important');
+                });
+            }
+            forceTransparentButtons();
+            setTimeout(forceTransparentButtons, 100);
+            setTimeout(forceTransparentButtons, 500);
+            setTimeout(forceTransparentButtons, 1000);
+
+            $('#selectAllCheckbox').on('change', function () {
+                const isChecked = $(this).is(':checked');
+
+                if (isChecked) {
+                    table.rows().every(function () {
+                        const rowData = this.data();
+                        const customerName = rowData[2];
+                        selectedRows.add(customerName);
+                    });
+                } else {
+                    selectedRows.clear();
+                }
+
+                table.$('.row-checkbox').prop('checked', isChecked);
+                updateRowStyles();
+
+            });
+
+
+            $(document).on('change', '.row-checkbox', function () {
+                const $row = $(this).closest('tr');
+
+                if ($(this).is(':checked')) {
+                    selectedRows.add($row[0]);
+                } else {
+                    selectedRows.delete($row[0]);
+                }
+
+                updateRowStyles();
+                updateSelectAllCheckbox();
+
+            });
+
+
+            function updateRowStyles() {
+                table.$('tr').removeClass('selected');
+                selectedRows.forEach(row => {
+                    $(row).addClass('selected');
+                });
+            }
+
+
+            function updateSelectAllCheckbox() {
+                const totalRows = table.rows().count();
+                const selectedCount = selectedRows.size;
+
+                if (selectedCount === 0) {
+                    $('#selectAllCheckbox').prop('indeterminate', false).prop('checked', false);
+                } else if (selectedCount === totalRows) {
+                    $('#selectAllCheckbox').prop('indeterminate', false).prop('checked', true);
+                } else {
+                    $('#selectAllCheckbox').prop('indeterminate', true);
+                }
+            }
+
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+

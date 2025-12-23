@@ -1,0 +1,746 @@
+﻿@model List<GSTECommerceLibrary.Admin.Admin>
+
+@{
+    ViewBag.Title = "Seller Registration Approval";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active" aria-current="page">
+        <span style="color: #6c757d;">Notification </span> <strong> / Request For Approve Seller</strong>
+    </li>
+
+}
+
+
+<!-- Add required CSS references -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.bootstrap5.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<link href="~/Content/Document/CSS/SellerRegistrationSC.css" rel="stylesheet" />
+
+<!--<section class="section">
+    <div class="card">-->
+@*<div class="card-header">
+        <h5 class="mb-0">Request For Approve Seller</h5>
+    </div>*@
+
+
+<!--<div class="card-body">
+    <div class="row mb-3">
+        <div class="col-md-8 text-end">
+
+            <span id="selectedCount" class="selected-count"></span>
+        </div>
+    </div>-->
+
+<table class="table table-striped table-bordered" id="sellerTable">
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="selectAllCheckbox"></th>
+            <th>Sr No</th>
+            <th>Seller Name</th>
+            <th>Mobile No</th>
+            <th>Business Name</th>
+            <th>Email</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-clientcode="@item.ClientCode">
+                <td><input type="checkbox" class="row-checkbox"></td>
+                <td></td> <!-- For serial number -->
+                <td>@item.SellerName</td>
+                <td>@($"+91 {item.MobileNo}")</td>
+                <td>@item.BusinessName</td>
+                <td>@item.Email</td>
+                <td class="text-center">
+                    <div class="d-flex justify-content-center align-items-center gap-3">
+                        <a href="javascript:void(0);"
+                           style="font-size: 1.2rem; color: black;"
+                           onclick="loadSellerDetails('@item.ClientCode')"
+                           title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </a>
+
+                        <a href="javascript:void(0);"
+                           style="font-size: 1.2rem; color: black;"
+                           onclick="approveSeller('@item.ClientCode')"
+                           title="Approve Seller">
+                            <i class="bi bi-check-circle"></i>
+                        </a>
+
+
+                        <a href="javascript:void(0);"
+                           style="font-size: 1.2rem; color: black;"
+                           onclick="loadSellerRejectForm('@item.ClientCode')"
+                           title="Reject Seller">
+                            <i class="bi bi-x-circle"></i>
+                        </a>
+
+
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Toast Notification -->
+<div class="position-fixed end-0 p-3" style="z-index: 11; top: 80px;">
+    <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+@*</div>
+        </div>
+    </section>*@
+
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background: #2C3E50;">
+                <h5 class="modal-title">Seller Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="detailsModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Seller Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" role="dialog" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <!-- modal-lg makes it wider -->
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background: #2C3E50;">
+                <h5 class="modal-title">Reject Seller</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="rejectModalBody" style="min-height: 300px;">
+                <!-- Partial view content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts {
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- DataTables Buttons -->
+    <script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.bootstrap5.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Downloaded CDN  -->
+    <script src="~/Content/Document/CustomJS/buttons.html5.min.js"></script>
+    <script src="~/Content/Document/CustomJS/buttons.print.min.js"></script>
+    <script src="~/Content/Document/CustomJS/jszip.min.js"></script>
+    <script src="~/Content/Document/CustomJS/pdfmake.min.js"></script>
+    <script src="~/Content/Document/CustomJS/vfs_fonts.js"></script>
+
+
+
+    <link href="~/Content/Document/CSS/custom-datatables.css" rel="stylesheet" />
+
+    <script>
+
+        // Toast notification functions
+        function showErrorToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-success').addClass('bg-danger');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function showSuccessToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        let table;
+        let selectedRows = new Set();
+
+        $(document).ready(function () {
+            // Initialize DataTable with export buttons
+            table = $('#sellerTable').DataTable({
+                responsive: true,
+                searching: true,
+                paging: true,
+                ordering: false,
+                info: true,
+                lengthChange: false,
+                pageLength: 10,
+                destroy: true,
+                autoWidth: false,
+                scrollX: false,
+                lengthMenu: [5, 10, 25, 50, 100],
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Type to search"
+                },
+                "dom": `
+                                    <"top d-flex justify-content-between"
+                                        <"float-start"l>
+                                        <"d-flex flex-column align-items-end"
+                                            <"mb-2"B>
+                                            f
+                                        >
+                                    >
+                                        rt
+                    <"bottom d-flex justify-content-between"
+                        i
+                        <"d-flex justify-content-end"p>
+                    >
+`,
+
+
+                "buttons": [
+                    {
+                        extend: 'copy',
+                        text: '<img src="/Content/Document/Image/Copy.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Copy to clipboard' },
+                        //  className: 'buttons-copy',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.copyHtml5.action.call(this, e, dt, button, config);
+                            // showSuccessToast('Data copied to clipboard');
+                        },
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5], // Only include these columns
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked'); // only selected rows
+                            },
+                            format: {
+                                body: (function () {
+                                    let srNoCounter = 0; // reset counter per export
+                                    return function (data, row, column, node) {
+                                        if (column === 0) {
+                                            srNoCounter++;
+                                            return srNoCounter; // Always sequential 1,2,3...
+                                        }
+                                        return data;
+                                    };
+                                })()
+                            }
+                        }
+                    },
+
+                    {
+                        extend: 'csv',
+                        text: '<img src="/Content/Document/Image/CSV.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Export as CSV file' },
+                        // className: 'buttons-csv',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.csvHtml5.action.call(this, e, dt, button, config);
+                            /* showSuccessToast('CSV export started');*/
+                        },
+                        filename: 'Seller_Approval_' + new Date().toISOString().slice(0, 10),
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5], // Export only these columns
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked'); // Only selected rows
+                            },
+                            format: {
+                                body: (function () {
+                                    let srNoCounter = 0; // Reset for each export
+                                    return function (data, row, column, node) {
+                                        if (column === 0) {
+                                            srNoCounter++;
+                                            return srNoCounter; // Always sequential 1,2,3...
+                                        }
+                                        return data;
+                                    };
+                                })()
+                            }
+                        }
+                    },
+
+                    {
+                        extend: 'excel',
+                        text: '<img src="/Content/Document/Image/XLS.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Export as Excel file' },
+                        // className: 'buttons-excel',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.excelHtml5.action.call(this, e, dt, button, config);
+                            /*showSuccessToast('Excel export started');*/
+                        },
+                        filename: 'Seller_Approval_' + new Date().toISOString().slice(0, 10),
+                        title: 'Seller Approval List',
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5], // Include only required columns
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked'); // Export only selected rows
+                            },
+                            format: {
+                                body: (function () {
+                                    let srNoCounter = 0; // Reset counter for each export
+                                    return function (data, row, column, node) {
+                                        if (column === 0) {
+                                            srNoCounter++;
+                                            return srNoCounter; // Sequential Sr. No. (1,2,3…)
+                                        }
+                                        return data;
+                                    };
+                                })()
+                            }
+                        }
+                    },
+
+                    {
+                        extend: 'pdf',
+                        text: '<img src="/Content/Document/Image/PDFicon.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Export as PDF' },
+                        //  className: 'buttons-pdf',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.'); return;
+                            }
+                            $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, config);
+                        },
+                        filename: 'Seller_Approval_' + new Date().toISOString().slice(0, 10),
+                        title: 'Seller Approval Report',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5], // Include all columns except first(0) and last(6)
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked');
+                            },
+                            format: {
+                                body: function (data, row, column, node) {
+                                    if (column === 0) {
+                                        const checkedRows = $('#sellerTable tbody tr').filter(function () {
+                                            return $(this).find('.row-checkbox').is(':checked');
+                                        });
+                                        return checkedRows.index(node.parentNode) + 1;
+                                    }
+                                    return data;
+                                }
+                            }
+                        },
+                        customize: function (doc) {
+                            // ✅ Remove default title
+                            doc.content.splice(0, 1);
+                            // ✅ Get DataTable reference
+                            var dt = $('#sellerTable').DataTable();
+
+                            // Generated date + total selected rows
+                            let now = new Date();
+                            let dateStr = now.getFullYear() + '-' +
+                                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(now.getDate()).padStart(2, '0') + ' ' +
+                                String(now.getHours()).padStart(2, '0') + ':' +
+                                String(now.getMinutes()).padStart(2, '0') + ':' +
+                                String(now.getSeconds()).padStart(2, '0');
+                            // Get all selected rows across all pages
+                            let totalRecords = dt.rows().nodes().to$().find('.row-checkbox:checked').length;
+                            // ✅ Custom header
+                            doc.content.unshift({
+                                margin: [0, 0, 0, 12],
+                                stack: [
+                                    {
+                                        text: 'Rahishop',
+                                        fontSize: 16,
+                                        bold: true,
+                                        alignment: 'center',
+                                        margin: [0, 0, 0, 6]
+                                    },
+                                    {
+                                        columns: [
+                                            {
+                                                text: 'Seller Management List',
+                                                fontSize: 12,
+                                                alignment: 'center',   // ✅ Center subtitle
+                                                margin: [0, 0, 0, 6]
+                                            },
+                                            {
+                                                stack: [
+                                                    { text: 'Generated On: ' + dateStr, fontSize: 8, alignment: 'right' },
+                                                    { text: 'Total Records: ' + totalRecords, fontSize: 8, alignment: 'right' }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            });
+
+                            // ✅ Find table dynamically & add serial numbers
+                            let tableNode = doc.content.find(node => node.table);
+                            if (tableNode) {
+                                let serialNumber = 1;
+                                tableNode.table.body.forEach(function (row, i) {
+                                    if (i > 0) row[0] = serialNumber++;
+                                });
+
+                                // Column widths
+                                tableNode.table.widths = ['10%', '20%', '25%', '25%', '20%'];
+                            }
+
+                            // ✅ Styles (blue header, white text)
+                            doc.styles.tableHeader = {
+                                fillColor: '#007bff',
+                                color: 'white',
+                                alignment: 'center',
+                                fontSize: 10,
+                                bold: true
+                            };
+                            doc.defaultStyle.fontSize = 8;
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<img src="/Content/Document/Image/Print.png" style="width:16px; height:16px;">',
+                        attr: { title: 'Print' },
+                        // className: 'buttons-print',
+                        action: function (e, dt, button, config) {
+                            if ($('.row-checkbox:checked').length === 0) {
+                                showErrorToast('Please select at least one row to export.');
+                                return;
+                            }
+                            $.fn.dataTable.ext.buttons.print.action.call(this, e, dt, button, config);
+                            /*showSuccessToast('Print dialog opened');*/
+                        },
+                        title: 'Seller Approval List',
+                        exportOptions: {
+                            columns: [1, 2, 3, 4, 5], // Export only required columns
+                            rows: function (idx, data, node) {
+                                return $(node).find('.row-checkbox').is(':checked'); // Only selected rows
+                            },
+                            format: {
+                                body: (function () {
+                                    let srNoCounter = 0; // Reset counter for each print
+                                    return function (data, row, column, node) {
+                                        if (column === 0) {
+                                            srNoCounter++;
+                                            return srNoCounter; // Always sequential Sr No (1,2,3…)
+                                        }
+                                        return data;
+                                    };
+                                })()
+                            }
+                        },
+                        customize: function (win) {
+                            $(win.document.body)
+                                .css('font-size', '10pt')
+                                .prepend(
+                                    '<div style="text-align:center; margin-bottom: 20px;"><h2>Seller Approval List</h2><p>Generated on: ' + new Date().toLocaleDateString() + '</p></div>'
+                                );
+
+                            var $table = $(win.document.body).find('table')
+                                .addClass('compact')
+                                .css('font-size', '9pt');
+
+                            var serial = 1;
+                            $table.find('tbody tr').each(function () {
+                                if ($(this).find('.row-checkbox').is(':checked')) {
+                                    $(this).find('td:nth-child(2)').text(serial++);
+                                }
+                            });
+                        }
+                    }
+                ],
+                "columnDefs": [
+                    {
+                        "targets": 0, // Checkbox column
+                        "orderable": false,
+                        "searchable": false
+                    },
+                    {
+                        "targets": 1, // Sr No column
+                        "orderable": false,
+                        "searchable": false,
+                        "render": function (data, type, row, meta) {
+                            return meta.row + 1;
+                        }
+                    },
+                    {
+                        "targets": 6, // Action column
+                        "orderable": false,
+                        "searchable": false
+                    }
+                ]
+            });
+
+            // Update serial numbers when table is redrawn
+            table.on('draw.dt', function () {
+                table.column(1, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            });
+
+            // Make buttons transparent with blue border, radius, and spacing
+            function forceTransparentButtons() {
+                $('.dt-buttons button, .dt-buttons a').each(function () {
+                    $(this).removeClass('btn-secondary btn-primary btn-success btn-info btn-warning btn-danger');
+
+                    this.style.setProperty('background', 'transparent', 'important');
+                    this.style.setProperty('background-color', 'transparent', 'important');
+                    this.style.setProperty('background-image', 'none', 'important');
+
+                    // 🔵 Blue border
+                    this.style.setProperty('border', '1px solid #007bff', 'important');
+
+                    // Keep text black
+                    this.style.setProperty('color', '#212529', 'important');
+
+                    // No shadow
+                    this.style.setProperty('box-shadow', 'none', 'important');
+
+                    // ➡️ Add spacing between buttons
+                    this.style.setProperty('margin-right', '8px', 'important');
+
+                    // 🔄 Rounded corners
+                    this.style.setProperty('border-radius', '6px', 'important');
+                });
+            }
+
+
+            forceTransparentButtons();
+            setTimeout(forceTransparentButtons, 100);
+            setTimeout(forceTransparentButtons, 500);
+            setTimeout(forceTransparentButtons, 1000);
+
+            // Select All checkbox functionality
+            $('#selectAllCheckbox').on('change', function () {
+                const isChecked = $(this).is(':checked');
+                table.$('.row-checkbox').prop('checked', isChecked);
+
+                if (isChecked) {
+                    table.rows().every(function () {
+                        const node = this.node();
+                        selectedRows.add(node);
+                    });
+                } else {
+                    selectedRows.clear();
+                }
+
+                // updateRowStyles();
+                updateSelectedCount();
+            });
+
+            // Row checkbox functionality
+            $(document).on('change', '.row-checkbox', function () {
+                const $row = $(this).closest('tr');
+
+                if ($(this).is(':checked')) {
+                    selectedRows.add($row[0]);
+                } else {
+                    selectedRows.delete($row[0]);
+                }
+
+                // updateRowStyles();
+                updateSelectAllCheckbox();
+                updateSelectedCount();
+            });
+
+
+
+            // Update Select All checkbox state
+            function updateSelectAllCheckbox() {
+                const totalRows = table.rows().count();
+                const selectedCount = selectedRows.size;
+
+                if (selectedCount === 0) {
+                    $('#selectAllCheckbox').prop('indeterminate', false).prop('checked', false);
+                } else if (selectedCount === totalRows) {
+                    $('#selectAllCheckbox').prop('indeterminate', false).prop('checked', true);
+                } else {
+                    $('#selectAllCheckbox').prop('indeterminate', true);
+                }
+            }
+
+
+        });
+        function showLoader() { $('#globalLoader').fadeIn(200); }
+        function hideLoader() { $('#globalLoader').fadeOut(200); }
+
+        // Your functions with SweetAlert integration
+        function loadSellerDetails(clientcode) {
+            showLoader();
+            $.get('/Admin/SellerRegistrationDetailsSC', { clientcode: clientcode }, function (data) {
+                $('#detailsModalBody').html(data);
+                $('#detailsModal').modal('show');
+                hideLoader();
+            }).fail(function () {
+                hideLoader();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load details.',
+                    confirmButtonColor: '#3085d6'
+                });
+            });
+        }
+
+        function approveSeller(clientcode) {
+            Swal.fire({
+                title: 'Confirm Approval',
+                text: "Are you sure you want to approve this Seller?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, approve!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showLoader();
+                    $.ajax({
+                        url: '/Admin/ApproveSellerRegistrationSC',
+                        type: 'POST',
+                        data: { clientcode: clientcode },
+                        success: function (response) {
+                            hideLoader();
+                            if (response && response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success',
+                                    text: response.message || "Seller approved successfully.",
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    timerProgressBar: true
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success',
+                                    text: "Seller approved successfully.",
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    timerProgressBar: true
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            }
+                        },
+                        error: function () {
+                            hideLoader();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Error occurred while approving the seller.',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        $("#rejectForm").submit(function (e) {
+            e.preventDefault();
+
+            var form = $(this);
+
+            Swal.fire({
+                title: 'Confirm Rejection',
+                text: "Are you sure you want to reject this seller?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, reject!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    showLoader();
+                    $.ajax({
+                        type: "POST",
+                        url: "/Admin/RejectedSellerUpdateSC",
+                        data: form.serialize(),
+                        success: function (res) {
+                            hideLoader();
+                            if (res.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Rejected!',
+                                    text: res.message || "Seller rejected successfully.",
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    timerProgressBar: true
+                                }).then(() => {
+                                    $("#rejectModal").modal('hide');
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: res.message || "Failed to reject seller.",
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    timerProgressBar: true
+                                });
+                            }
+                        },
+                        error: function () {
+                            hideLoader();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Internal error occurred while rejecting the seller.',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        function loadSellerRejectForm(clientcode) {
+            showLoader();
+            $.get('/Admin/RejectSellerSC', { clientcode: clientcode }, function (data) {
+                $('#rejectModalBody').html(data);
+                $('#rejectModal').modal('show');
+                hideLoader();
+            }).fail(function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load reject form.',
+                    confirmButtonColor: '#3085d6'
+                });
+            });
+        }
+    </script>
+
+
+}

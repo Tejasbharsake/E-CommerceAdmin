@@ -1,0 +1,83 @@
+﻿@{
+    ViewBag.Title = "Buyer Payment";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Breadcrumb {
+    @*<li class="breadcrumb-item">
+            <a href="@Url.Action("DashboardNM", "Admin")">Dashboard</a>
+        </li>*@
+    <li class="breadcrumb-item">
+        <a href="@Url.Action("BuyerPaymentSG", "Admin")">Buyer Payment</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page" id="dynamicBreadcrumb">
+        Pending Online Refunds
+    </li>
+}
+
+<!-- Buyer Payment Tabs -->
+<ul class="nav nav-pills nav-justified mb-3" id="buyerPaymentTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="online-tab" data-bs-toggle="tab" href="#online" role="tab"
+           aria-controls="online" aria-selected="true" data-breadcrumb="Pending Online Refunds">
+            Pending Online Refunds
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="cod-tab" data-bs-toggle="tab" href="#cod" role="tab"
+           aria-controls="cod" aria-selected="false" data-breadcrumb="Pending COD Refunds">
+            Pending COD Refunds
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="Completed-tab" data-bs-toggle="tab" href="#Completed" role="tab"
+           aria-controls="Completed" aria-selected="false" data-breadcrumb="Completed Refunds">
+            Completed Refunds
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content p-3 border border-top-0" id="buyerPaymentTabsContent" style="min-height: 650px;">
+    <div class="tab-pane fade show active" id="online" role="tabpanel" aria-labelledby="online-tab">
+        <iframe src="@Url.Action("PendingRefundOrdersOnlineSG", "Admin")" width="100%" height="600px" frameborder="0"></iframe>
+    </div>
+    <div class="tab-pane fade" id="cod" role="tabpanel" aria-labelledby="cod-tab">
+        <iframe src="@Url.Action("PendingRefundOrdersCODSG", "Admin")" width="100%" height="600px" frameborder="0"></iframe>
+    </div>
+    <div class="tab-pane fade" id="Completed" role="tabpanel" aria-labelledby="Completed-tab">
+        <iframe src="@Url.Action("BuyerRefundPaymentCompletedSG", "Admin")" width="100%" height="600px" frameborder="0"></iframe>
+    </div>
+</div>
+
+
+<!-- Toast on main page -->
+
+<div class="position-fixed end-0 p-3" style="z-index: 1050; top: 60px;">
+    <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastMessage"></span>
+            </div>
+            <!-- Close button -->
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Update breadcrumb when tab is clicked
+            $('#buyerPaymentTabs a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                var breadcrumbText = $(e.target).data('breadcrumb');
+                $('#dynamicBreadcrumb').text(breadcrumbText);
+
+                // Optional: Smooth scrolling to tab when clicked
+                $('html, body').animate({
+                    scrollTop: $("#buyerPaymentTabs").offset().top - 100
+                }, 300);
+            });
+        });
+    </script>
+}

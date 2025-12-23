@@ -1,0 +1,212 @@
+﻿@using System.Data
+@{
+    var ds = ViewBag.CourierDetails as DataSet;
+    var dt = ds?.Tables.Count > 0 ? ds.Tables[0] : null;
+
+    string sellerName = "";
+    string clientCode = "";
+    int totalOrders = 0;
+    decimal totalAmount = 0;
+    string fromDate = "";
+    string toDate = "";
+    string bankHolder = "";
+    string bankAccountNo = "";
+    string ifscCode = "";
+
+    <link href="~/Content/Document/CSS/CourierPaymentDetails.css" rel="stylesheet" />
+
+    if (dt != null && dt.Rows.Count > 0)
+    {
+        var row = dt.Rows[0];
+        sellerName = row["Courier Name"].ToString();
+        clientCode = row["ClientCode"].ToString();
+        totalOrders = Convert.ToInt32(row["Total Orders"]);
+        totalAmount = Convert.ToDecimal(row["Total Payable Amount"]);
+        fromDate = Convert.ToDateTime(row["Payment Date From"]).ToString("yyyy-MM-dd");
+        toDate = Convert.ToDateTime(row["Payment Date To"]).ToString("yyyy-MM-dd");
+
+        bankHolder = row["BankHolderName"].ToString();
+        bankAccountNo = row["BankAccountNo"].ToString();
+        ifscCode = row["IFSCCode"].ToString();
+    }
+}
+
+@if (dt != null && dt.Rows.Count > 0)
+{
+    <div class="client-payment-wrapper">
+
+        <!-- Courier Info -->
+        <div class="seller-info-box mb-4 p-3 shadow-sm rounded bg-white">
+            <p><strong>Courier Name:</strong> @sellerName</p>
+            <p><strong>Total Orders:</strong> @totalOrders</p>
+            <p><strong>Date Range:</strong> @fromDate to @toDate</p>
+            <p><strong>Total Order Charge ₹:</strong> ₹@totalAmount.ToString("N2")</p>
+
+            <input type="hidden" id="totalCharge" value="@totalAmount" />
+            <input type="hidden" id="courierName" value="@sellerName" />
+            <input type="hidden" id="clientCode" value="@clientCode" />
+            <input type="hidden" id="fromDate" value="@fromDate" />
+            <input type="hidden" id="toDate" value="@toDate" />
+        </div>
+
+        <!-- Bank Details -->
+        <div class="bank-details-box mb-4 p-3 shadow-sm rounded bg-white">
+            <h6 class="mb-3"><i class="bi bi-bank"></i> Bank Details</h6>
+            <p><strong>Account Holder:</strong> @bankHolder</p>
+            <p>
+                <strong>Account Number:</strong>
+                @{
+                    string maskedAccount = "-";
+                    if (!string.IsNullOrWhiteSpace(bankAccountNo))
+                    {
+                        var accTrim = bankAccountNo.Trim();
+                        if (accTrim.Length >= 4)
+                        {
+                            maskedAccount = "••••••••" + accTrim.Substring(accTrim.Length - 4);
+                        }
+                        else
+                        {
+                            maskedAccount = accTrim;
+                        }
+                    }
+                }
+                @maskedAccount
+            </p>
+            <p><strong>IFSC Code:</strong> @ifscCode</p>
+            <p><strong>Transfer Method:</strong> NEFT (Electronic Transfer)</p>
+        </div>
+
+
+        <!-- Payment Box - FIXED: Non-editable with Total Charge pre-filled -->
+        <div class="payment-summary-box mx-auto text-center p-3 shadow-sm rounded bg-white">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <label><strong>Total Pay Amount</strong></label>
+                    <input type="text"
+                           class="form-control text-center font-weight-bold fs-5"
+                           id="txtTotalPay"
+                           value="₹@totalAmount.ToString("N2")"
+                           readonly
+                           style="background-color: #f8f9fa; cursor: not-allowed; font-weight: 600;" />
+                </div>
+            </div>
+
+            <div class="row mt-4 justify-content-center">
+                <button type="button" class="btn btn-primary px-4" id="btnChoosePayment">Pay ₹@totalAmount.ToString("N2")</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Option Modal -->
+    <div class="modal fade" id="paymentOptionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-3">
+                <h5 class="mb-3">Choose Payment Method</h5>
+                <div class="d-flex justify-content-around">
+                    <button id="btnRazorPay" class="btn btn-primary">Pay with Razorpay</button>
+                    <button id="btnNeftPay" class="btn btn-outline-secondary">Pay with NEFT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning text-center mt-4">
+        No order details found for this courier.
+    </div>
+}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    $(document).ready(function () {
+        var totalCharge = parseFloat($("#totalCharge").val());
+
+        // ✅ No validation needed - amount is fixed
+        // Button is always enabled with full amount
+
+        // ✅ Main Pay click → show modal directly
+        $("#btnChoosePayment").click(function () {
+            var modal = new bootstrap.Modal(document.getElementById('paymentOptionModal'));
+            modal.show();
+        });
+
+        // ✅ Razorpay flow - using full totalCharge
+        $("#btnRazorPay").click(function () {
+            const courierName = $("#courierName").val();
+            const clientCode = $("#clientCode").val();
+            const fromDate = $("#fromDate").val();
+            const toDate = $("#toDate").val();
+
+            var options = {
+                "key": "rzp_test_ett8OJ6dpelutz",
+                "amount": Math.round(totalCharge * 100), // Full amount
+                "currency": "INR",
+                "name": "Courier Payment",
+                "description": "Payment to Courier: " + courierName,
+                "handler": function (response) {
+                    savePaymentTransaction(response.razorpay_payment_id, totalCharge, "Razorpay");
+                },
+                "prefill": {
+                    "name": courierName,
+                    "email": "courier@example.com",
+                    "contact": "9403401126"
+                },
+                "theme": { "color": "#007bff" }
+            };
+
+            var rzp = new Razorpay(options);
+            rzp.open();
+
+            rzp.on('payment.failed', function (response) {
+                Swal.fire("Payment Failed", response.error.description, "error");
+            });
+        });
+
+        // ✅ NEFT flow - using full totalCharge
+        $("#btnNeftPay").click(function () {
+            const txnId = "HDFC-" + Date.now();
+            savePaymentTransaction(txnId, totalCharge, "NEFT");
+        });
+
+        // ✅ Common Save function - always saves full amount
+        function savePaymentTransaction(transactionId, amount, mode) {
+            const clientCode = $("#clientCode").val();
+            const fromDate = $("#fromDate").val();
+            const toDate = $("#toDate").val();
+
+            $.ajax({
+                url: '@Url.Action("InsertCourierPaymentDetailsHK", "Admin")',
+                type: 'POST',
+                data: {
+                    ClientCode: clientCode,
+                    TransactionId: transactionId,
+                    PaymentMode: mode,
+                    PaidFrom: fromDate,
+                    PaidTo: toDate,
+                    StartDate: fromDate,
+                    EndDate: toDate,
+                    PaidAmount: amount,
+                    RemainingAmount: 0, // Full payment, so remaining is 0
+                    TotalAmount: totalCharge
+                },
+                success: function (result) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: mode + ' Payment Successful!',
+                        text: '₹' + amount.toFixed(2) + ' paid successfully',
+                        showConfirmButton: false,
+                        timer: 2000
+                    }).then(() => location.reload());
+                },
+                error: function () {
+                    Swal.fire("Error", "Something went wrong while saving payment.", "error");
+                }
+            });
+        }
+    });
+</script>

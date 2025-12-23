@@ -1,0 +1,718 @@
+﻿@model System.Data.DataTable
+
+@* Check and load jQuery if not already loaded *@
+<script>
+    if (typeof jQuery == 'undefined') {
+        document.write('<script src="https://code.jquery.com/jquery-3.7.1.min.js"><\/script>');
+    }
+</script>
+
+@* Load DataTables CSS *@
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" />
+
+<style>
+    /* Button container positioning */
+    .dt-buttons {
+        margin-bottom: 15px !important;
+        float: right !important;
+    }
+
+    /* Custom button styling - transparent background with blue border */
+    button.dt-button,
+    div.dt-button,
+    a.dt-button,
+    .btn-export-custom {
+        background-color: transparent !important;
+        background-image: none !important;
+        background: transparent !important;
+        border: 1px solid #0d6efd !important;
+        border-radius: 4px !important;
+        padding: 6px 10px !important;
+        margin-right: 5px !important;
+        box-shadow: none !important;
+    }
+
+        /* Remove ALL hover and active effects */
+        button.dt-button:hover,
+        button.dt-button:focus,
+        button.dt-button:active,
+        div.dt-button:hover,
+        div.dt-button:focus,
+        div.dt-button:active,
+        a.dt-button:hover,
+        a.dt-button:focus,
+        a.dt-button:active,
+        .btn-export-custom:hover,
+        .btn-export-custom:focus,
+        .btn-export-custom:active {
+            background-color: transparent !important;
+            background-image: none !important;
+            background: transparent !important;
+            border: 1px solid #0d6efd !important;
+            box-shadow: none !important;
+            outline: none !important;
+            color: inherit !important;
+        }
+
+        /* Image styling inside buttons - FIXED SIZE */
+        .dt-button img,
+        button.dt-button img,
+        div.dt-button img,
+        a.dt-button img {
+            display: block !important;
+            width: 16px !important;
+            height: 16px !important;
+            max-width: 16px !important;
+            max-height: 16px !important;
+            pointer-events: none !important;
+        }
+
+    /* Search box positioning */
+    .dataTables_filter {
+        clear: both;
+        margin-top: 10px;
+    }
+
+    /* Table header styling */
+    #SoldproductTable thead th {
+        background-color: #2C3E50;
+        color: #FFFFFF;
+        font-weight: 600;
+        text-align: center;
+        padding: 5px;
+        border-bottom: 2px solid #ddd;
+        font-size: 14px;
+        height: 8px !important;
+        font-family: 'Poppins', sans-serif;
+        vertical-align: middle;
+    }
+
+    /* Table body styling */
+    #SoldproductTable tbody td {
+        padding: 2px 5px !important;
+        height: 5px !important;
+        line-height: 1;
+        font-size: 13px;
+        text-align: center;
+        font-family: 'Poppins', sans-serif;
+        vertical-align: middle;
+    }
+
+    /* Checkbox styling */
+    .select-checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #6ea8fe; /* lighter blue */
+    }
+
+    input[type="checkbox"]:checked {
+        accent-color: #0d6efd !important;
+    }
+
+    /* Selected row highlight */
+    .selected-row {
+        background-color: #d1ecf1 !important;
+    }
+
+    /* Indeterminate checkbox state */
+    #selectAll:indeterminate {
+        opacity: 0.7;
+    }
+
+    /* DataTables wrapper spacing */
+    .dataTables_wrapper .row {
+        margin-bottom: 10px;
+    }
+</style>
+
+@if (Model != null && Model.Rows.Count > 0)
+{
+    <div class="table-responsive mt-3">
+        <table id="SoldproductTable" class="table table-bordered table-striped table-hover">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">
+                        <input type="checkbox" id="selectAll" class="select-checkbox" />
+                    </th>
+                    <th>Sr No</th>
+                    <th>Product Code</th>
+                    <th>Product Name</th>
+                    <th>MRP (₹)</th>
+                    <th>Actual Price (₹)</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int srNo = 1;
+                }
+                @foreach (System.Data.DataRow row in Model.Rows)
+                {
+                    <tr data-product-code="@row["ProductCode"]">
+                        <td class="text-center">
+                            <input type="checkbox" class="row-checkbox select-checkbox" value="@row["ProductCode"]" />
+                        </td>
+                        <td class="text-center">@srNo</td>
+                        <td>@row["ProductCode"]</td>
+                        <td>@row["ProductName"]</td>
+                        <td class="text-end">@row["ProductMRP"]</td>
+                        <td class="text-end">@row["ActualProductPrice"]</td>
+                        <td class="text-center">@row["Stock"]</td>
+                    </tr>
+                    srNo++;
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* Load all DataTables JS dependencies *@
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/pdfmake.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/vfs_fonts.js"></script>
+    <!-- pdfMake MUST load before vfs_fonts -->
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/pdfmake.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var initAttempts = 0;
+            var maxAttempts = 100;
+            var selectedProductCodes = new Set();
+
+            var checkDataTable = setInterval(function () {
+                initAttempts++;
+
+                if (typeof $.fn.DataTable !== 'undefined' && typeof pdfMake !== 'undefined') {
+                    clearInterval(checkDataTable);
+
+                    // Ensure pdfMake.vfs is properly assigned
+                    if (typeof pdfMake.vfs === 'undefined' && typeof pdfFonts !== 'undefined' && typeof pdfFonts.pdfMake !== 'undefined') {
+                        pdfMake.vfs = pdfFonts.pdfMake.vfs;
+                    }
+
+                    // Destroy existing DataTable instance if present
+                    if ($.fn.DataTable.isDataTable('#SoldproductTable')) {
+                        $('#SoldproductTable').DataTable().destroy();
+                    }
+
+                    // Get current date and time
+                    function getCurrentDateTime() {
+                        var now = new Date();
+                        var month = now.getMonth() + 1;
+                        var day = now.getDate();
+                        var year = now.getFullYear();
+                        var hours = now.getHours();
+                        var minutes = ('0' + now.getMinutes()).slice(-2);
+                        var seconds = ('0' + now.getSeconds()).slice(-2);
+                        var ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12;
+                        hours = hours ? hours : 12;
+
+                        return {
+                            date: month + '/' + day + '/' + year,
+                            time: hours + ':' + minutes + ':' + seconds + ' ' + ampm
+                        };
+                    }
+
+                    // Restore checkbox states when page changes
+                    function restoreCheckboxStates() {
+                        $('#SoldproductTable tbody .row-checkbox').each(function () {
+                            var productCode = $(this).val();
+                            if (selectedProductCodes.has(productCode)) {
+                                $(this).prop('checked', true);
+                                $(this).closest('tr').addClass('selected-row');
+                            } else {
+                                $(this).prop('checked', false);
+                                $(this).closest('tr').removeClass('selected-row');
+                            }
+                        });
+                        updateSelectAllState();
+                    }
+
+                    // Update Select All checkbox state
+                    function updateSelectAllState() {
+                        var currentPageCheckboxes = $('#SoldproductTable tbody .row-checkbox:visible');
+                        var currentPageChecked = currentPageCheckboxes.filter(':checked');
+
+                        if (currentPageCheckboxes.length === 0) {
+                            $('#selectAll').prop('checked', false).prop('indeterminate', false);
+                        } else if (currentPageChecked.length === currentPageCheckboxes.length) {
+                            $('#selectAll').prop('checked', true).prop('indeterminate', false);
+                        } else if (currentPageChecked.length > 0) {
+                            $('#selectAll').prop('checked', false).prop('indeterminate', true);
+                        } else {
+                            $('#selectAll').prop('checked', false).prop('indeterminate', false);
+                        }
+                    }
+
+                    // Function to get ALL selected rows data from ALL pages
+                    function getSelectedRowsData() {
+                        var selectedData = [];
+                        var srNo = 1;
+
+                        if (selectedProductCodes.size === 0) {
+                            return [];
+                        }
+
+                        table.rows().every(function () {
+                            var row = this.node();
+                            var $row = $(row);
+                            var checkbox = $row.find('.row-checkbox');
+                            var productCode = checkbox.val();
+
+                            if (selectedProductCodes.has(productCode)) {
+                                var cells = $row.find('td');
+                                var rowData = [
+                                    srNo.toString(),
+                                    cells.eq(2).text().trim(),
+                                    cells.eq(3).text().trim(),
+                                    cells.eq(4).text().trim(),
+                                    cells.eq(5).text().trim(),
+                                    cells.eq(6).text().trim()
+                                ];
+                                selectedData.push(rowData);
+                                srNo++;
+                            }
+                        });
+
+                        return selectedData;
+                    }
+
+                    // Export to clipboard - FIXED with modern Clipboard API
+                    function exportToClipboard(selectedData) {
+                        if (selectedData.length === 0) {
+                            console.log('No rows selected for copy operation');
+                            return;
+                        }
+
+                        try {
+                            var headers = ['Sr No', 'Product Code', 'Product Name', 'MRP', 'Actual Price', 'Stock'];
+                            var copyText = headers.join('\t') + '\n';
+                            selectedData.forEach(function (row) {
+                                copyText += row.join('\t') + '\n';
+                            });
+
+                            // Use modern Clipboard API
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(copyText).then(function () {
+                                    console.log('Data copied to clipboard: ' + selectedData.length + ' rows');
+                                }).catch(function (err) {
+                                    console.error('Copy failed:', err);
+                                    fallbackCopyToClipboard(copyText, selectedData.length);
+                                });
+                            } else {
+                                fallbackCopyToClipboard(copyText, selectedData.length);
+                            }
+                        } catch (err) {
+                            console.error('Copy failed:', err);
+                        }
+                    }
+
+                    // Fallback copy method for older browsers
+                    function fallbackCopyToClipboard(text, rowCount) {
+                        var textArea = document.createElement("textarea");
+                        textArea.value = text;
+                        textArea.style.position = 'fixed';
+                        textArea.style.top = '0';
+                        textArea.style.left = '0';
+                        textArea.style.width = '2em';
+                        textArea.style.height = '2em';
+                        textArea.style.padding = '0';
+                        textArea.style.border = 'none';
+                        textArea.style.outline = 'none';
+                        textArea.style.boxShadow = 'none';
+                        textArea.style.background = 'transparent';
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+
+                        try {
+                            var successful = document.execCommand('copy');
+                            if (successful) {
+                                console.log('Data copied to clipboard (fallback): ' + rowCount + ' rows');
+                            }
+                        } catch (err) {
+                            console.error('Fallback copy failed:', err);
+                        }
+
+                        document.body.removeChild(textArea);
+                    }
+
+                    // Export to CSV
+                    function exportToCSV(selectedData) {
+                        if (selectedData.length === 0) {
+                            console.log('No rows selected for CSV export');
+                            return;
+                        }
+
+                        try {
+                            var headers = ['Sr No', 'Product Code', 'Product Name', 'MRP', 'Actual Price', 'Stock'];
+                            var csv = headers.join(',') + '\n';
+                            selectedData.forEach(function (row) {
+                                csv += row.map(function (cell) {
+                                    return '"' + String(cell).replace(/"/g, '""') + '"';
+                                }).join(',') + '\n';
+                            });
+
+                            var BOM = "\uFEFF";
+                            var blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+                            var link = document.createElement('a');
+                            var url = URL.createObjectURL(blob);
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', 'products_' + Date.now() + '.csv');
+                            link.style.visibility = 'hidden';
+                            document.body.appendChild(link);
+                            link.click();
+                            setTimeout(function () {
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
+                            }, 100);
+                            console.log('CSV exported: ' + selectedData.length + ' rows');
+                        } catch (err) {
+                            console.error('CSV export failed:', err);
+                        }
+                    }
+
+                    // Export to Excel
+                    function exportToExcel(selectedData) {
+                        if (selectedData.length === 0) {
+                            console.log('No rows selected for Excel export');
+                            return;
+                        }
+
+                        try {
+                            var headers = ['Sr No', 'Product Code', 'Product Name', 'MRP', 'Actual Price', 'Stock'];
+                            var csv = headers.join(',') + '\n';
+                            selectedData.forEach(function (row) {
+                                csv += row.map(function (cell) {
+                                    return '"' + String(cell).replace(/"/g, '""') + '"';
+                                }).join(',') + '\n';
+                            });
+
+                            var BOM = "\uFEFF";
+                            var blob = new Blob([BOM + csv], { type: 'application/vnd.ms-excel' });
+                            var link = document.createElement('a');
+                            var url = URL.createObjectURL(blob);
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', 'products_' + Date.now() + '.xls');
+                            link.style.visibility = 'hidden';
+                            document.body.appendChild(link);
+                            link.click();
+                            setTimeout(function () {
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
+                            }, 100);
+                            console.log('Excel exported: ' + selectedData.length + ' rows');
+                        } catch (err) {
+                            console.error('Excel export failed:', err);
+                        }
+                    }
+
+                    // Export to PDF - COMPLETELY FIXED
+                    function exportToPDF(selectedData) {
+                        if (selectedData.length === 0) {
+                            console.log('No rows selected for PDF export');
+                            return;
+                        }
+
+                        try {
+                            // Comprehensive pdfMake checks
+                            if (typeof pdfMake === 'undefined') {
+                                console.error('pdfMake is not loaded');
+                                alert('PDF library not loaded. Please refresh the page.');
+                                return;
+                            }
+
+                            if (typeof pdfMake.createPdf !== 'function') {
+                                console.error('pdfMake.createPdf is not a function');
+                                alert('PDF library not properly initialized. Please refresh the page.');
+                                return;
+                            }
+
+                            // Check and assign vfs if needed
+                            if (typeof pdfMake.vfs === 'undefined') {
+                                if (typeof pdfFonts !== 'undefined' && typeof pdfFonts.pdfMake !== 'undefined' && typeof pdfFonts.pdfMake.vfs !== 'undefined') {
+                                    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+                                } else {
+                                    console.error('pdfMake fonts (vfs) are not loaded');
+                                    alert('PDF fonts not loaded. Please refresh the page.');
+                                    return;
+                                }
+                            }
+
+                            var dateTime = getCurrentDateTime();
+                            var totalRecords = selectedData.length;
+
+                            var tableBody = [
+                                [
+                                    { text: 'Sr No', style: 'tableHeader', fillColor: '#0d6efd', color: 'white', bold: true },
+                                    { text: 'Product Code', style: 'tableHeader', fillColor: '#0d6efd', color: 'white', bold: true },
+                                    { text: 'Product Name', style: 'tableHeader', fillColor: '#0d6efd', color: 'white', bold: true },
+                                    { text: 'MRP', style: 'tableHeader', fillColor: '#0d6efd', color: 'white', bold: true },
+                                    { text: 'Actual Price', style: 'tableHeader', fillColor: '#0d6efd', color: 'white', bold: true },
+                                    { text: 'Stock', style: 'tableHeader', fillColor: '#0d6efd', color: 'white', bold: true }
+                                ]
+                            ];
+
+                            selectedData.forEach(function (row) {
+                                tableBody.push([
+                                    { text: String(row[0]), alignment: 'center' },
+                                    { text: String(row[1]), alignment: 'left' },
+                                    { text: String(row[2]), alignment: 'left' },
+                                    { text: String(row[3]), alignment: 'right' },
+                                    { text: String(row[4]), alignment: 'right' },
+                                    { text: String(row[5]), alignment: 'center' }
+                                ]);
+                            });
+
+                            var docDefinition = {
+                                pageOrientation: 'landscape',
+                                pageSize: 'A4',
+                                pageMargins: [40, 60, 40, 40],
+                                content: [
+                                    { text: 'Rahitech', style: 'header', alignment: 'center', fontSize: 18, bold: true, margin: [0, 0, 0, 5] },
+                                    { text: 'Product Management', style: 'subheader', alignment: 'center', fontSize: 14, margin: [0, 0, 0, 10] },
+                                    {
+                                        columns: [
+                                            { text: '', width: '*' },
+                                            {
+                                                stack: [
+                                                    { text: 'Generated On: ' + dateTime.date + ', ' + dateTime.time, alignment: 'right', fontSize: 9, margin: [0, 0, 0, 2] },
+                                                    { text: 'Total Records: ' + totalRecords, alignment: 'right', fontSize: 9, margin: [0, 0, 0, 15] }
+                                                ],
+                                                width: 'auto'
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        table: {
+                                            headerRows: 1,
+                                            widths: ['10%', '15%', '30%', '15%', '15%', '15%'],
+                                            body: tableBody
+                                        },
+                                        layout: {
+                                            hLineWidth: function () { return 1; },
+                                            vLineWidth: function () { return 1; },
+                                            hLineColor: function () { return '#aaa'; },
+                                            vLineColor: function () { return '#aaa'; }
+                                        }
+                                    }
+                                ],
+                                styles: {
+                                    header: { fontSize: 18, bold: true },
+                                    subheader: { fontSize: 14 },
+                                    tableHeader: { bold: true, fontSize: 10, alignment: 'center' }
+                                }
+                            };
+
+                            // Create and download PDF with error handling
+                            try {
+                                var pdfDocGenerator = pdfMake.createPdf(docDefinition);
+                                pdfDocGenerator.download('products_' + Date.now() + '.pdf');
+                                console.log('PDF exported successfully: ' + selectedData.length + ' rows');
+                            } catch (pdfError) {
+                                console.error('PDF creation/download failed:', pdfError);
+                                alert('Failed to generate PDF: ' + pdfError.message);
+                            }
+
+                        } catch (err) {
+                            console.error('PDF generation failed:', err);
+                            console.error('Error stack:', err.stack);
+                            alert('PDF generation failed. Please check console for details.');
+                        }
+                    }
+
+
+
+
+
+
+                    // Print function
+                    function printTable(selectedData) {
+                        if (selectedData.length === 0) {
+                            console.log('No rows selected for printing');
+                            return;
+                        }
+
+                        try {
+                            var dateTime = getCurrentDateTime();
+                            var totalRecords = selectedData.length;
+
+                            var printContent = '<html><head><title>Print Products</title>';
+                            printContent += '<style>';
+                            printContent += 'body { font-family: Arial, sans-serif; margin: 20px; }';
+                            printContent += 'h2, h4 { text-align: center; margin: 5px 0; }';
+                            printContent += '.info { text-align: right; font-size: 12px; margin: 10px 0; }';
+                            printContent += 'table { width: 100%; border-collapse: collapse; margin-top: 20px; }';
+                            printContent += 'th, td { border: 1px solid #ddd; padding: 8px; }';
+                            printContent += 'th { background-color: #0d6efd; color: white; text-align: center; font-weight: bold; }';
+                            printContent += 'td { text-align: left; }';
+                            printContent += '.center { text-align: center; }';
+                            printContent += '.right { text-align: right; }';
+                            printContent += '</style></head><body>';
+                            printContent += '<h2>Rahitech</h2>';
+                            printContent += '<h4>Product Management</h4>';
+                            printContent += '<div class="info">';
+                            printContent += '<p>Generated On: ' + dateTime.date + ', ' + dateTime.time + '</p>';
+                            printContent += '<p>Total Records: ' + totalRecords + '</p>';
+                            printContent += '</div>';
+                            printContent += '<table><thead><tr>';
+                            printContent += '<th>Sr No</th><th>Product Code</th><th>Product Name</th><th>MRP</th><th>Actual Price</th><th>Stock</th>';
+                            printContent += '</tr></thead><tbody>';
+
+                            selectedData.forEach(function (row) {
+                                printContent += '<tr>';
+                                printContent += '<td class="center">' + row[0] + '</td>';
+                                printContent += '<td>' + row[1] + '</td>';
+                                printContent += '<td>' + row[2] + '</td>';
+                                printContent += '<td class="right">' + row[3] + '</td>';
+                                printContent += '<td class="right">' + row[4] + '</td>';
+                                printContent += '<td class="center">' + row[5] + '</td>';
+                                printContent += '</tr>';
+                            });
+
+                            printContent += '</tbody></table></body></html>';
+
+                            var printWindow = window.open('', '_blank', 'width=800,height=600');
+                            printWindow.document.write(printContent);
+                            printWindow.document.close();
+                            setTimeout(function () {
+                                printWindow.focus();
+                                printWindow.print();
+                            }, 500);
+                            console.log('Print initiated: ' + selectedData.length + ' rows');
+                        } catch (err) {
+                            console.error('Print failed:', err);
+                        }
+                    }
+
+                    // Initialize DataTable
+                    var table = $('#SoldproductTable').DataTable({
+                        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 text-end"B>><"row"<"col-sm-12"f>>rtip',
+                        buttons: [
+                            {
+                                text: '<img src="/Content/Document/Image/Copy.png" alt="Copy" style="width:16px;height:16px;">',
+                                attr: { title: 'Copy to Clipboard' }, 
+                                className: 'btn-export-custom',
+                                action: function () {
+                                    exportToClipboard(getSelectedRowsData());
+                                }
+                            },
+                            {
+                                text: '<img src="/Content/Document/Image/CSV.png" alt="CSV" style="width:16px;height:16px;">',
+                                attr: { title: 'Export as CSV file' }, 
+                                className: 'btn-export-custom',
+                                action: function () {
+                                    exportToCSV(getSelectedRowsData());
+                                }
+                            },
+                            {
+                                text: '<img src="/Content/Document/Image/XLS.png" alt="Excel" style="width:16px;height:16px;">',
+                                attr: { title: 'Export as Excel file' }, 
+                                className: 'btn-export-custom',
+                                action: function () {
+                                    exportToExcel(getSelectedRowsData());
+                                }
+                            },
+                            {
+                                text: '<img src="/Content/Document/Image/PDFicon.png" alt="PDF" style="width:16px;height:16px;">',
+                                attr: { title: 'Export as PDF' }, 
+                                className: 'btn-export-custom',
+                                action: function () {
+                                    exportToPDF(getSelectedRowsData());
+                                }
+                            },
+                            {
+                                text: '<img src="/Content/Document/Image/Print.png" alt="Print" style="width:16px;height:16px;">',
+                                attr: { title: 'Print' }, 
+                                className: 'btn-export-custom',
+                                action: function () {
+                                    printTable(getSelectedRowsData());
+                                }
+                            }
+                        ],
+                        responsive: true,
+                        ordering: false,
+                        pageLength: 10,
+                        lengthChange: false,
+                        language: {
+                            search: "Search:",
+                            info: "Showing _START_ to _END_ of _TOTAL_ products",
+                            infoEmpty: "No products available",
+                            infoFiltered: "(filtered from _MAX_ total products)",
+                            zeroRecords: "No matching products found"
+                        },
+                        order: [[1, 'asc']],
+                        columnDefs: [{ orderable: false, targets: 0 }],
+                        drawCallback: function () {
+                            restoreCheckboxStates();
+                        }
+                    });
+
+                    // Select All functionality
+                    $(document).off('click', '#selectAll').on('click', '#selectAll', function () {
+                        var isChecked = $(this).prop('checked');
+
+                        if (isChecked) {
+                            table.rows({ search: 'applied' }).every(function () {
+                                var $row = $(this.node());
+                                var $checkbox = $row.find('.row-checkbox');
+                                var productCode = $checkbox.val();
+                                selectedProductCodes.add(productCode);
+                                $checkbox.prop('checked', true);
+                                $row.addClass('selected-row');
+                            });
+                        } else {
+                            table.rows({ search: 'applied' }).every(function () {
+                                var $row = $(this.node());
+                                var $checkbox = $row.find('.row-checkbox');
+                                var productCode = $checkbox.val();
+                                selectedProductCodes.delete(productCode);
+                                $checkbox.prop('checked', false);
+                                $row.removeClass('selected-row');
+                            });
+                        }
+                        updateSelectAllState();
+                    });
+
+                    // Individual checkbox handler
+                    $(document).off('change', '#SoldproductTable tbody .row-checkbox').on('change', '#SoldproductTable tbody .row-checkbox', function () {
+                        var $row = $(this).closest('tr');
+                        var productCode = $(this).val();
+                        var isChecked = $(this).prop('checked');
+
+                        if (isChecked) {
+                            selectedProductCodes.add(productCode);
+                            $row.addClass('selected-row');
+                        } else {
+                            selectedProductCodes.delete(productCode);
+                            $row.removeClass('selected-row');
+                        }
+                        updateSelectAllState();
+                    });
+                }
+
+                if (initAttempts >= maxAttempts) {
+                    clearInterval(checkDataTable);
+                    console.error('Failed to initialize DataTable - libraries not loaded');
+                }
+            }, 100);
+        })();
+    </script>
+}
+else
+{
+    <div class="alert alert-warning text-center my-3">
+        <i class="fas fa-exclamation-triangle me-2"></i> No products found for the selected date range.
+    </div>
+}

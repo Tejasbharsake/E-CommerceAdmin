@@ -1,0 +1,148 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+<link href="~/Content/Document/CSS/ProductDetails.css" rel="stylesheet" />
+
+@if (Model != null)
+{
+    <div class="container ">
+
+        @{
+            var mediaList = new List<string> {
+                Model.ProductMedia1,
+                Model.ProductMedia2,
+                Model.ProductMedia3,
+                Model.ProductMedia4
+            }.Where(m => !string.IsNullOrEmpty(m)).ToList();
+        }
+
+        @if (mediaList.Any())
+        {
+            <div id="productImageCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+
+                <!-- Indicators -->
+                <div class="carousel-indicators">
+                    @for (int i = 0; i < mediaList.Count; i++)
+                    {
+                        <button type="button"
+                                data-bs-target="#productImageCarousel"
+                                data-bs-slide-to="@i"
+                                class="@(i == 0 ? "active" : "")"
+                                aria-current="@(i == 0 ? "true" : "false")"
+                                aria-label="Image @(i + 1)">
+                        </button>
+                    }
+                </div>
+
+                <!-- Carousel Items -->
+                <div class="carousel-inner rounded shadow-sm">
+                    @for (int i = 0; i < mediaList.Count; i++)
+                    {
+                        <div class="carousel-item @(i == 0 ? "active" : "")">
+                            <img src="@Url.Content("~/Content/Document/Image/ProductImg/" + mediaList[i])"
+                                 class="d-block w-100"
+                                 style="max-height: 220px; object-fit: contain;"
+                                 alt="Product Image @(i + 1)" />
+                        </div>
+                    }
+                </div>
+
+                <!-- Controls -->
+                @if (mediaList.Count > 1)
+                {
+                    <button class="carousel-control-prev" type="button" data-bs-target="#productImageCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon custom-arrow"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#productImageCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon custom-arrow"></span>
+                    </button>
+                }
+            </div>
+        }
+
+        
+
+        <!-- Product Details -->
+        <div class="row">
+            <div class="col-md-6">
+                @if (!string.IsNullOrEmpty(Convert.ToString(Model.ProductCode)))
+                {
+                    <p><strong>Product Code:</strong> @Model.ProductCode</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.SKU))
+                {
+                    <p><strong>SKU:</strong> @Model.SKU</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.BrandName))
+                {
+                    <p><strong>Brand Name:</strong> @Model.BrandName</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductName))
+                {
+                    <p><strong>Product Name:</strong> @Model.ProductName</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.ManufactureName))
+                {
+                    <p><strong>Manufacturer Name:</strong> @Model.ManufactureName</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.MainCategory))
+                {
+                    <p><strong>Main Category:</strong> @Model.MainCategory</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.HSNCode))
+                {
+                    <p><strong>HSN Code:</strong> @Model.HSNCode</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.GSTDetails))
+                {
+                    <p><strong>GST Details:</strong> @Model.GSTDetails</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.RejectionReason))
+                {
+                    <p><strong>Rejection Reason:</strong> @Model.RejectionReason</p>
+                }
+            </div>
+            <div class="col-md-6">
+                @if (Model.ProductMRP > 0)
+                {
+                    <p><strong>Product MRP:</strong> ₹@Model.ProductMRP</p>
+                }
+                @if (Model.ActualPrice > 0)
+                {
+                    <p><strong>Actual Price:</strong> ₹@Model.ActualPrice</p>
+                }
+                @if (Model.ProductWeight > 0)
+                {
+                    <p><strong>Weight:</strong> @Model.ProductWeight kg</p>
+                }
+                @if (Model.WarrantyPeriodMonths > 0)
+                {
+                    <p><strong>Warranty (Months):</strong> @Model.WarrantyPeriodMonths</p>
+                }
+                @if (Model.Stock > 0)
+                {
+                    <p><strong>Minimum Stock(No):</strong> @Model.Stock</p>
+                }
+                @if (Model.AdminCommission > 0)
+                {
+                    <p><strong>Admin Commission:</strong> @Model.AdminCommission%</p>
+                }
+
+                <!-- Description -->
+                @if (!string.IsNullOrEmpty(Model.ProductDescription))
+                {
+
+                    <p><strong>Description:</strong> @Model.ProductDescription</p>
+
+                }
+            </div>
+        </div>
+
+
+
+    </div>
+}
+else
+{
+    <p class="text-danger text-center">Product details not found.</p>
+}
+

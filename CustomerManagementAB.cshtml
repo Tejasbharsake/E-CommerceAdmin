@@ -1,0 +1,970 @@
+﻿@{
+    ViewBag.Title = "Customer Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Breadcrumb {
+
+    <li class="breadcrumb-item">
+        <a href="#">Customer Management</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page" id="dynamicBreadcrumb">
+        Active Customer
+    </li>
+}
+<head>
+    <link href="~/Content/Document/CSS/custom-datatables.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+</head>
+
+<div class="main-content">
+    <ul class="nav nav-pills nav-justified mb-3" id="sellerTable">
+        <li class="nav-item">
+            <a class="nav-link active" id="all-customers-tab" href="#">All Customers</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="active-customers-tab" href="#">Active Customers</a>
+        </li>
+    </ul>
+
+    <div id="tabContentArea" class="mt-3">
+        <div class="text-center mt-5">
+            <strong>Loading...</strong>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification HTML -->
+<div class="position-fixed end-0 p-3" style="z-index: 11; top: 60px;">
+    <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- jsPDF CDN -->
+    <script src="~/Content/Document/CustomJS/jspdf.umd.min.js"></script>
+    <!-- jsPDF AutoTable plugin -->
+    <script src="~/Content/Document/CustomJS/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // Global variables
+        var selectedRows = new Set();
+        var currentDataTable = null;
+        var currentViewType = 'main'; // 'main', 'tab', 'modal'
+        var eventHandlersInitialized = false; // Flag to prevent duplicate handlers
+
+        // Toast notification functions
+        function showErrorToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-success').addClass('bg-danger');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function showSuccessToast(message) {
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        // Enhanced cleanup function - removes ALL event handlers
+        function cleanupEventHandlers() {
+            // Remove document-level delegated events
+            $(document).off('click.customerManagement');
+            $(document).off('change.customerManagement');
+
+            // Remove direct element handlers
+            $('#copyBtn, #csvBtn, #excelBtn, #pdfBtn, #printBtn').off('click.customerManagement');
+            $('#selectAll').off('click.customerManagement');
+            $('.row-checkbox').off('change.customerManagement');
+
+            // Reset flag
+            eventHandlersInitialized = false;
+        }
+
+        // New function to format date to DD-MM-YYYY format
+        function formatDateToDDMMYYYY(dateString) {
+            if (!dateString || dateString.trim() === '') {
+                return '';
+            }
+
+            try {
+                var date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return dateString; // Return original if invalid date
+                }
+
+                var day = String(date.getDate()).padStart(2, '0');
+                var month = String(date.getMonth() + 1).padStart(2, '0');
+                var year = date.getFullYear();
+
+                return day + '-' + month + '-' + year;
+            } catch (error) {
+                console.error('Error formatting date:', error);
+                return dateString; // Return original string if error
+            }
+        }
+
+        // New function to format dates in modal table
+        function formatDatesInModalTable($table) {
+            if (currentViewType === 'modal') {
+                // Find the Order Date column (typically column index 5 in modal view)
+                $table.find('tbody tr').each(function() {
+                    var $row = $(this);
+                    var $dateCell = $row.find('td:eq(5)'); // Order Date column
+
+                    if ($dateCell.length > 0) {
+                        var originalDate = $dateCell.text().trim();
+                        var formattedDate = formatDateToDDMMYYYY(originalDate);
+                        $dateCell.text(formattedDate);
+                    }
+                });
+            }
+        }
+        function showLoader() { $('#globalLoader').fadeIn(200); }
+        function hideLoader() { $('#globalLoader').fadeOut(200); }
+
+
+        function loadTabContent(url, clickedTab) {
+            cleanupEventHandlers();
+            selectedRows.clear();
+            showLoader();
+            $.ajax({
+                url: url,
+                type: "GET",
+                success: function (data) {
+                    $("#tabContentArea").html(data);
+                    $(".nav-link").removeClass("active");
+                    $(clickedTab).addClass("active");
+
+                    currentViewType = 'tab';
+
+                    setTimeout(function () {
+                        initializeDataTableAndEvents();
+                    }, 200);
+                    hideLoader();
+                },
+                error: function () {
+                    $("#tabContentArea").html("<p class='text-danger'>Failed to load data.</p>");
+                    hideLoader();
+                }
+            });
+        }
+
+        function initializeDataTableAndEvents() {
+            var $table = findCurrentTable();
+            if (!$table || $table.length === 0) return;
+
+            // Destroy existing DataTable
+            if ($.fn.DataTable.isDataTable($table)) {
+                $table.DataTable().destroy();
+            }
+
+            // Update Amount column header for modal view and format dates
+            if (currentViewType === 'modal') {
+                updateAmountColumnHeader($table);
+                formatDatesInModalTable($table); // Format dates before DataTable initialization
+            }
+
+            // Initialize new DataTable
+            currentDataTable = $table.DataTable({
+                responsive: true,
+                searching: true,
+                paging: true,
+                ordering: false,
+                lengthChange: false,
+                destroy: true,
+                autoWidth: false,
+                scrollX: false,
+                info: true,
+                lengthMenu: [5, 10, 25, 50, 100],
+                pageLength: 10,
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Type to search"
+                },
+                columnDefs: getColumnDefs(),
+                drawCallback: function () {
+                    restoreCheckboxStates();
+                    updateSelectAllState();
+                }
+            });
+
+            // Initialize events only once
+            if (!eventHandlersInitialized) {
+                initializeAllEvents();
+                eventHandlersInitialized = true;
+            }
+
+            // Add styles
+            addStyles();
+
+            // Initialize tooltips after table is ready
+            setTimeout(function() {
+                initializeTooltips();
+            }, 100);
+        }
+
+        // Updated function to update Amount column header
+        function updateAmountColumnHeader($table) {
+            // Find the Amount column header and update it
+            $table.find('thead th').each(function() {
+                var headerText = $(this).text().trim();
+                if (headerText === 'Amount') {
+                    $(this).text('Amount');
+                }
+            });
+        }
+
+        // Combined event initialization function
+        function initializeAllEvents() {
+            initializeCheckboxEvents();
+            initializeExportEvents();
+        }
+
+        function findCurrentTable() {
+            // Priority order: table1 in modal, table1 in tab content, table1 in main
+            if ($('#customerDetailsModal').is(':visible') && $('#customerDetailsModal #table1').length) {
+                currentViewType = 'modal';
+                return $('#customerDetailsModal #table1');
+            } else if ($('#tabContentArea #table1').length) {
+                currentViewType = 'tab';
+                return $('#tabContentArea #table1');
+            } else if ($('#table1').length) {
+                currentViewType = 'main';
+                return $('#table1');
+            }
+            return $();
+        }
+
+        function getColumnDefs() {
+            if (currentViewType === 'modal') {
+                return [{ orderable: false, targets: [0] }];
+            } else {
+                return [{ orderable: false, targets: [0, -1] }];
+            }
+        }
+
+        function restoreCheckboxStates() {
+            $('.row-checkbox').each(function () {
+                var rowId = $(this).val();
+                var isSelected = selectedRows.has(rowId);
+                $(this).prop('checked', isSelected);
+                $(this).closest('tr').toggleClass('selected-row', isSelected);
+            });
+        }
+
+        function initializeCheckboxEvents() {
+            // Use namespaced events to avoid conflicts
+            $(document).on('click.customerManagement', '#selectAll', function (e) {
+                e.stopPropagation();
+                var $currentTable = findCurrentTable();
+                if (!$currentTable || $currentTable.length === 0) return;
+
+                var isChecked = $(this).is(':checked');
+
+                if (isChecked) {
+                    // Select ALL rows across all pages
+                    if (currentDataTable) {
+                        currentDataTable.rows({ search: 'applied' }).every(function () {
+                            var $row = $(this.node());
+                            var $checkbox = $row.find('.row-checkbox');
+                            var rowId = $checkbox.val();
+                            selectedRows.add(rowId);
+                            $checkbox.prop('checked', true);
+                            $row.addClass('selected-row');
+                        });
+                    } else {
+                        $currentTable.find('.row-checkbox').each(function () {
+                            var rowId = $(this).val();
+                            selectedRows.add(rowId);
+                            $(this).prop('checked', true);
+                            $(this).closest('tr').addClass('selected-row');
+                        });
+                    }
+                } else {
+                    // Deselect ALL rows across all pages
+                    if (currentDataTable) {
+                        currentDataTable.rows({ search: 'applied' }).every(function () {
+                            var $row = $(this.node());
+                            var $checkbox = $row.find('.row-checkbox');
+                            var rowId = $checkbox.val();
+                            selectedRows.delete(rowId);
+                            $checkbox.prop('checked', false);
+                            $row.removeClass('selected-row');
+                        });
+                    } else {
+                        $currentTable.find('.row-checkbox').each(function () {
+                            var rowId = $(this).val();
+                            selectedRows.delete(rowId);
+                            $(this).prop('checked', false);
+                            $(this).closest('tr').removeClass('selected-row');
+                        });
+                    }
+                }
+                updateSelectAllState();
+            });
+
+            // Individual checkbox selection with namespace
+            $(document).on('change.customerManagement', '.row-checkbox', function (e) {
+                e.stopPropagation();
+                var $currentTable = findCurrentTable();
+                if (!$currentTable || $currentTable.length === 0) return;
+
+                var row = $(this).closest('tr');
+                var rowId = $(this).val();
+                var isChecked = $(this).is(':checked');
+
+                if (isChecked) {
+                    selectedRows.add(rowId);
+                    row.addClass('selected-row');
+                } else {
+                    selectedRows.delete(rowId);
+                    row.removeClass('selected-row');
+                }
+
+                updateSelectAllState();
+            });
+        }
+
+        function updateSelectAllState() {
+            var $table = findCurrentTable();
+            var totalCheckboxes = $table.find('.row-checkbox').length;
+            var checkedCheckboxes = $table.find('.row-checkbox:checked').length;
+            var $selectAll = $table.find('#selectAll');
+
+            if (checkedCheckboxes === 0) {
+                $selectAll.prop('checked', false).prop('indeterminate', false);
+            } else if (checkedCheckboxes === totalCheckboxes) {
+                $selectAll.prop('checked', true).prop('indeterminate', false);
+            } else {
+                $selectAll.prop('checked', false).prop('indeterminate', true);
+            }
+        }
+
+        // Fixed export event initialization - only attach once with namespace
+        function initializeExportEvents() {
+            $(document).on('click.customerManagement', '#copyBtn, #csvBtn, #excelBtn, #pdfBtn, #printBtn', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Debounce to prevent multiple rapid clicks
+                if ($(this).hasClass('processing')) {
+                    return;
+                }
+                $(this).addClass('processing');
+
+                setTimeout(() => {
+                    $(this).removeClass('processing');
+                }, 1000);
+
+                var buttonId = $(this).attr('id');
+                var result = getSelectedRowsData();
+
+                if (result.data.length === 0) {
+                    showErrorToast('Please select at least one row to export.');
+                    return;
+                }
+
+                switch (buttonId) {
+                    case 'copyBtn':
+                        handleCopy(result);
+                        break;
+                    case 'csvBtn':
+                        handleCSV(result);
+                        break;
+                    case 'excelBtn':
+                        handleExcel(result);
+                        break;
+                    case 'pdfBtn':
+                        handlePDF(result);
+                        break;
+                    case 'printBtn':
+                        handlePrint(result);
+                        break;
+                }
+            });
+        }
+
+        // Enhanced data extraction with support for all pages
+        function getSelectedRowsData() {
+            var selectedData = [];
+            var headers = getHeadersForCurrentView();
+            var serialNo = 1;
+
+            try {
+                if (currentDataTable && $.fn.DataTable.isDataTable(findCurrentTable())) {
+                    // Get data for all selected rows (across all pages)
+                    currentDataTable.rows().every(function () {
+                        var row = this.node();
+                        if (!row) return;
+
+                        var checkbox = $(row).find('.row-checkbox');
+                        if (checkbox.length === 0) return;
+
+                        var rowId = checkbox.val();
+                        if (selectedRows.has(rowId)) {
+                            var rowData = extractRowData($(row), serialNo);
+                            if (rowData.length > 0) {
+                                selectedData.push(rowData);
+                                serialNo++;
+                            }
+                        }
+                    });
+                } else {
+                    // Fallback for non-DataTable tables
+                    var $currentTable = findCurrentTable();
+                    $currentTable.find('.row-checkbox:checked').each(function () {
+                        var row = $(this).closest('tr');
+                        var rowData = extractRowData(row, serialNo);
+                        if (rowData.length > 0) {
+                            selectedData.push(rowData);
+                            serialNo++;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error extracting selected rows data:', error);
+            }
+
+            return { headers: headers, data: selectedData };
+        }
+
+        function extractRowData(row, serialNo) {
+            var rowData = [];
+            var cells = row.find('td');
+
+            if (cells.length === 0) return rowData;
+
+            rowData.push(serialNo.toString());
+
+            if (currentViewType === 'modal') {
+                if (cells.length >= 8) {
+                    rowData.push(cells.eq(2).text().trim() || '');
+                    rowData.push(cells.eq(3).text().trim() || '');
+                    rowData.push(cells.eq(4).text().trim() || '');
+                    // Order Date is already formatted by formatDatesInModalTable function
+                    rowData.push(cells.eq(5).text().trim() || '');
+                    rowData.push(cells.eq(6).text().trim() || '');
+                    rowData.push(cells.eq(7).text().trim() || '');
+                }
+            } else {
+                if (cells.length >= 10) {
+                    rowData.push(cells.eq(2).text().trim() || '');
+                    rowData.push(cells.eq(3).text().trim() || '');
+                    rowData.push(cells.eq(4).text().trim() || '');
+                    rowData.push(cells.eq(5).text().trim() || '');
+                    rowData.push(cells.eq(6).text().trim() || '');
+                    rowData.push(cells.eq(7).text().trim() || '');
+                    rowData.push(cells.eq(8).text().trim() || '');
+                    rowData.push(cells.eq(9).text().trim() || '');
+                }
+            }
+
+            return rowData;
+        }
+        
+        function getHeadersForCurrentView() {
+            if (currentViewType === 'modal') {
+                return ['Sr No', 'Order Code', 'Product Name', 'Manufacturer', 'Amount', 'Order Date', 'Transaction ID'];
+            } else {
+                return ['Sr No', 'Customer Code', 'Customer Name', 'Email', 'Mobile No', 'Address', 'City', 'State', 'Total Orders'];
+            }
+        }
+
+        function formatIndianCurrency(value) {
+            try {
+                if (!value || value === '' || value === null || value === undefined) {
+                    return 'Rs. 0.00';
+                }
+                var cleanValue = String(value).trim().replace(/[₹$,\sRs.]/g, '');
+                if (cleanValue === '') {
+                    return 'Rs. 0.00';
+                }
+                var number = parseFloat(cleanValue);
+                if (isNaN(number)) {
+                    return 'Rs. 0.00';
+                }
+                var formattedNumber = number.toLocaleString('en-IN', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                return 'Rs. ' + formattedNumber;
+            } catch (error) {
+                console.error('Error formatting Indian currency:', error);
+                return 'Rs. 0.00';
+            }
+        }
+
+        // Export handler functions with improved error handling
+        function handleCopy(result) {
+            try {
+                var copyText = result.headers.join('\t') + '\n';
+                result.data.forEach(function (row) {
+                    copyText += row.join('\t') + '\n';
+                });
+
+                navigator.clipboard.writeText(copyText).then(function () {
+                   // showSuccessToast('Data copied to clipboard! (' + result.data.length + ' rows)');
+                }).catch(function () {
+                    showErrorToast('Copy failed. Please try again.');
+                });
+            } catch (error) {
+                console.error('Copy Error:', error);
+                showErrorToast('Error copying data');
+            }
+        }
+
+        function handleCSV(result) {
+            try {
+                var csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += result.headers.map(function(header) {
+                    return '"' + header.replace(/"/g, '""') + '"';
+                }).join(',') + '\r\n';
+
+                result.data.forEach(function (row) {
+                    csvContent += row.map(function (cell) {
+                        if (cell === null || cell === undefined) {
+                            return '""';
+                        }
+                        return '"' + String(cell).replace(/"/g, '""') + '"';
+                    }).join(',') + '\r\n';
+                });
+
+                var encodedUri = encodeURI(csvContent);
+                var link = document.createElement('a');
+                link.setAttribute('href', encodedUri);
+                link.setAttribute('download', getFileName('csv'));
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+               // showSuccessToast('CSV file downloaded! (' + result.data.length + ' rows)');
+            } catch (error) {
+                console.error('CSV Export Error:', error);
+                showErrorToast('Error exporting CSV file');
+            }
+        }
+
+        function handleExcel(result) {
+            try {
+                var excelContent = '<table border="1"><thead><tr>';
+                result.headers.forEach(function (header) {
+                    excelContent += '<th>' + header + '</th>';
+                });
+                excelContent += '</tr></thead><tbody>';
+
+                result.data.forEach(function (row) {
+                    excelContent += '<tr>';
+                    row.forEach(function (cell) {
+                        excelContent += '<td>' + cell + '</td>';
+                    });
+                    excelContent += '</tr>';
+                });
+                excelContent += '</tbody></table>';
+
+                var blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = getFileName('xls');
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+               // showSuccessToast('Excel file downloaded! (' + result.data.length + ' rows)');
+            } catch (error) {
+                console.error('Excel Export Error:', error);
+                showErrorToast('Error exporting Excel file');
+            }
+        }
+
+        function handlePDF(result) {
+            if (typeof window.jspdf === 'undefined') {
+                showErrorToast('jsPDF library is not loaded.');
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('l', 'mm', 'a4');
+
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const leftMargin = 14;
+                const rightMargin = 14;
+
+                // --------------------------
+                // Static Header Function (Original Structure)
+                // --------------------------
+                const addHeader = function (doc) {
+                    // Company Name
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(18);
+                    doc.text("RahiShop", pageWidth / 2, 15, { align: "center" });
+
+                    // Report Title and Generated On (same line)
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(14);
+                    const reportTitle = currentViewType === 'modal'
+                        ? 'Customer Managemnt'
+                        : 'Customer Management';
+
+                    const now = new Date();
+                    const formattedDate = now.getFullYear() + '-' +
+                        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(now.getDate()).padStart(2, '0') + ' ' +
+                        String(now.getHours()).padStart(2, '0') + ':' +
+                        String(now.getMinutes()).padStart(2, '0') + ':' +
+                        String(now.getSeconds()).padStart(2, '0');
+
+                    // Draw subtitle centered
+                    doc.text(reportTitle, pageWidth / 2, 25, { align: "center" });
+
+                    // Draw "Generated On" right-aligned on the same line
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "italic");
+                    doc.text(`Generated On: ${formattedDate}`, pageWidth - rightMargin, 25, { align: "right" });
+
+                    // Total Records below "Generated On"
+                    doc.text(`Total Records: ${result.data.length}`, pageWidth - rightMargin, 32, { align: "right" });
+                };
+
+                // Add header
+                addHeader(doc);
+
+                // --------------------------
+                // Table with Proper Column Widths
+                // --------------------------
+                if (typeof doc.autoTable === 'function' && result.data.length > 0) {
+                    const headers = result.headers;
+                    const columnStyles = {};
+
+                    // ✅ Proper column width distribution based on view type
+                    if (currentViewType === 'modal') {
+                        // Modal view: Sr No, Manufacturer, Product Name, Order Code, Order Date, Amount, Transaction ID
+                        columnStyles[0] = { cellWidth: 15 };  // Sr No
+                        columnStyles[1] = { cellWidth: 38 };  // Manufacturer
+                        columnStyles[2] = { cellWidth: 52 };  // Product Name
+                        columnStyles[3] = { cellWidth: 32 };  // Order Code
+                        columnStyles[4] = { cellWidth: 30 };  // Order Date
+                        columnStyles[5] = { cellWidth: 32 };  // Amount
+                        columnStyles[6] = { cellWidth: 45 };  // Transaction ID
+                    } else {
+                        // Customer view: Sr No, Customer Code, Customer Name, Email, Mobile No, Address, City, State, Total Orders
+                        columnStyles[0] = { cellWidth: 12 };  // Sr No
+                        columnStyles[1] = { cellWidth: 28 };  // Customer Code
+                        columnStyles[2] = { cellWidth: 38 };  // Customer Name
+                        columnStyles[3] = { cellWidth: 48 };  // Email
+                        columnStyles[4] = { cellWidth: 26 };  // Mobile No
+                        columnStyles[5] = { cellWidth: 42 };  // Address
+                        columnStyles[6] = { cellWidth: 26 };  // City
+                        columnStyles[7] = { cellWidth: 24 };  // State
+                        columnStyles[8] = { cellWidth: 20 };  // Total Orders
+                    }
+
+                    doc.autoTable({
+                        head: [headers],
+                        body: result.data,
+                        startY: 38,
+                        margin: { top: 38, left: leftMargin, right: rightMargin, bottom: 10 },
+                        styles: {
+                            fontSize: 8.5,
+                            cellPadding: 2.5,
+                            lineWidth: 0,
+                            overflow: 'linebreak',
+                            cellWidth: 'wrap'
+                        },
+                        headStyles: {
+                            fillColor: [0, 123, 255],
+                            textColor: [255, 255, 255],
+                            halign: "center",
+                            fontStyle: "bold",
+                            fontSize: 9.5
+                        },
+                        bodyStyles: {
+                            halign: "center",
+                            textColor: [0, 0, 0]
+                        },
+                        alternateRowStyles: {
+                            fillColor: [245, 245, 245]
+                        },
+                        columnStyles: columnStyles,
+                        theme: "plain",
+                        tableLineWidth: 0,
+                        didDrawPage: function (data) {
+                            if (data.pageNumber > 1) {
+                                addHeader(doc);
+                            }
+                        }
+                    });
+                }
+
+                doc.save(getFileName('pdf'));
+
+            } catch (error) {
+                console.error('PDF Error:', error);
+                showErrorToast('PDF error: ' + error.message);
+            }
+        }
+
+        function handlePrint(result) {
+            try {
+                var printWindow = window.open('', '', 'height=600,width=800');
+                printWindow.document.write('<html><head><title>Print</title>');
+                printWindow.document.write('<style>table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid black; padding: 8px; text-align: left; }</style>');
+                printWindow.document.write('</head><body>');
+                printWindow.document.write('<h2>' + getReportTitle() + '</h2>');
+                printWindow.document.write('<table><thead><tr>');
+
+                result.headers.forEach(function(header) {
+                    printWindow.document.write('<th>' + header + '</th>');
+                });
+
+                printWindow.document.write('</tr></thead><tbody>');
+
+                result.data.forEach(function(row) {
+                    printWindow.document.write('<tr>');
+                    row.forEach(function(cell) {
+                        printWindow.document.write('<td>' + cell + '</td>');
+                    });
+                    printWindow.document.write('</tr>');
+                });
+
+                printWindow.document.write('</tbody></table></body></html>');
+                printWindow.document.close();
+                printWindow.print();
+            } catch (error) {
+                console.error('Print Error:', error);
+                showErrorToast('Error printing data');
+            }
+        }
+
+        function getFileName(extension) {
+            var prefix = currentViewType === 'modal' ? 'orders' : 'customers';
+            return prefix + '_' + new Date().getTime() + '.' + extension;
+        }
+
+        function getReportTitle() {
+            return currentViewType === 'modal' ? 'Orders Report' : 'Customers Report';
+        }
+
+        function addStyles() {
+            if (!$('#global-table-styles').length) {
+                $('<style id="global-table-styles">')
+                    .prop('type', 'text/css')
+                    .html(`
+                        .selected-row { background-color: #e3f2fd !important; }
+                        .row-checkbox { cursor: pointer; }
+                        #selectAll { cursor: pointer; }
+                        #selectAll:indeterminate { opacity: 0.5; }
+                        .dataTables_wrapper .dataTables_filter input { margin-left: 0.5em; }
+                        .export-controls { background-color: white; padding: 10px; border-radius: 5px; border: 1px solid #dee2e6; }
+
+                        /* Export Button Styles - No Hover Effects & Black Borders */
+                        .export-btn {
+                            min-width: 40px;
+                            height: 35px;
+                            border: 1px solid #007bff !important;
+                            background-color: transparent !important;
+                            transition: none !important;
+                        }
+                        .export-btn:hover,
+                        .export-btn:focus,
+                        .export-btn:active,
+                        .export-btn:focus-visible {
+                            background-color: transparent !important;
+                            color: inherit !important;
+                            border-color: #007bff !important;
+                            transform: none !important;
+                            box-shadow: none !important;
+                            outline: none !important;
+                        }
+
+                        /* Specific button colors with black borders - no hover */
+                        .btn-outline-primary,
+                        .btn-outline-primary:hover,
+                        .btn-outline-primary:focus,
+                        .btn-outline-primary:active {
+                            border-color: #007bff !important;
+                            color: #0d6efd !important;
+                            background-color: transparent !important;
+                        }
+                        .btn-outline-info,
+                        .btn-outline-info:hover,
+                        .btn-outline-info:focus,
+                        .btn-outline-info:active {
+                            border-color: #007bff !important;
+                            color: #0dcaf0 !important;
+                            background-color: transparent !important;
+                        }
+                        .btn-outline-success,
+                        .btn-outline-success:hover,
+                        .btn-outline-success:focus,
+                        .btn-outline-success:active {
+                            border-color: #007bff !important;
+                            color: #198754 !important;
+                            background-color: transparent !important;
+                        }
+                        .btn-outline-danger,
+                        .btn-outline-danger:hover,
+                        .btn-outline-danger:focus,
+                        .btn-outline-danger:active {
+                            border-color: #007bff !important;
+                            color: #dc3545 !important;
+                            background-color: transparent !important;
+                        }
+                        .btn-outline-dark,
+                        .btn-outline-dark:hover,
+                        .btn-outline-dark:focus,
+                        .btn-outline-dark:active {
+                            border-color: #007bff !important;
+                            color: #212529 !important;
+                            background-color: transparent !important;
+                        }
+
+                        .export-icon { width: 16px; height: 16px; object-fit: contain; }
+                        table.dataTable thead th:first-child::after,
+                        table.dataTable thead th:first-child::before { display: none !important; }
+                        table.dataTable thead th:first-child { cursor: default !important; }
+                        .processing { opacity: 0.6; pointer-events: none; }
+                    `).appendTo('head');
+            }
+        }
+
+        // Function to initialize tooltips - FIXED
+        function initializeTooltips() {
+            // Destroy existing tooltips first
+            $('[data-bs-toggle="tooltip"]').tooltip('dispose');
+
+            // Initialize tooltips for export buttons with proper attributes
+            $('#copyBtn').attr({
+                'data-bs-toggle': 'tooltip',
+                'data-bs-placement': 'top',
+                'title': 'Copy to Clipboard'
+            });
+
+            $('#csvBtn').attr({
+                'data-bs-toggle': 'tooltip',
+                'data-bs-placement': 'top',
+                'title': 'Export as CSV file'
+            });
+
+            $('#excelBtn').attr({
+                'data-bs-toggle': 'tooltip',
+                'data-bs-placement': 'top',
+                'title': 'Export as Excel file'
+            });
+
+            $('#pdfBtn').attr({
+                'data-bs-toggle': 'tooltip',
+                'data-bs-placement': 'top',
+                'title': 'Export as PDF'
+            });
+
+            $('#printBtn').attr({
+                'data-bs-toggle': 'tooltip',
+                'data-bs-placement': 'top',
+                'title': 'Print'
+            });
+
+            // Initialize all tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
+
+        $(document).ready(function () {
+            // Load initial tab
+            const allTab = $("#all-customers-tab");
+            loadTabContent('@Url.Action("LoadAllCustomers", "Admin")', allTab);
+
+            // ✅ Dynamic breadcrumb updater with tab navigation
+            $("#all-customers-tab, #active-customers-tab").on('click', function (e) {
+                e.preventDefault();
+                var targetId = $(this).attr('id');
+                var breadcrumbText = '';
+                var actionUrl = '';
+
+                if (targetId === 'all-customers-tab') {
+                    breadcrumbText = 'All Customers';
+                    actionUrl = '@Url.Action("LoadAllCustomers", "Admin")';
+                } else if (targetId === 'active-customers-tab') {
+                    breadcrumbText = 'Active Customers';
+                    actionUrl = '@Url.Action("LoadActiveCustomer", "Admin")';
+                }
+
+                // Update breadcrumb
+                $('#dynamicBreadcrumb').text(breadcrumbText);
+
+                // Load tab content
+                loadTabContent(actionUrl, this);
+
+                // Optional smooth scroll to tab top
+                $('html, body').animate({
+                    scrollTop: $("#sellerTable").offset().top - 80
+                }, 300);
+            });
+
+            // Customer view functionality
+            $(document).on("click", ".view-customer", function (e) {
+                e.preventDefault();
+                var customerCode = $(this).data("customer");
+                showLoader();
+
+                $("#customerDetailsBody").html('<div class="text-center"><div class="spinner-border text-primary"></div><p>Loading...</p></div>');
+
+                $.get('@Url.Action("CustomerDetailsPartial", "Admin")', { clientCode: customerCode }, function (data) {
+                    $("#customerDetailsBody").html(data);
+                    $("#customerDetailsModal").modal("show");
+
+                    setTimeout(function() {
+                        currentViewType = 'modal';
+                        selectedRows.clear();
+                        // Clean up before initializing for modal
+                        cleanupEventHandlers();
+                        initializeDataTableAndEvents();
+                        // Reinitialize tooltips for modal view
+                        initializeTooltips();
+                        hideLoader();
+                    }, 300);
+
+                }).fail(function () {
+                    $("#customerDetailsBody").html("<p class='text-danger'>Failed to load customer details.</p>");
+                    hideLoader();
+                });
+            });
+
+            // Modal close event - reset to tab view
+            $('#customerDetailsModal').on('hidden.bs.modal', function () {
+                currentViewType = 'tab';
+                selectedRows.clear();
+                // Clean up modal event handlers
+                cleanupEventHandlers();
+                setTimeout(function() {
+                    initializeDataTableAndEvents();
+                }, 100);
+            });
+        });
+    </script>
+}
+<link href="~/Content/Document/CSS/CustomerManagementMainView.css" rel="stylesheet" />

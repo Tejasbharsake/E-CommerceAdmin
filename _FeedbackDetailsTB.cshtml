@@ -1,0 +1,111 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+
+
+<!-- ✅ Product Image Carousel at Top -->
+@if (!string.IsNullOrEmpty(Model.ProductMedia1) ||
+     !string.IsNullOrEmpty(Model.ProductMedia2) ||
+     !string.IsNullOrEmpty(Model.ProductMedia3) ||
+     !string.IsNullOrEmpty(Model.ProductMedia4))
+{
+    <div class="p-3">
+        <h5 class="text-primary mb-3">Product Images</h5>
+
+        <div id="productImageCarousel" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="3000" data-bs-pause="hover">
+
+            <!-- Indicators -->
+            <div class="carousel-indicators">
+                @if (!string.IsNullOrEmpty(Model.ProductMedia1))
+                {
+                    <button type="button" data-bs-target="#productImageCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Image 1"></button>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia2))
+                {
+                    <button type="button" data-bs-target="#productImageCarousel" data-bs-slide-to="1" aria-label="Image 2"></button>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia3))
+                {
+                    <button type="button" data-bs-target="#productImageCarousel" data-bs-slide-to="2" aria-label="Image 3"></button>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia4))
+                {
+                    <button type="button" data-bs-target="#productImageCarousel" data-bs-slide-to="3" aria-label="Image 4"></button>
+                }
+            </div>
+
+            <!-- Image Items -->
+            <div class="carousel-inner rounded shadow-sm">
+                @if (!string.IsNullOrEmpty(Model.ProductMedia1))
+                {
+                    <div class="carousel-item active">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia1" class="d-block w-100" style="max-height: 220px; object-fit: contain;" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia2))
+                {
+                    <div class="carousel-item">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia2" class="d-block w-100" style="max-height: 220px; object-fit: contain;" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia3))
+                {
+                    <div class="carousel-item">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia3" class="d-block w-100" style="max-height: 220px; object-fit: contain;" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia4))
+                {
+                    <div class="carousel-item">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia4" class="d-block w-100" style="max-height: 220px; object-fit: contain;" />
+                    </div>
+                }
+            </div>
+
+            <!-- Navigation Arrows -->
+            <button class="carousel-control-prev" type="button" data-bs-target="#productImageCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#productImageCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+    </div>
+}
+
+<!-- ✅ Feedback Details -->
+<div class="p-3">
+    <h5 class="text-primary mb-3">Order Code: @Model.OrderCode</h5>
+
+    <div class="mb-2">
+        <strong>Product Name:</strong> @Model.ProductName
+    </div>
+    <div class="mb-2">
+        <strong>Customer Name:</strong> @Model.CustomerName
+    </div>
+    <div class="mb-2">
+        <strong>Rating:</strong>
+        @for (int i = 1; i <= 5; i++)
+        {
+            if (i <= Model.Rating)
+            {
+                <span style="color: gold; font-size:1.1rem;">★</span>
+            }
+            else
+            {
+                <span style="color: lightgray; font-size:1.1rem;">☆</span>
+            }
+        }
+    </div>
+    <div class="mb-2">
+        <strong>Feedback:</strong> @Model.Feedback
+    </div>
+    <div class="mb-2">
+        <strong>Feedback Date:</strong> @Model.FeedbackDate.ToString("dd-MM-yyyy")
+    </div>
+
+    <div class="text-end mt-4">
+        @*<button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+            Close
+        </button>*@
+    </div>
+</div>
