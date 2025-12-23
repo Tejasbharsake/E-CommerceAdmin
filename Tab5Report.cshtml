@@ -1,0 +1,1769 @@
+﻿@model System.Data.DataTable
+@using System.Data
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Orders Report</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+
+    <style>
+
+        #OrderDetailModal .modal-content {
+            padding: 0 !important;
+        }
+
+        /* Ensure modal-header touches all edges */
+        #OrderDetailModal .modal-header {
+            border-top-left-radius: calc(0.5rem - 1px);
+            border-top-right-radius: calc(0.5rem - 1px);
+            border-bottom: 2px solid #1a252f;
+            margin: 0 !important;
+        }
+
+        /* Add padding back to modal body */
+        #OrderDetailModal .modal-body {
+            padding: 1.5rem;
+        }
+
+
+
+
+
+
+        #orderReportTable thead th, #totalOrdersTable thead th, #returnOrdersTable thead th, #cancelOrdersTable thead th, #replaceOrdersTable thead th {
+            background-color: #2C3E50;
+            color: #FFFFFF;
+            font-weight: 600;
+            text-align: center;
+            padding: 5px;
+            border-bottom: 2px solid #ddd;
+            font-size: 14px;
+            height: 8px !important;
+            font-family: 'Poppins', sans-serif;
+            vertical-align: middle;
+        }
+
+        #orderReportTable tbody td, #totalOrdersTable tbody td, #returnOrdersTable tbody td, #cancelOrdersTable tbody td, #replaceOrdersTable tbody td {
+            padding: 2px 5px !important;
+            height: 5px !important;
+            line-height: 1;
+            font-size: 13px;
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            vertical-align: middle;
+        }
+
+        #orderReportTable_paginate .pagination .page-link,
+        #totalOrdersTable_paginate .pagination .page-link,
+        #returnOrdersTable_paginate .pagination .page-link,
+        #cancelOrdersTable_paginate .pagination .page-link,
+        #replaceOrdersTable_paginate .pagination .page-link {
+            padding: 2px 10px;
+            font-size: 12px;
+            min-width: 33px;
+        }
+
+        .btn-outline-primary, .btn-outline-info, .btn-outline-success, .btn-outline-danger, .btn-outline-dark {
+            border-color: #007bff !important;
+        }
+
+        .btn-outline-primary:hover, .btn-outline-info:hover, .btn-outline-success:hover,
+        .btn-outline-danger:hover, .btn-outline-dark:hover {
+            border-color: #0056b3 !important;
+        }
+
+        .selected-row {
+            background-color: #e3f2fd !important;
+        }
+
+        .row-checkbox, #selectAll, #selectAllTotalOrders, #selectAllReturnOrders, #selectAllCancelOrders, #selectAllReplaceOrders {
+            cursor: pointer;
+        }
+
+        .card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+        }
+
+        .card-header .btn-sm {
+            padding: 0.25rem 0.4rem;
+            margin-left: 0.5rem;
+        }
+
+        .card-header .d-flex {
+            flex-wrap: nowrap;
+        }
+
+        .highcharts-figure,
+        .highcharts-data-table table {
+            min-width: 320px;
+            max-width: 800px;
+            margin: 1em auto;
+        }
+
+        .highcharts-data-table table {
+            font-family: Verdana, sans-serif;
+            border-collapse: collapse;
+            border: 1px solid #ebebeb;
+            margin: 10px auto;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .highcharts-data-table caption {
+            padding: 1em 0;
+            font-size: 1.2em;
+            color: #555;
+        }
+
+        .highcharts-data-table th {
+            font-weight: 600;
+            padding: 0.5em;
+        }
+
+        .highcharts-data-table td,
+        .highcharts-data-table th,
+        .highcharts-data-table caption {
+            padding: 0.5em;
+        }
+
+        .highcharts-data-table thead tr,
+        .highcharts-data-table tr:nth-child(even) {
+            background: #f8f8f8;
+        }
+
+        .highcharts-data-table tr:hover {
+            background: #f1f7ff;
+        }
+
+        @@media (max-width: 576px) {
+            .card-header .d-flex {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .card-header .btn-sm {
+                margin-left: 0.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hidden fields to store date range -->
+    <input type="hidden" id="hiddenStartDate" value="@ViewBag.StartDate" />
+    <input type="hidden" id="hiddenEndDate" value="@ViewBag.EndDate" />
+
+
+    <div class="container-fluid py-4">
+        @if (!string.IsNullOrEmpty(ViewBag.Error as string))
+        {
+            <div class="alert alert-danger">@ViewBag.Error</div>
+        }
+        else if (Model != null)
+        {
+            <!-- Statistics Cards Row -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-12 mb-3">
+                    <div class="card border-0 shadow-sm h-100 total-orders-card" style="cursor: pointer;" id="openTotalOrders">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary bg-gradient rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-shopping-cart text-white" style="font-size: 24px;"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="small text-muted fw-semibold text-uppercase">Total Orders</div>
+                                    <div class="fs-2 fw-bold text-primary" id="totalOrders">@(ViewBag.TotalOrders ?? 0)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-12 mb-3">
+                    <div class="card border-0 shadow-sm h-100 return-orders-card" style="cursor: pointer;" id="openReturnOrders">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-warning bg-gradient rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-undo text-white" style="font-size: 24px;"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="small text-muted fw-semibold text-uppercase">Return Orders</div>
+                                    <div class="fs-2 fw-bold text-warning" id="returnOrders">@(ViewBag.ReturnOrders ?? 0)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-12 mb-3">
+                    <div class="card border-0 shadow-sm h-100 cancel-orders-card" style="cursor: pointer;" id="openCancelOrders">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-danger bg-gradient rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-times-circle text-white" style="font-size: 24px;"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="small text-muted fw-semibold text-uppercase">Cancel Orders</div>
+                                    <div class="fs-2 fw-bold text-danger" id="cancelOrders">@(ViewBag.CancelOrders ?? 0)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-12 mb-3">
+                    <div class="card border-0 shadow-sm h-100 replace-orders-card" style="cursor: pointer;" id="openReplaceOrders">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-info bg-gradient rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-exchange-alt text-white" style="font-size: 24px;"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="small text-muted fw-semibold text-uppercase">Replace Orders</div>
+                                    <div class="fs-2 fw-bold text-info" id="replaceOrders">@(ViewBag.ReplaceOrders ?? 0)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            // Order Detail Modal
+            <div class="modal fade" id="OrderDetailModal" tabindex="-1" aria-labelledby="OrderDetailModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background: #2C3E50; margin: 0; padding: 1rem 1.5rem;">
+                            <h4 class="modal-title text-white" id="OrderDetailModalLabel">Order Details</h4>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="Order-detail-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Buttons Row -->
+            <div class="row mb-3 align-items-end">
+                <div class="col-md-5">
+                    <!-- Filters can go here -->
+                </div>
+                <div class="col-md-7 text-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end justify-content-start">
+                    <button class="btn btn-outline-primary btn-sm" id="copyBtn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Copy to clipboard">
+                        <img src="~/Content/Document/Image/Copy.png" alt="Copy" width="16" height="16" />
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" id="csvBtn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Export as CSV file">
+                        <img src="~/Content/Document/Image/CSV.png" alt="CSV" width="16" height="16" />
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" id="excelBtn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Export as Excel file">
+                        <img src="~/Content/Document/Image/XLS.png" alt="Excel" width="16" height="16" />
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" id="pdfBtn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Export as PDF file">
+                        <img src="~/Content/Document/Image/PDFicon.png" alt="PDF" width="16" height="16" />
+                    </button>
+                    <button class="btn btn-outline-dark btn-sm" id="printBtn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Print">
+                        <img src="~/Content/Document/Image/Print.png" alt="Print" width="16" height="16" />
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Orders Report</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="orderReportTable" class="table table-striped table-bordered">
+                            <thead>
+                                <tr style="background: #2C3E50; color: white;">
+                                    <th><input type="checkbox" id="selectAll" /></th>
+                                    <th>Sr No</th>
+                                    @foreach (System.Data.DataColumn column in Model.Columns)
+                                    {
+                                        <th>@column.ColumnName</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var srNo = 1;
+                                }
+                                @foreach (System.Data.DataRow row in Model.Rows)
+                                {
+                                    <tr>
+                                        <td><input type="checkbox" class="row-checkbox" value="@srNo" /></td>
+                                        <td>@srNo</td>
+                                        @foreach (var item in row.ItemArray)
+                                        {
+                                            <td>
+                                                @if (item != null && item.ToString().ToLower().Contains("status"))
+                                                {
+                                                    if (item.ToString().ToLower() == "active")
+                                                    {
+                                                        <span class="badge bg-success">@item</span>
+                                                    }
+                                                    else if (item.ToString().ToLower() == "cancelled")
+                                                    {
+                                                        <span class="badge bg-danger">@item</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">@item</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    @(item?.ToString() ?? "")
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                    srNo++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Highcharts Graph Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h4 class="card-title">Orders Distribution Chart</h4>
+                </div>
+                <div class="card-body">
+                    <div id="container" style="width: 100%; height: 500px;"></div>
+                </div>
+            </div>
+
+            <!-- Toast Notification HTML -->
+            <div class="position-fixed end-0 p-3" style="z-index: 11; top: 60px;">
+                <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <span id="toastMessage"></span>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">No data found.</div>
+        }
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Highcharts Library -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+    <!-- jsPDF CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jsPDF AutoTable plugin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- XLSX Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        // ===== GLOBAL VARIABLES =====
+        var orderDataTable;
+        var totalOrdersTable;
+        var returnOrdersTable;
+        var cancelOrdersTable;
+        var replaceOrdersTable;
+        var allTableData = [];
+        var allTotalOrdersTableData = [];
+        var allReturnOrdersTableData = [];
+        var allCancelOrdersTableData = [];
+        var allReplaceOrdersTableData = [];
+        var selectedRowIds = new Set();
+        var selectedTotalOrdersRowIds = new Set();
+        var selectedReturnOrdersRowIds = new Set();
+        var selectedCancelOrdersRowIds = new Set();
+        var selectedReplaceOrdersRowIds = new Set();
+        var tableHeaders = [];
+        var totalOrdersTableHeaders = [];
+        var returnOrdersTableHeaders = [];
+        var cancelOrdersTableHeaders = [];
+        var replaceOrdersTableHeaders = [];
+
+        // ===== TOAST FUNCTIONS =====
+        function showErrorToast(message) {
+            console.log('Error Toast:', message);
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-success').addClass('bg-danger');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function showSuccessToast(message) {
+            console.log('Success Toast:', message);
+            $('#toastMessage').text(message);
+            $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        // ===== STORE TABLE DATA FUNCTION =====
+        function storeTableData(tableId, allTableData, tableHeaders) {
+            console.log(`Starting to store table data for ${tableId}...`);
+            tableHeaders.length = 0;
+            $(`#${tableId} thead tr th`).each(function (index) {
+                if (index > 0) {
+                    tableHeaders.push($(this).text().trim());
+                }
+            });
+            console.log(`Headers stored for ${tableId}:`, tableHeaders);
+
+            allTableData.length = 0;
+            $(`#${tableId} tbody tr`).each(function () {
+                var rowData = [];
+                var rowId = $(this).find('.row-checkbox').val();
+
+                $(this).find('td').each(function (index) {
+                    if (index > 0) {
+                        var cellText = $(this).text().trim();
+                        cellText = cellText.replace(/\s+/g, ' ');
+                        rowData.push(cellText);
+                    }
+                });
+
+                if (rowData.length > 0) {
+                    allTableData.push({
+                        id: rowId,
+                        data: rowData
+                    });
+                }
+            });
+            console.log(`Table data stored for ${tableId}:`, allTableData.length, 'rows');
+        }
+
+        // ===== GET SELECTED DATA FUNCTION =====
+        function getSelectedRowsData(allTableData, selectedRowIds, tableHeaders) {
+            console.log('Getting selected rows data...');
+            console.log('Selected row IDs:', Array.from(selectedRowIds));
+
+            var selectedData = [];
+            allTableData.forEach(function(row) {
+                if (selectedRowIds.has(row.id)) {
+                    selectedData.push(row.data);
+                }
+            });
+
+            console.log('Selected data found:', selectedData.length, 'rows');
+            return { headers: tableHeaders, data: selectedData };
+        }
+
+        // ===== ENHANCED CHECKBOX FUNCTIONS =====
+        function initializeCheckboxes(tableId, selectAllId, allTableData, selectedRowIds) {
+            console.log(`Initializing checkboxes for ${tableId}...`);
+            $(document).off('click', `#${selectAllId}`);
+            $(document).off('change', `#${tableId} .row-checkbox`);
+
+            $(document).on('click', `#${selectAllId}`, function (e) {
+                e.stopPropagation();
+                console.log(`Select All clicked for ${tableId}`);
+                var isChecked = $(this).is(':checked');
+                console.log(`Select All state for ${tableId}:`, isChecked);
+
+                if (isChecked) {
+                    allTableData.forEach(function(row) {
+                        selectedRowIds.add(row.id);
+                    });
+                    $(`#${tableId} .row-checkbox`).each(function () {
+                        $(this).prop('checked', true);
+                        $(this).closest('tr').addClass('selected-row');
+                    });
+                    console.log(`All rows selected for ${tableId}:`, selectedRowIds.size);
+                    showSuccessToast(`All ${allTableData.length} rows selected across all pages for ${tableId}`);
+                } else {
+                    selectedRowIds.clear();
+                    $(`#${tableId} .row-checkbox`).each(function () {
+                        $(this).prop('checked', false);
+                        $(this).closest('tr').removeClass('selected-row');
+                    });
+                    console.log(`All selections cleared for ${tableId}`);
+                    showSuccessToast('All selections cleared');
+                }
+
+                updateSelectAllCheckbox(tableId, selectAllId, allTableData, selectedRowIds);
+            });
+
+            $(document).on('change', `#${tableId} .row-checkbox`, function (e) {
+                e.stopPropagation();
+                var row = $(this).closest('tr');
+                var rowId = $(this).val();
+                var isChecked = $(this).is(':checked');
+                console.log(`Row checkbox changed for ${tableId}:`, rowId, 'checked:', isChecked);
+
+                if (isChecked) {
+                    selectedRowIds.add(rowId);
+                    row.addClass('selected-row');
+                    console.log(`Row selected for ${tableId}:`, rowId);
+                } else {
+                    selectedRowIds.delete(rowId);
+                    row.removeClass('selected-row');
+                    console.log(`Row deselected for ${tableId}:`, rowId);
+                }
+
+                updateSelectAllCheckbox(tableId, selectAllId, allTableData, selectedRowIds);
+            });
+
+            $(`#${tableId} .row-checkbox`).each(function() {
+                var rowId = $(this).val();
+                if (selectedRowIds.has(rowId)) {
+                    $(this).prop('checked', true);
+                    $(this).closest('tr').addClass('selected-row');
+                } else {
+                    $(this).prop('checked', false);
+                    $(this).closest('tr').removeClass('selected-row');
+                }
+            });
+
+            updateSelectAllCheckbox(tableId, selectAllId, allTableData, selectedRowIds);
+            console.log(`Checkbox initialization complete for ${tableId}`);
+        }
+
+        function updateSelectAllCheckbox(tableId, selectAllId, allTableData, selectedRowIds) {
+            var totalRows = allTableData.length;
+            var selectedCount = selectedRowIds.size;
+            console.log(`Updating select all checkbox for ${tableId}. Total:`, totalRows, 'Selected:', selectedCount);
+
+            var selectAllCheckbox = $(`#${selectAllId}`);
+            if (selectedCount === 0) {
+                selectAllCheckbox.prop('checked', false).prop('indeterminate', false);
+            } else if (selectedCount === totalRows) {
+                selectAllCheckbox.prop('checked', true).prop('indeterminate', false);
+            } else {
+                selectAllCheckbox.prop('checked', false).prop('indeterminate', true);
+            }
+        }
+
+        // ===== EXPORT FUNCTION =====
+        function exportTable(buttonId, exportType, allTableData, selectedRowIds, tableHeaders, filePrefix) {
+            console.log(`${exportType} button clicked for ${buttonId}`);
+            var result = getSelectedRowsData(allTableData, selectedRowIds, tableHeaders);
+            if (result.data.length === 0) {
+                showErrorToast('Please select at least one row to export.');
+                return;
+            }
+
+            var exportHeaders = ['Sr No'];
+            result.headers.forEach(function(header) {
+                if (header.toLowerCase() !== 'sr no' && header.toLowerCase() !== 'sr.no') {
+                    exportHeaders.push(header);
+                }
+            });
+
+            if (exportType === 'copy') {
+                var copyText = exportHeaders.join('\t') + '\n';
+                result.data.forEach(function (row, index) {
+                    var copyRow = [index + 1];
+                    row.forEach(function(cell, cellIndex) {
+                        var headerName = result.headers[cellIndex];
+                        if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no') {
+                            copyRow.push(cell);
+                        }
+                    });
+                    copyText += copyRow.join('\t') + '\n';
+                });
+
+                navigator.clipboard.writeText(copyText).then(function () {
+                    showSuccessToast('Data copied to clipboard! (' + result.data.length + ' rows)');
+                }).catch(function (err) {
+                    console.error('Copy failed:', err);
+                    showErrorToast('Copy failed. Please try again.');
+                });
+            } else if (exportType === 'csv') {
+                var csvContent = exportHeaders.join(',') + '\n';
+                result.data.forEach(function (row, index) {
+                    var csvRow = [index + 1];
+                    row.forEach(function(cell, cellIndex) {
+                        var headerName = result.headers[cellIndex];
+                        if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no') {
+                            csvRow.push('"' + cell.replace(/"/g, '""') + '"');
+                        }
+                    });
+                    csvContent += csvRow.join(',') + '\n';
+                });
+
+                var blob = new Blob([csvContent], { type: 'text/csv' });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = `${filePrefix}_report_${new Date().getTime()}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                showSuccessToast('CSV file downloaded! (' + result.data.length + ' rows)');
+            } else if (exportType === 'excel') {
+                var excelContent = '<table border="1"><thead><tr>';
+                exportHeaders.forEach(function (header) {
+                    excelContent += '<th>' + header + '</th>';
+                });
+                excelContent += '</tr></thead><tbody>';
+
+                result.data.forEach(function (row, index) {
+                    excelContent += '<tr>';
+                    excelContent += '<td>' + (index + 1) + '</td>';
+                    row.forEach(function(cell, cellIndex) {
+                        var headerName = result.headers[cellIndex];
+                        if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no') {
+                            excelContent += '<td>' + cell + '</td>';
+                        }
+                    });
+                    excelContent += '</tr>';
+                });
+                excelContent += '</tbody></table>';
+
+                var blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = `${filePrefix}_report_${new Date().getTime()}.xls`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                showSuccessToast('Excel file downloaded! (' + result.data.length + ' rows)');
+            } else if (exportType === 'pdf') {
+                if (typeof window.jspdf === 'undefined') {
+                    showErrorToast('jsPDF library is not loaded.');
+                    console.error('jsPDF not found');
+                    return;
+                }
+
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(24);
+                    doc.setTextColor(0, 0, 0);
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    doc.text("RahiShop", pageWidth / 2, 25, { align: 'center' });
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(16);
+                    doc.setTextColor(80, 80, 80);
+                    doc.text("Orders Management", pageWidth / 2, 35, { align: 'center' });
+
+                    doc.setFontSize(10);
+                    doc.setTextColor(100, 100, 100);
+                    const currentDateTime = new Date().toLocaleString('en-GB', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    }).replace(',', '');
+                    doc.text("Generated On: " + currentDateTime, pageWidth - 15, 35, { align: 'right' });
+                    doc.text("Total Records: " + result.data.length, pageWidth - 15, 42, { align: 'right' });
+
+                    if (typeof doc.autoTable === 'function') {
+                        var pdfData = [];
+                        var pdfHeaders = ['Sr No'];
+                        result.headers.forEach(function(header) {
+                            if (header.toLowerCase() !== 'sr no' && header.toLowerCase() !== 'sr.no') {
+                                pdfHeaders.push(header);
+                            }
+                        });
+
+                        result.data.forEach(function(row, index) {
+                            var pdfRow = [index + 1];
+                            row.forEach(function(cell, cellIndex) {
+                                var headerName = result.headers[cellIndex];
+                                if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no') {
+                                    pdfRow.push(cell);
+                                }
+                            });
+                            pdfData.push(pdfRow);
+                        });
+
+                        doc.autoTable({
+                            head: [pdfHeaders],
+                            body: pdfData,
+                            startY: 55,
+                            styles: {
+                                fontSize: 8,
+                                cellPadding: 3,
+                                lineColor: [255, 255, 255],
+                                lineWidth: 0,
+                                textColor: [0, 0, 0],
+                                fontStyle: 'normal',
+                                valign: 'middle',
+                                overflow: 'linebreak',
+                                cellWidth: 'auto'
+                            },
+                            headStyles: {
+                                fillColor: [33, 150, 243],
+                                textColor: [255, 255, 255],
+                                fontStyle: 'bold',
+                                halign: 'center',
+                                valign: 'middle',
+                                fontSize: 9,
+                                cellPadding: 4,
+                                lineColor: [255, 255, 255],
+                                lineWidth: 0,
+                                minCellHeight: 8,
+                                maxCellHeight: 10
+                            },
+                            bodyStyles: {
+                                halign: 'center',
+                                valign: 'middle',
+                                fontSize: 8,
+                                lineColor: [255, 255, 255],
+                                lineWidth: 0,
+                                cellPadding: 2,
+                                minCellHeight: 6
+                            },
+                            alternateRowStyles: {
+                                fillColor: [248, 249, 250],
+                                lineColor: [255, 255, 255],
+                                lineWidth: 0
+                            },
+                            margin: {
+                                top: 10,
+                                right: 15,
+                                bottom: 15,
+                                left: 15
+                            },
+                            columnStyles: {
+                                0: {
+                                    halign: 'center',
+                                    valign: 'middle',
+                                    cellWidth: 15,
+                                    fontStyle: 'bold',
+                                    lineColor: [255, 255, 255],
+                                    lineWidth: 0
+                                }
+                            },
+                            theme: 'plain',
+                            tableLineColor: [255, 255, 255],
+                            tableLineWidth: 0,
+                            didParseCell: function (data) {
+                                if (data.section === 'head') {
+                                    data.cell.minHeight = 8;
+                                    data.cell.maxHeight = 10;
+                                }
+                            },
+                            willDrawCell: function (data) {
+                                if (data.section === 'head') {
+                                    data.cell.styles.halign = 'center';
+                                    data.cell.styles.valign = 'middle';
+                                    data.cell.styles.fontSize = 9;
+                                    data.cell.styles.cellPadding = 4;
+                                }
+                                if (data.section === 'body') {
+                                    data.cell.styles.fontSize = 8;
+                                    data.cell.styles.cellPadding = 2;
+                                }
+                            }
+                        });
+                    }
+
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+                    const filename = `RahiShop_${filePrefix}_Report_${timestamp}.pdf`;
+                    doc.save(filename);
+                    showSuccessToast('PDF generated successfully! (' + result.data.length + ' records)');
+                } catch (error) {
+                    console.error('PDF Generation Error:', error);
+                    showErrorToast('Error generating PDF: ' + error.message);
+                }
+            } else if (exportType === 'print') {
+                var printContent = '<html><head><title>' + (filePrefix === 'orders' ? 'Orders Report' : filePrefix === 'totalOrders' ? 'Total Orders' : filePrefix === 'returnOrders' ? 'Return Orders' : filePrefix === 'cancelOrders' ? 'Cancel Orders' : 'Replace Orders') + '</title>';
+                printContent += '<style>body{font-family:Arial,sans-serif;margin:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:8px;}th{background-color:#f2f2f2;text-align:center;}</style>';
+                printContent += '</head><body><h2>' + (filePrefix === 'orders' ? 'Orders Report' : filePrefix === 'totalOrders' ? 'Total Orders' : filePrefix === 'returnOrders' ? 'Return Orders' : filePrefix === 'cancelOrders' ? 'Cancel Orders' : 'Replace Orders') + '</h2>';
+                printContent += '<p>Generated: ' + new Date().toLocaleDateString() + ' | Records: ' + result.data.length + '</p>';
+                printContent += '<table><thead><tr>';
+
+                exportHeaders.forEach(function (header) {
+                    printContent += '<th>' + header + '</th>';
+                });
+                printContent += '</tr></thead><tbody>';
+
+                result.data.forEach(function (row, index) {
+                    printContent += '<tr><td>' + (index + 1) + '</td>';
+                    row.forEach(function(cell, cellIndex) {
+                        var headerName = result.headers[cellIndex];
+                        if (headerName && headerName.toLowerCase() !== 'sr no' && headerName.toLowerCase() !== 'sr.no') {
+                            printContent += '<td>' + cell + '</td>';
+                        }
+                    });
+                    printContent += '</tr>';
+                });
+                printContent += '</tbody></table></body></html>';
+
+                var printWindow = window.open('', '_blank');
+                printWindow.document.write(printContent);
+                printWindow.document.close();
+                printWindow.print();
+                printWindow.close();
+                showSuccessToast('Print dialog opened! (' + result.data.length + ' rows)');
+            }
+        }
+
+        // ===== INITIALIZE REPLACE ORDERS TABLE =====
+        function initializeReplaceOrdersTable() {
+            if ($('#replaceOrdersTable').length > 0) {
+                console.log('Initializing Replace Orders Table...');
+                storeTableData('replaceOrdersTable', allReplaceOrdersTableData, replaceOrdersTableHeaders);
+
+                if ($.fn.DataTable.isDataTable('#replaceOrdersTable')) {
+                    $('#replaceOrdersTable').DataTable().destroy();
+                }
+
+                replaceOrdersTable = $('#replaceOrdersTable').DataTable({
+                    paging: true,
+                    pageLength: 10,
+                    lengthChange: false,
+
+                    searching: true,
+                    ordering: false,
+                    info: true,
+                    destroy:true,
+                    autoWidth: false,
+                    responsive: true,
+                    order: [[9, 'desc']],
+                    language: {
+                        search: "Search replace orders:",
+                        searchPlaceholder: "Type to search..."
+                    },
+                    columnDefs: [
+                        { orderable: false, targets: 0, width: "50px" },
+                        { orderable: false, targets: 1, width: "50px" }
+                    ],
+                    drawCallback: function (settings) {
+                        console.log('Replace Orders Table draw callback');
+                        setTimeout(function () {
+                            initializeCheckboxes('replaceOrdersTable', 'selectAllReplaceOrders', allReplaceOrdersTableData, selectedReplaceOrdersRowIds);
+                        }, 100);
+                    },
+                    initComplete: function (settings, json) {
+                        console.log('Replace Orders Table initialization complete');
+                        setTimeout(function () {
+                            initializeCheckboxes('replaceOrdersTable', 'selectAllReplaceOrders', allReplaceOrdersTableData, selectedReplaceOrdersRowIds);
+                            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                                new bootstrap.Tooltip(tooltipTriggerEl);
+                            });
+                        }, 200);
+                    }
+                });
+
+                $('#copyBtnReplaceOrders').off('click').on('click', function (e) {
+                    e.preventDefault();
+                    exportTable('copyBtnReplaceOrders', 'copy', allReplaceOrdersTableData, selectedReplaceOrdersRowIds, replaceOrdersTableHeaders, 'replaceOrders');
+                });
+
+                $('#csvBtnReplaceOrders').off('click').on('click', function (e) {
+                    e.preventDefault();
+                    exportTable('csvBtnReplaceOrders', 'csv', allReplaceOrdersTableData, selectedReplaceOrdersRowIds, replaceOrdersTableHeaders, 'replaceOrders');
+                });
+
+                $('#excelBtnReplaceOrders').off('click').on('click', function (e) {
+                    e.preventDefault();
+                    exportTable('excelBtnReplaceOrders', 'excel', allReplaceOrdersTableData, selectedReplaceOrdersRowIds, replaceOrdersTableHeaders, 'replaceOrders');
+                });
+
+                $('#pdfBtnReplaceOrders').off('click').on('click', function (e) {
+                    e.preventDefault();
+                    exportTable('pdfBtnReplaceOrders', 'pdf', allReplaceOrdersTableData, selectedReplaceOrdersRowIds, replaceOrdersTableHeaders, 'replaceOrders');
+                });
+
+                $('#printBtnReplaceOrders').off('click').on('click', function (e) {
+                    e.preventDefault();
+                    exportTable('printBtnReplaceOrders', 'print', allReplaceOrdersTableData, selectedReplaceOrdersRowIds, replaceOrdersTableHeaders, 'replaceOrders');
+                });
+
+                console.log('Replace Orders Table initialized');
+            }
+        }
+
+        // ===== DOCUMENT READY =====
+        $(document).ready(function () {
+            console.log('Document ready started...');
+
+            // Initialize tooltips for export buttons
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Initialize Order Report Table
+            if ($('#orderReportTable').length === 0) {
+                console.log('Order Report Table not found!');
+            } else {
+                storeTableData('orderReportTable', allTableData, tableHeaders);
+                console.log('Initializing Order DataTable...');
+                orderDataTable = $('#orderReportTable').DataTable({
+                    paging: true,
+                    pageLength: 10,
+                    lengthChange: false,
+                    lengthMenu: 10,
+                    searching: true,
+                    ordering: false,
+                    info: true,
+                    autoWidth: false,
+                    responsive: true,
+                    language: {
+                        search: "Search:",
+                        searchPlaceholder: "Type to search"
+                    },
+                    columnDefs: [
+                        {
+                            orderable: false,
+                            targets: 0,
+                            width: "50px"
+                        }
+                    ],
+                    drawCallback: function(settings) {
+                        console.log('Order DataTable draw callback - reinitializing checkboxes');
+                        setTimeout(function() {
+                            initializeCheckboxes('orderReportTable', 'selectAll', allTableData, selectedRowIds);
+                        }, 100);
+                    },
+                    initComplete: function(settings, json) {
+                        console.log('Order DataTable initialization complete');
+                        setTimeout(function() {
+                            initializeCheckboxes('orderReportTable', 'selectAll', allTableData, selectedRowIds);
+                        }, 200);
+                    }
+                });
+            }
+
+            // Initialize Total Orders Table after AJAX load
+            function initializeTotalOrdersTable() {
+                if ($('#totalOrdersTable').length > 0) {
+                    storeTableData('totalOrdersTable', allTotalOrdersTableData, totalOrdersTableHeaders);
+                    if ($.fn.DataTable.isDataTable('#totalOrdersTable')) {
+                        $('#totalOrdersTable').DataTable().destroy();
+                    }
+
+                    totalOrdersTable = $('#totalOrdersTable').DataTable({
+                        paging: true,
+                        pageLength: 10,
+                        lengthChange: false,
+                        lengthMenu: [10, 25, 50, 100],
+                        searching: true,
+                        ordering: false,
+                        info: true,
+                        destroy:true,
+                        autoWidth: false,
+                        scrolX:false,
+                        responsive: true,
+                        order: [[9, 'desc']],
+                        language: {
+                            search: "Search orders:",
+                            searchPlaceholder: "Type to search..."
+                        },
+                        columnDefs: [
+                            {
+                                orderable: false,
+                                targets: 0,
+                                width: "50px"
+                            }
+                        ],
+                        drawCallback: function(settings) {
+                            console.log('Total Orders Table draw callback - reinitializing checkboxes');
+                            setTimeout(function() {
+                                initializeCheckboxes('totalOrdersTable', 'selectAllTotalOrders', allTotalOrdersTableData, selectedTotalOrdersRowIds);
+                            }, 100);
+                        },
+                        initComplete: function(settings, json) {
+                            console.log('Total Orders Table initialization complete');
+                            setTimeout(function() {
+                                initializeCheckboxes('totalOrdersTable', 'selectAllTotalOrders', allTotalOrdersTableData, selectedTotalOrdersRowIds);
+                                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                                tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                                    new bootstrap.Tooltip(tooltipTriggerEl);
+                                });
+                            }, 200);
+                        }
+                    });
+
+                    $('#copyBtnTotalOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('copyBtnTotalOrders', 'copy', allTotalOrdersTableData, selectedTotalOrdersRowIds, totalOrdersTableHeaders, 'totalOrders');
+                    });
+
+                    $('#csvBtnTotalOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('csvBtnTotalOrders', 'csv', allTotalOrdersTableData, selectedTotalOrdersRowIds, totalOrdersTableHeaders, 'totalOrders');
+                    });
+
+                    $('#excelBtnTotalOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('excelBtnTotalOrders', 'excel', allTotalOrdersTableData, selectedTotalOrdersRowIds, totalOrdersTableHeaders, 'totalOrders');
+                    });
+
+                    $('#pdfBtnTotalOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('pdfBtnTotalOrders', 'pdf', allTotalOrdersTableData, selectedTotalOrdersRowIds, totalOrdersTableHeaders, 'totalOrders');
+                    });
+
+                    $('#printBtnTotalOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('printBtnTotalOrders', 'print', allTotalOrdersTableData, selectedTotalOrdersRowIds, totalOrdersTableHeaders, 'totalOrders');
+                    });
+                }
+            }
+
+            // Initialize Return Orders Table after AJAX load
+            function initializeReturnOrdersTable() {
+                if ($('#returnOrdersTable').length > 0) {
+                    storeTableData('returnOrdersTable', allReturnOrdersTableData, returnOrdersTableHeaders);
+                    if ($.fn.DataTable.isDataTable('#returnOrdersTable')) {
+                        $('#returnOrdersTable').DataTable().destroy();
+                    }
+
+                    returnOrdersTable = $('#returnOrdersTable').DataTable({
+                        paging: true,
+                        pageLength: 10,
+                        lengthChange: false,
+                        lengthMenu: 10,
+                        searching: true,
+                        ordering: false,
+                        info: true,
+                        autoWidth: false,
+                        responsive: true,
+                        order: [[9, 'desc']],
+                        language: {
+                            search: "Search orders:",
+                            searchPlaceholder: "Type to search..."
+                        },
+                        columnDefs: [
+                            {
+                                orderable: false,
+                                targets: 0,
+                                width: "50px"
+                            }
+                        ],
+                        drawCallback: function(settings) {
+                            console.log('Return Orders Table draw callback - reinitializing checkboxes');
+                            setTimeout(function() {
+                                initializeCheckboxes('returnOrdersTable', 'selectAllReturnOrders', allReturnOrdersTableData, selectedReturnOrdersRowIds);
+                            }, 100);
+                        },
+                        initComplete: function(settings, json) {
+                            console.log('Return Orders Table initialization complete');
+                            setTimeout(function() {
+                                initializeCheckboxes('returnOrdersTable', 'selectAllReturnOrders', allReturnOrdersTableData, selectedReturnOrdersRowIds);
+                                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                                tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                                    new bootstrap.Tooltip(tooltipTriggerEl);
+                                });
+                            }, 200);
+                        }
+                    });
+
+                    $('#copyBtnReturnOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('copyBtnReturnOrders', 'copy', allReturnOrdersTableData, selectedReturnOrdersRowIds, returnOrdersTableHeaders, 'returnOrders');
+                    });
+
+                    $('#csvBtnReturnOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('csvBtnReturnOrders', 'csv', allReturnOrdersTableData, selectedReturnOrdersRowIds, returnOrdersTableHeaders, 'returnOrders');
+                    });
+
+                    $('#excelBtnReturnOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('excelBtnReturnOrders', 'excel', allReturnOrdersTableData, selectedReturnOrdersRowIds, returnOrdersTableHeaders, 'returnOrders');
+                    });
+
+                    $('#pdfBtnReturnOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('pdfBtnReturnOrders', 'pdf', allReturnOrdersTableData, selectedReturnOrdersRowIds, returnOrdersTableHeaders, 'returnOrders');
+                    });
+
+                    $('#printBtnReturnOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('printBtnReturnOrders', 'print', allReturnOrdersTableData, selectedReturnOrdersRowIds, returnOrdersTableHeaders, 'returnOrders');
+                    });
+                }
+            }
+
+            // Initialize Cancel Orders Table after AJAX load
+            function initializeCancelOrdersTable() {
+                if ($('#cancelOrdersTable').length > 0) {
+                    storeTableData('cancelOrdersTable', allCancelOrdersTableData, cancelOrdersTableHeaders);
+                    if ($.fn.DataTable.isDataTable('#cancelOrdersTable')) {
+                        $('#cancelOrdersTable').DataTable().destroy();
+                    }
+
+                    cancelOrdersTable = $('#cancelOrdersTable').DataTable({
+                        paging: true,
+                        pageLength: 10,
+                        lengthChange: false,
+                        lengthMenu: 10,
+                        searching: true,
+                        ordering: false,
+                        info: true,
+                        autoWidth: false,
+                        responsive: true,
+                        order: [[9, 'desc']],
+                        language: {
+                            search: "Search orders:",
+                            searchPlaceholder: "Type to search..."
+                        },
+                        columnDefs: [
+                            {
+                                orderable: false,
+                                targets: 0,
+                                width: "50px"
+                            },
+                            {
+                                orderable: false,
+                                targets: 1,
+                                width: "50px"
+                            }
+                        ],
+                        drawCallback: function(settings) {
+                            console.log('Cancel Orders Table draw callback - reinitializing checkboxes');
+                            setTimeout(function() {
+                                initializeCheckboxes('cancelOrdersTable', 'selectAllCancelOrders', allCancelOrdersTableData, selectedCancelOrdersRowIds);
+                            }, 100);
+                        },
+                        initComplete: function(settings, json) {
+                            console.log('Cancel Orders Table initialization complete');
+                            setTimeout(function() {
+                                initializeCheckboxes('cancelOrdersTable', 'selectAllCancelOrders', allCancelOrdersTableData, selectedCancelOrdersRowIds);
+                                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                                tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                                    new bootstrap.Tooltip(tooltipTriggerEl);
+                                });
+                            }, 200);
+                        }
+                    });
+
+                    $('#copyBtnCancelOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('copyBtnCancelOrders', 'copy', allCancelOrdersTableData, selectedCancelOrdersRowIds, cancelOrdersTableHeaders, 'cancelOrders');
+                    });
+
+                    $('#csvBtnCancelOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('csvBtnCancelOrders', 'csv', allCancelOrdersTableData, selectedCancelOrdersRowIds, cancelOrdersTableHeaders, 'cancelOrders');
+                    });
+
+                    $('#excelBtnCancelOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('excelBtnCancelOrders', 'excel', allCancelOrdersTableData, selectedCancelOrdersRowIds, cancelOrdersTableHeaders, 'cancelOrders');
+                    });
+
+                    $('#pdfBtnCancelOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('pdfBtnCancelOrders', 'pdf', allCancelOrdersTableData, selectedCancelOrdersRowIds, cancelOrdersTableHeaders, 'cancelOrders');
+                    });
+
+                    $('#printBtnCancelOrders').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        exportTable('printBtnCancelOrders', 'print', allCancelOrdersTableData, selectedCancelOrdersRowIds, cancelOrdersTableHeaders, 'cancelOrders');
+                    });
+
+                    console.log('Cancel Orders Table initialized');
+                }
+            }
+
+
+            // Total Orders card click handler
+$("#openTotalOrders").click(function () {
+    console.log('Total Orders card clicked');
+
+    // Get date range from hidden fields
+    var startDate = $('#hiddenStartDate').val();
+    var endDate = $('#hiddenEndDate').val();
+
+    // Build URL with date parameters if they exist
+    var url = '@Url.Action("CardTotalOrdersListANB", "Admin")';
+    if (startDate && endDate) {
+        url += '?startDate=' + encodeURIComponent(startDate) + '&endDate=' + encodeURIComponent(endDate);
+    }
+
+    $.ajax({
+        url: url,
+        type: 'GET',
+        cache: false,
+        async: true,
+        beforeSend: function () {
+            console.log('Initiating AJAX call for Total Orders');
+            console.log('Date Range:', startDate, 'to', endDate);
+            $("#Order-detail-content").empty();
+            $("#Order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+        },
+        success: function (result) {
+            console.log('AJAX success: Total Orders loaded');
+            $("#Order-detail-content").html(result);
+            $("#OrderDetailModalLabel").text("Total Orders");
+            var modal = new bootstrap.Modal(document.getElementById("OrderDetailModal"));
+            modal.show();
+            setTimeout(function () {
+                if (typeof initializeTotalOrdersTable === 'function') {
+                    initializeTotalOrdersTable();
+                    console.log('Total Orders Table initialized successfully');
+                } else {
+                    console.error('initializeTotalOrdersTable function is not defined');
+                    showErrorToast('Failed to initialize total orders table');
+                }
+            }, 100);
+        },
+        error: function (xhr, status, error) {
+            console.error("AJAX Error for Total Orders:", {
+                status: status,
+                error: error,
+                responseText: xhr.responseText,
+                statusCode: xhr.status
+            });
+            showErrorToast("Failed to load total orders list: " + (xhr.responseText || "Unknown error"));
+        }
+    });
+});
+
+
+@*$("#openTotalOrders").click(function () {
+    var dateRange = $('#orderDateRange').val(); // Get selected date range
+    var dates = dateRange.split(' - ');
+
+    var startDate = dates[0];
+    var endDate = dates[1];
+
+    var url = '@Url.Action("CardTotalOrdersListANB", "Admin")';
+
+    $.ajax({
+        url: url,
+        type: 'GET',
+        data: { startDate: startDate, endDate: endDate },
+        beforeSend: function () {
+            $("#Order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+        },
+        success: function (result) {
+            $("#Order-detail-content").html(result);
+            $("#OrderDetailModalLabel").text("Total Orders");
+            var modal = new bootstrap.Modal(document.getElementById("OrderDetailModal"));
+            modal.show();
+
+            // Initialize DataTable safely
+            if (typeof initializeTotalOrdersTable === 'function') {
+                initializeTotalOrdersTable();
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Failed to load total orders:", error);
+            $("#Order-detail-content").html('<div class="alert alert-danger">Failed to load data.</div>');
+        }
+    });
+});*@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Return Orders card click handler
+$("#openReturnOrders").click(function () {
+    console.log('Return Orders card clicked');
+
+    var startDate = $('#hiddenStartDate').val();
+    var endDate = $('#hiddenEndDate').val();
+
+    var url = '@Url.Action("CardTotalReturnOrdersListANB", "Admin")';
+    if (startDate && endDate) {
+        url += '?startDate=' + encodeURIComponent(startDate) + '&endDate=' + encodeURIComponent(endDate);
+    }
+
+    console.log('AJAX URL:', url);
+    $.ajax({
+        url: url,
+        type: 'GET',
+        cache: false,
+        async: true,
+        beforeSend: function () {
+            console.log('Initiating AJAX call for Return Orders');
+            console.log('Date Range:', startDate, 'to', endDate);
+            $("#Order-detail-content").empty();
+            $("#Order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+        },
+        success: function (result) {
+            console.log('AJAX success: Return Orders loaded');
+            $("#Order-detail-content").html(result);
+            $("#OrderDetailModalLabel").text("Return Orders");
+            var modal = new bootstrap.Modal(document.getElementById("OrderDetailModal"));
+            modal.show();
+            setTimeout(function () {
+                if (typeof initializeReturnOrdersTable === 'function') {
+                    initializeReturnOrdersTable();
+                    console.log('Return Orders Table initialized successfully');
+                } else {
+                    console.error('initializeReturnOrdersTable function is not defined');
+                    showErrorToast('Failed to initialize return orders table');
+                }
+            }, 100);
+        },
+        error: function (xhr, status, error) {
+            console.error("AJAX Error for Return Orders:", {
+                status: status,
+                error: error,
+                responseText: xhr.responseText,
+                statusCode: xhr.status
+            });
+            showErrorToast("Failed to load return orders list: " + (xhr.responseText || "Unknown error"));
+        }
+    });
+});
+
+
+
+
+@*// Return Orders card click handler
+$("#openReturnOrders").click(function () {
+    var dateRange = $('#orderDateRange').val(); // Get selected date range
+    var dates = dateRange.split(' - ');
+
+    var startDate = dates[0];
+    var endDate = dates[1];
+
+    var url = '@Url.Action("CardTotalReturnOrdersListANB", "Admin")';
+
+    $.ajax({
+        url: url,
+        type: 'GET',
+        data: { startDate: startDate, endDate: endDate }, // Pass dates as parameters
+        beforeSend: function () {
+            $("#Order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+        },
+        success: function (result) {
+            $("#Order-detail-content").html(result);
+            $("#OrderDetailModalLabel").text("Return Orders");
+            var modal = new bootstrap.Modal(document.getElementById("OrderDetailModal"));
+            modal.show();
+
+            // Initialize DataTable safely
+            if (typeof initializeReturnOrdersTable === 'function') {
+                initializeReturnOrdersTable();
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Failed to load return orders:", error);
+            $("#Order-detail-content").html('<div class="alert alert-danger">Failed to load data.</div>');
+        }
+    });
+});*@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Cancel Orders card click handler
+$("#openCancelOrders").click(function () {
+    console.log('Cancel Orders card clicked');
+
+    var startDate = $('#hiddenStartDate').val();
+    var endDate = $('#hiddenEndDate').val();
+
+    var url = '@Url.Action("CardTotalCancelOrdersListANB", "Admin")';
+    if (startDate && endDate) {
+        url += '?startDate=' + encodeURIComponent(startDate) + '&endDate=' + encodeURIComponent(endDate);
+    }
+
+    console.log('AJAX URL:', url);
+    $.ajax({
+        url: url,
+        type: 'GET',
+        cache: false,
+        async: true,
+        beforeSend: function () {
+            console.log('Initiating AJAX call for Cancel Orders');
+            console.log('Date Range:', startDate, 'to', endDate);
+            $("#Order-detail-content").empty();
+            $("#Order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+        },
+        success: function (result) {
+            console.log('AJAX success: Cancel Orders loaded');
+            $("#Order-detail-content").html(result);
+            $("#OrderDetailModalLabel").text("Cancel Orders");
+            var modal = new bootstrap.Modal(document.getElementById("OrderDetailModal"));
+            modal.show();
+            setTimeout(function () {
+                if (typeof initializeCancelOrdersTable === 'function') {
+                    initializeCancelOrdersTable();
+                    console.log('Cancel Orders Table initialized successfully');
+                } else {
+                    console.error('initializeCancelOrdersTable function is not defined');
+                    showErrorToast('Failed to initialize cancel orders table');
+                }
+            }, 100);
+        },
+        error: function (xhr, status, error) {
+            console.error("AJAX Error for Cancel Orders:", {
+                status: status,
+                error: error,
+                responseText: xhr.responseText,
+                statusCode: xhr.status
+            });
+            showErrorToast("Failed to load cancel orders list: " + (xhr.responseText || "Unknown error"));
+        }
+    });
+});
+
+@*// Cancel Orders card click handler
+$("#openCancelOrders").click(function () {
+    var dateRange = $('#orderDateRange').val(); // Get selected date range
+    var dates = dateRange.split(' - ');
+
+    var startDate = dates[0].trim();
+    var endDate = dates[1].trim();
+
+    var url = '@Url.Action("CardTotalCancelOrdersListANB", "Admin")';
+
+    $.ajax({
+        url: url,
+        type: 'GET',
+        data: { startDate: startDate, endDate: endDate }, // Pass dates as parameters
+        beforeSend: function () {
+            $("#Order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+        },
+        success: function (result) {
+            $("#Order-detail-content").html(result);
+            $("#OrderDetailModalLabel").text("Cancel Orders");
+            var modal = new bootstrap.Modal(document.getElementById("OrderDetailModal"));
+            modal.show();
+
+            // Initialize DataTable safely
+            if (typeof initializeCancelOrdersTable === 'function') {
+                initializeCancelOrdersTable();
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Failed to load cancel orders:", error);
+            $("#Order-detail-content").html('<div class="alert alert-danger">Failed to load data.</div>');
+        }
+    });
+});*@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Replace Orders card click handler
+$("#openReplaceOrders").click(function () {
+    console.log('Replace Orders card clicked');
+
+    var startDate = $('#hiddenStartDate').val();
+    var endDate = $('#hiddenEndDate').val();
+
+    var url = '@Url.Action("CardTotalReplaceOrdersListANB", "Admin")';
+    if (startDate && endDate) {
+        url += '?startDate=' + encodeURIComponent(startDate) + '&endDate=' + encodeURIComponent(endDate);
+    }
+
+    console.log('AJAX URL:', url);
+    $.ajax({
+        url: url,
+        type: 'GET',
+        cache: false,
+        async: true,
+        beforeSend: function () {
+            console.log('Initiating AJAX call for Replace Orders');
+            console.log('Date Range:', startDate, 'to', endDate);
+            $("#Order-detail-content").empty();
+            $("#Order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+        },
+        success: function (result) {
+            console.log('AJAX success: Replace Orders loaded');
+            $("#Order-detail-content").html(result);
+            $("#OrderDetailModalLabel").text("Replace Orders");
+            var modal = new bootstrap.Modal(document.getElementById("OrderDetailModal"));
+            modal.show();
+            setTimeout(function () {
+                if (typeof initializeReplaceOrdersTable === 'function') {
+                    initializeReplaceOrdersTable();
+                    console.log('Replace Orders Table initialized successfully');
+                } else {
+                    console.error('initializeReplaceOrdersTable function is not defined');
+                    showErrorToast('Failed to initialize replace orders table');
+                }
+            }, 100);
+        },
+        error: function (xhr, status, error) {
+            console.error("AJAX Error for Replace Orders:", {
+                status: status,
+                error: error,
+                responseText: xhr.responseText,
+                statusCode: xhr.status
+            });
+            showErrorToast("Failed to load replace orders list: " + (xhr.responseText || "Unknown error"));
+        }
+    });
+});
+
+
+
+@*// Replace Orders card click handler
+$("#openReplaceOrders").click(function () {
+    var dateRange = $('#orderDateRange').val(); // Get selected date range
+    var dates = dateRange.split(' - ');
+
+    var startDate = dates[0].trim();
+    var endDate = dates[1].trim();
+
+    var url = '@Url.Action("CardTotalReplaceOrdersListANB", "Admin")';
+
+    $.ajax({
+        url: url,
+        type: 'GET',
+        data: { startDate: startDate, endDate: endDate }, // Pass dates as parameters
+        beforeSend: function () {
+            $("#Order-detail-content").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading...</div>');
+        },
+        success: function (result) {
+            $("#Order-detail-content").html(result);
+            $("#OrderDetailModalLabel").text("Replace Orders");
+            var modal = new bootstrap.Modal(document.getElementById("OrderDetailModal"));
+            modal.show();
+
+            // Initialize DataTable safely
+            if (typeof initializeReplaceOrdersTable === 'function') {
+                initializeReplaceOrdersTable();
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Failed to load replace orders:", error);
+            $("#Order-detail-content").html('<div class="alert alert-danger">Failed to load data.</div>');
+        }
+    });
+});*@
+
+
+
+
+
+
+
+
+
+            // Export button events for order report table
+            $(document).on('click', '#copyBtn', function(e) {
+                e.preventDefault();
+                exportTable('copyBtn', 'copy', allTableData, selectedRowIds, tableHeaders, 'orders');
+            });
+
+            $(document).on('click', '#csvBtn', function(e) {
+                e.preventDefault();
+                exportTable('csvBtn', 'csv', allTableData, selectedRowIds, tableHeaders, 'orders');
+            });
+
+            $(document).on('click', '#excelBtn', function(e) {
+                e.preventDefault();
+                exportTable('excelBtn', 'excel', allTableData, selectedRowIds, tableHeaders, 'orders');
+            });
+
+            $(document).on('click', '#pdfBtn', function(e) {
+                e.preventDefault();
+                exportTable('pdfBtn', 'pdf', allTableData, selectedRowIds, tableHeaders, 'orders');
+            });
+
+            $(document).on('click', '#printBtn', function(e) {
+                e.preventDefault();
+                exportTable('printBtn', 'print', allTableData, selectedRowIds, tableHeaders, 'orders');
+            });
+
+            // Initialize Highcharts
+            initializeHighcharts();
+            console.log('All initialization complete');
+        });
+
+        function initializeHighcharts() {
+            console.log('Initializing Highcharts...');
+            @if (ViewBag.PaymentMethodData != null)
+            {
+                <text>
+                try {
+                    var chartData = @Html.Raw(ViewBag.PaymentMethodData);
+                    console.log('Chart Data:', chartData);
+                    console.log('Chart Data Length:', chartData.length);
+
+                    if (chartData && chartData.length > 0) {
+                        console.log('Creating chart with data...');
+
+                        Highcharts.chart('container', {
+                            chart: {
+                                type: 'pie',
+                                backgroundColor: '#ffffff',
+                                height: 500
+                            },
+                            title: {
+                                text: 'Payment Method Distribution',
+                                style: {
+                                    fontSize: '18px',
+                                    fontWeight: 'bold'
+                                }
+                            },
+                            tooltip: {
+                                pointFormat: '{series.name}: <b>{point.y}</b> orders ({point.percentage:.1f}%)'
+                            },
+                            accessibility: {
+                                point: {
+                                    valueSuffix: ' orders'
+                                }
+                            },
+                            plotOptions: {
+                                pie: {
+                                    allowPointSelect: true,
+                                    cursor: 'pointer',
+                                    dataLabels: {
+                                        enabled: true,
+                                        format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)',
+                                        style: {
+                                            fontSize: '12px'
+                                        }
+                                    },
+                                    showInLegend: true
+                                }
+                            },
+                            legend: {
+                                align: 'right',
+                                verticalAlign: 'middle',
+                                layout: 'vertical'
+                            },
+                            series: [{
+                                name: 'Payment Method',
+                                colorByPoint: true,
+                                data: chartData
+                            }],
+                            credits: {
+                                enabled: false
+                            }
+                        });
+
+                        console.log('Chart created successfully!');
+                    } else {
+                        console.warn('Chart data is empty');
+                        createEmptyChart();
+                    }
+                } catch (error) {
+                    console.error('Error initializing chart:', error);
+                    showErrorToast('Error loading chart: ' + error.message);
+                    createEmptyChart();
+                }
+                </text>
+            }
+            else
+            {
+                <text>
+                console.warn('ViewBag.PaymentMethodData is null');
+                createEmptyChart();
+                </text>
+            }
+        }
+
+        function createEmptyChart() {
+            console.log('Creating empty chart...');
+            Highcharts.chart('container', {
+                chart: {
+                    type: 'pie',
+                    backgroundColor: '#f8f9fa',
+                    height: 500
+                },
+                title: {
+                    text: 'No Payment Method Data Available',
+                    style: {
+                        fontSize: '16px',
+                        color: '#666'
+                    }
+                },
+                subtitle: {
+                    text: 'Please select a date range or check if data exists'
+                },
+                series: [{
+                    type: 'pie',
+                    data: [],
+                    innerSize: '50%'
+                }],
+                credits: {
+                    enabled: false
+                }
+            });
+        }
+    </script>
+</body>
+</html>

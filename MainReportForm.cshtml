@@ -1,0 +1,217 @@
+﻿@{
+    ViewBag.Title = "Reports";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item">
+        <a href="#">Reports</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page" id="dynamicBreadcrumb">
+        Customer Report
+    </li>
+}
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-pills nav-justified mb-3" id="reportTabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" id="customer-tab" data-bs-toggle="tab" href="#customer">Customer Report</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="product-tab" data-bs-toggle="tab" href="#product">Product Report</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="seller-tab" data-bs-toggle="tab" href="#seller">Seller Report</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="order-tab" data-bs-toggle="tab" href="#order">Order Report</a>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content p-3 border">
+    <div class="tab-pane fade show active" id="customer">
+        <div id="customerReportContent">Loading...</div>
+    </div>
+    <div class="tab-pane fade" id="product">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Date Range Filter</label>
+                <input class="form-control input-daterange-datepicker" type="text" id="productDateRange" name="productDateRange" value="01/01/2024 - 01/31/2024" autocomplete="off" />
+            </div>
+        </div>
+        <div id="productReportContent">Loading...</div>
+    </div>
+    <div class="tab-pane fade" id="seller">
+        <div id="sellerReportContent">Loading...</div>
+    </div>
+    <div class="tab-pane fade" id="order">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Date Range Filter</label>
+                <input class="form-control input-daterange-datepicker" type="text" id="orderDateRange" name="orderDateRange" value="01/01/2024 - 01/31/2024" placeholder="Select Date Range" autocomplete="off" />
+            </div>
+        </div>
+        <div id="orderReportContent">Loading...</div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Moment.js -->
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+
+    <!-- Daterangepicker CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" />
+    <!-- Daterangepicker JS -->
+    <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+
+    <!-- Highcharts -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+
+    <script>
+        // ✅ Declare globally to retain between tab switches
+        var dataTableInstances = {};
+        var chartInstances = {};
+
+        // ✅ Safe initialization placeholder (prevents undefined error)
+        function initializeSimpleDataTable(containerId) {
+            // This is a placeholder; your actual DataTable init code goes here
+            console.log(`Initializing DataTable for ${containerId}`);
+        }
+
+        function initializeChart(containerId) {
+            setTimeout(() => {
+                if (chartInstances[containerId]) {
+                    chartInstances[containerId].destroy();
+                    delete chartInstances[containerId];
+                }
+
+                const chartContainer = document.querySelector(`#${containerId} .chart-container`);
+                if (chartContainer) {
+                    chartInstances[containerId] = Highcharts.chart(chartContainer, {
+                        chart: { type: 'column' },
+                        title: { text: 'Sample Report Chart' },
+                        xAxis: { categories: ['A', 'B', 'C', 'D'] },
+                        yAxis: { title: { text: 'Values' } },
+                        series: [
+                            { name: 'Series 1', data: [5, 3, 4, 7] },
+                            { name: 'Series 2', data: [2, 2, 3, 2] }
+                        ]
+                    });
+                }
+            }, 400);
+        }
+
+        function destroyDataTable(containerId) {
+            if (dataTableInstances[containerId]) {
+                try {
+                    dataTableInstances[containerId].destroy();
+                    delete dataTableInstances[containerId];
+                } catch (error) {
+                    console.log('Error destroying DataTable:', error);
+                }
+            }
+        }
+
+        function destroyChart(containerId) {
+            if (chartInstances[containerId]) {
+                try {
+                    chartInstances[containerId].destroy();
+                    delete chartInstances[containerId];
+                } catch (error) {
+                    console.log('Error destroying chart:', error);
+                }
+            }
+        }
+
+        function loadTabContent(tabId, dateRange = null) {
+            const mapping = {
+                customer: '/Admin/Tab1Report',
+                product: '/Admin/Tab2Report',
+                seller: '/Admin/Tab4Report',
+                order: '/Admin/Tab5Report'
+            };
+
+            const targetDiv = `#${tabId}ReportContent`;
+            const contentId = `${tabId}ReportContent`;
+            let url = mapping[tabId];
+
+            if (dateRange && (tabId === 'product' || tabId === 'order')) {
+                const dates = dateRange.split(' - ');
+                if (dates.length === 2) {
+                    const startDate = encodeURIComponent(dates[0]);
+                    const endDate = encodeURIComponent(dates[1]);
+                    url += `?startDate=${startDate}&endDate=${endDate}`;
+                }
+            }
+
+            destroyDataTable(contentId);
+            destroyChart(contentId);
+
+            $(targetDiv).html(`
+                    <div class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <br>
+                        <small class="text-muted">Loading ${tabId} data...</small>
+                    </div>
+                `);
+
+            // ✅ AJAX load content dynamically
+            $(targetDiv).load(url, function (response, status, xhr) {
+                if (status === "error") {
+                    $(targetDiv).html(`
+                            <div class="alert alert-danger">
+                                Error loading report: ${xhr.status} ${xhr.statusText}
+                            </div>
+                        `);
+                } else {
+                    initializeSimpleDataTable(contentId);
+                    initializeChart(contentId);
+                }
+            });
+        }
+
+        // ✅ Document Ready
+        $(document).ready(function () {
+            $('.input-daterange-datepicker').daterangepicker({
+                opens: 'right',
+                locale: { format: 'MM/DD/YYYY' }
+            });
+
+            // Load default Customer tab on page load
+            loadTabContent('customer');
+
+            // ✅ Handle tab switching (fixed scope issue)
+            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                const tabId = $(e.target).attr('href').substring(1);
+                loadTabContent(tabId);
+
+                let breadcrumbText = '';
+                switch (tabId) {
+                    case 'customer': breadcrumbText = 'Customer Report'; break;
+                    case 'product': breadcrumbText = 'Product Report'; break;
+                    case 'seller': breadcrumbText = 'Seller Report'; break;
+                    case 'order': breadcrumbText = 'Order Report'; break;
+                    default: breadcrumbText = 'Reports';
+                }
+                $('#dynamicBreadcrumb').text(breadcrumbText);
+            });
+
+            // ✅ Auto reload on date filter apply
+            $('#productDateRange').on('apply.daterangepicker', function () {
+                loadTabContent('product', $(this).val());
+            });
+
+            $('#orderDateRange').on('apply.daterangepicker', function () {
+                loadTabContent('order', $(this).val());
+            });
+        });
+    </script>
+}

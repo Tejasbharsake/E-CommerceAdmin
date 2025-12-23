@@ -1,0 +1,140 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    ViewBag.Title = "CourierPaymentManagmentHK";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<head>
+    <link href="~/Content/Document/CSS/custom-datatables.css" rel="stylesheet" />
+    <style>
+        /* Custom styles for full-width tabs */
+        .mb-4.d-flex.gap-3 {
+            width: 100%;
+        }
+
+            .mb-4.d-flex.gap-3 .btn {
+                flex: 1;
+                text-align: center;
+                padding: 12px 0;
+            }
+
+        #courierPaymentTabContent {
+            width: 100%;
+        }
+
+        /* Breadcrumb styling */
+        .breadcrumb {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .breadcrumb-item {
+            display: inline;
+        }
+
+            .breadcrumb-item.active {
+                color: #495057;
+                font-weight: 500;
+            }
+
+            /* Custom separator styling */
+            .breadcrumb-item + .breadcrumb-item::before {
+                content: "/";
+                padding: 0 5px;
+                color: #6c757d;
+            }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .mb-4.d-flex.gap-3 {
+                flex-direction: column;
+            }
+
+                .mb-4.d-flex.gap-3 .btn {
+                    margin-bottom: 5px;
+                }
+        }
+    </style>
+</head>
+<!-- ✅ Bootstrap CSS (already likely in _Layout.cshtml, kept here if not) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" />
+<!-- ✅ DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+<div class="main-content">
+    <section class="section">
+        <div class="container-fluid">
+            <!-- ✅ Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item" id="breadcrumbBase">Courier Payment Management</li>
+                    <li class="breadcrumb-item active" id="breadcrumbActive">Pending Payment</li>
+                </ol>
+            </nav>
+
+            @*<h3><strong>Courier Payment</strong></h3>*@
+            <!-- ✅ Courier Payment Tabs -->
+            <div class="mb-4 d-flex gap-3">
+                <button class="btn btn-primary shadow-sm border-0 active" id="btnCourierPaymentHistory">Payment History</button>
+                <button class="btn btn-light shadow-sm border-0" id="btnCourierPendingPayment">Pending Payment</button>
+            </div>
+            <!-- ✅ Dynamic Content Area -->
+            <div id="courierPaymentTabContent">
+                <div class="text-center mt-5">
+                    <strong>Loading...</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+<!-- ✅ AJAX Loader -->
+@*<div id="ajaxLoader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.6); z-index: 9999; text-align: center;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        <img src="~/Content/Document/Image/ball-triangle.svg" style="width: 3rem;" alt="Loading...">
+        <div class="mt-2">Loading, please wait...</div>
+    </div>
+</div>*@
+@section Scripts {
+    <!-- ✅ jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- ✅ Bootstrap JS -->
+    <!-- ✅ DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script>
+        function loadCourierTab(url, activeBtn, tabName) {
+            $('#ajaxLoader').show();
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (data) {
+                    $("#courierPaymentTabContent").html(data);
+                    $(".btn").removeClass("active btn-primary").addClass("btn-light border-0");
+                    $(activeBtn).addClass("active btn-primary border-0").removeClass("btn-light");
+                    // ✅ Update breadcrumb with the active tab name
+                    $("#breadcrumbActive").text(tabName);
+                    // ✅ Initialize DataTable after content is loaded
+                    setTimeout(function () {
+                        if ($('#dataTable').length) {
+                            $('#dataTable').DataTable();
+                        }
+                    }, 300); // wait for partial view render
+                },
+                error: function () {
+                    $("#courierPaymentTabContent").html("<div class='text-danger text-center'>Failed to load data.</div>");
+                },
+                complete: function () {
+                    $('#ajaxLoader').fadeOut();
+                }
+            });
+        }
+        $(document).ready(function () {
+            loadCourierTab('@Url.Action("PendingCourierPaymentPartialHK", "Admin")', '#btnCourierPendingPayment', 'Pending Payment');
+            $("#btnCourierPaymentHistory").click(function () {
+                loadCourierTab('@Url.Action("CourierPaymentHistoryPartialHK_New", "Admin")', this, 'Payment History');
+            });
+            $("#btnCourierPendingPayment").click(function () {
+                loadCourierTab('@Url.Action("PendingCourierPaymentPartialHK", "Admin")', this, 'Pending Payment');
+            });
+        });
+    </script>
+}

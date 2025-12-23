@@ -1,0 +1,138 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    Layout = null;
+}
+
+<div class="container-fluid">
+    <!-- ✅ Header ekdach -->
+    @*<h5 class="mb-3 border-bottom pb-2">Product Details</h5>*@
+
+    <!-- ✅ Row 1: Product Images -->
+    @if (!string.IsNullOrEmpty(Model.ProductMedia1)
+        || !string.IsNullOrEmpty(Model.ProductMedia2)
+        || !string.IsNullOrEmpty(Model.ProductMedia3)
+        || !string.IsNullOrEmpty(Model.ProductMedia4))
+    {
+        <div id="productImageCarousel" class="carousel slide mb-4 shadow-sm rounded"
+             data-bs-ride="carousel" data-bs-interval="3000" data-bs-pause="hover">
+
+            <!-- Indicators -->
+            <div class="carousel-indicators">
+                @if (!string.IsNullOrEmpty(Model.ProductMedia1))
+                {<button type="button" data-bs-target="#productImageCarousel" data-bs-slide-to="0" class="active"></button>}
+                @if (!string.IsNullOrEmpty(Model.ProductMedia2))
+                {<button type="button" data-bs-target="#productImageCarousel" data-bs-slide-to="1"></button>}
+                @if (!string.IsNullOrEmpty(Model.ProductMedia3))
+                {<button type="button" data-bs-target="#productImageCarousel" data-bs-slide-to="2"></button>}
+                @if (!string.IsNullOrEmpty(Model.ProductMedia4))
+                {<button type="button" data-bs-target="#productImageCarousel" data-bs-slide-to="3"></button>}
+            </div>
+
+            <!-- Images -->
+            <div class="carousel-inner rounded">
+                @if (!string.IsNullOrEmpty(Model.ProductMedia1))
+                {
+                    <div class="carousel-item active">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia1"
+                             class="d-block w-100" style="max-height: 250px; object-fit: contain;" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia2))
+                {
+                    <div class="carousel-item">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia2"
+                             class="d-block w-100" style="max-height: 250px; object-fit: contain;" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia3))
+                {
+                    <div class="carousel-item">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia3"
+                             class="d-block w-100" style="max-height: 250px; object-fit: contain;" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia4))
+                {
+                    <div class="carousel-item">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia4"
+                             class="d-block w-100" style="max-height: 250px; object-fit: contain;" />
+                    </div>
+                }
+            </div>
+
+            <!-- Controls -->
+            <button class="carousel-control-prev" type="button" data-bs-target="#productImageCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#productImageCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+
+        </div>
+    }
+
+    <!-- ✅ Row 2: Product Information (2 columns) -->
+    <div class="row">
+        <div class="col-md-6">
+            <dl class="row">
+                <dt class="col-sm-5">Product Code:</dt>
+                <dd class="col-sm-7">@Model.ProductCode</dd>
+
+                <dt class="col-sm-5">Name:</dt>
+                <dd class="col-sm-7">@Model.ProductName</dd>
+
+                <dt class="col-sm-5">Category:</dt>
+                <dd class="col-sm-7">@Model.MainCategoryName</dd>
+
+                <dt class="col-sm-5">Brand:</dt>
+                <dd class="col-sm-7">@Model.BrandName</dd>
+
+                <dt class="col-sm-5">Manufacturer:</dt>
+                <dd class="col-sm-7">@Model.ManufacturerName</dd>
+
+                <dt class="col-sm-5">MRP:</dt>
+                <dd class="col-sm-7">@Model.ProductMRP.ToString("C")</dd>
+
+                <dt class="col-sm-5">Selling Price:</dt>
+                <dd class="col-sm-7">@Model.ActualProductPrice.ToString("C")</dd>
+            </dl>
+        </div>
+
+        <div class="col-md-6">
+            <dl class="row">
+                <dt class="col-sm-5">Weight(Kg):</dt>
+                <dd class="col-sm-7">@Model.ProductWeight</dd>
+
+                <dt class="col-sm-5">Stock(No.):</dt>
+                <dd class="col-sm-7">@Model.Stock</dd>
+
+                <dt class="col-sm-5">HSN Code:</dt>
+                <dd class="col-sm-7">@Model.HSNCode1</dd>
+
+                <dt class="col-sm-5">CGST:</dt>
+                <dd class="col-sm-7">@Model.CGST %</dd>
+
+                <dt class="col-sm-5">SGST:</dt>
+                <dd class="col-sm-7">@Model.SGST %</dd>
+
+                <dt class="col-sm-5">IGST:</dt>
+                <dd class="col-sm-7">@Model.IGST %</dd>
+
+                <dt class="col-sm-5">UTGST:</dt>
+                <dd class="col-sm-7">@Model.UTGST %</dd>
+
+                <dt class="col-sm-5">Registered On:</dt>
+                <dd class="col-sm-7">@Model.RegisterDate.ToString("dd-MMM-yyyy")</dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- ✅ Full-width Description at bottom -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <strong>Description:</strong>
+            <p>@Model.ProductDescription</p>
+        </div>
+    </div>
+</div>
+<link href="~/Content/Document/CSS/ProductApprovalSC.css" rel="stylesheet" />

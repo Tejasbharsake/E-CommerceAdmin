@@ -1,0 +1,1769 @@
+﻿@model List<GSTECommerceLibrary.Admin.Admin>
+@{
+    ViewBag.Title = "DashboardNM";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+}
+@section Breadcrumb {
+    <li class="breadcrumb-item active" aria-current="page">
+        Dashboard
+    </li>
+}
+@using Newtonsoft.Json;
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@ViewBag.Title</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Simple DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
+
+
+    <!-- Daterangepicker CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" />
+    <!-- Daterangepicker JS -->
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+
+
+
+
+    <!-- Your Custom DataTable CSS -->
+    <link rel="stylesheet" href="~/Content/Document/CSS/custom-datatables.css" />
+
+    <link href="~/Content/Document/CSS/DashboardCustom.css" rel="stylesheet" />
+   <link href="~/Content/Document/CSS/DashboardExportbutton.css" rel="stylesheet" />
+
+    @*<script src="https://code.highcharts.com/highcharts.js"></script>*@
+
+
+    <style>
+
+
+        /*    Reduce header height
+        #table1 thead th {
+            padding: 2px 5px !important;  top/bottom, left/right
+            height: 5px !important;  fixed header height
+            line-height: 1;
+            font-size: 14px;  smaller text
+        }
+
+         Reduce body row height
+        #table1 tbody td {
+            padding: 2px 5px !important;
+            height: 5px !important;
+            line-height: 1;
+            font-size: 13px;
+            text-align: center;
+        }*/
+
+
+        /*     Target DataTables pagination buttons
+        #table1_paginate .pagination .page-link {
+            padding: 2px 10px;  smaller height & width
+            font-size: 12px;  smaller text
+            min-width: 33px;  button width
+        }*/
+    </style>
+
+</head>
+
+<body>
+
+
+
+
+    <!-- Floating Date Picker Button -->
+    <button id="floatingDatePickerBtn" title="">
+        <i class="bi bi-calendar-range"></i>
+    </button>
+
+
+
+
+    <!-- Hidden Date Range Input -->
+    <input type="text" id="hiddenDateRangePicker" />
+
+
+    <div class="container-fluid mt-3">
+        <!-- First Row with 5 Cards -->
+        <div class="row mb-3">
+            @{
+                var titles = new[] { "Active Seller", "Active Customer", "Total Revenue(₹)", "Total Order", "Total Active Offer", "Total Delivered Order", "Total Return Order", "Total Replace Order", "Total Cancel Order" };
+                var colors = new[] { "bg-primary", "bg-info", "bg-success", "bg-danger", "bg-warning", "bg-secondary", "bg-dark", "bg-primary", "bg-success" };
+                var icons = new[] { "bi-shop", "bi-people-fill", "bi-currency-rupee", "bi-bag-fill", "bi-tags-fill", "bi-truck", "bi-arrow-return-left", "bi-arrow-repeat", "bi-x-circle-fill" };
+                var values = new[] {
+        ViewBag.TotalSeller ?? 0,
+        ViewBag.TotalCustomer ?? 0,
+        ViewBag.TotalRevenue ?? 0,
+        ViewBag.TotalOrder ?? 0,
+        ViewBag.TotalActiveOffer ?? 0,
+        ViewBag.TotalDeliveredOrde ?? 0,
+        ViewBag.TotalReturnOrder ?? 0,
+        ViewBag.TotalReplaceOrder ?? 0,
+        ViewBag.TotalCancelOrder ?? 0
+    };
+                var jsActions = new[] {
+        "loadSellerList",
+        "loadCustomerList",
+        "loadRevenue",
+        "loadOrderList",
+        "loadActiveOffers",
+        "loadDeliveredOrders",
+        "loadReturnOrders",
+        "loadReplaceOrders",
+        "loadCancelOrders"
+    };
+            }
+
+            @for (int i = 0; i < 5; i++)
+            {
+                <div class="col-md-2-4 mb-3">
+                    @if (titles[i] == "Total Revenue(₹)")
+                    {
+                        <div class="card h-100">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="p-3 rounded text-white @colors[i] card-icon">
+                                    <i class="bi @icons[i]"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="card-title-text text-muted">@titles[i]</div>
+                                    <div class="card-value-text">@values[i]</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card h-100 clickable-card" data-js-action="@jsActions[i]" data-title="@titles[i]">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="p-3 rounded text-white @colors[i] card-icon">
+                                    <i class="bi @icons[i]"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="card-title-text text-muted">@titles[i]</div>
+                                    <div class="card-value-text">@values[i]</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Second Row with 4 Cards -->
+        <div class="row">
+            @for (int i = 5; i < titles.Length; i++)
+            {
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100 clickable-card" data-js-action="@jsActions[i]" data-title="@titles[i]">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="p-3 rounded text-white @colors[i] card-icon">
+                                <i class="bi @icons[i]"></i>
+                            </div>
+                            <div class="ms-3">
+                                <div class="card-title-text text-muted">@titles[i]</div>
+                                <div class="card-value-text">@values[i]</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Modal for displaying partial views -->
+    <div class="modal fade" id="dashboardModal" tabindex="-1" aria-labelledby="dashboardModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header text-white" style="background: #2C3E50;">
+
+                    <h5 class="modal-title" id="dashboardModalLabel"></h5>
+                    @*<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>*@
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+
+                </div>
+                <div class="modal-body" id="modalBodyContent">
+                    <!-- Partial view content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    @*<button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>*@
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Month-wise Charts with Year Filters -->
+    <div class="container-fluid mt-4">
+        <div class="row mb-3">
+            <div class="col-md-6 text-center">
+                <h5>
+                    <button id="prevYearRevenue" class="btn btn-sm btn-outline-primary">&lt;</button>
+                    @*Month-wise Revenue (₹)*@ <span id="selectedYearRevenue">@DateTime.Now.Year</span>
+                    <button id="nextYearRevenue" class="btn btn-sm btn-outline-primary">&gt;</button>
+                </h5>
+                <div id="profitChart" class="chart-container"></div>
+            </div>
+            <div class="col-md-6 text-center">
+                <h5>
+                    <button id="prevYearOrders" class="btn btn-sm btn-outline-primary">&lt;</button>
+                    @*Month-wise Orders*@ <span id="selectedYearOrders">@DateTime.Now.Year</span>
+                    <button id="nextYearOrders" class="btn btn-sm btn-outline-primary">&gt;</button>
+                </h5>
+                <div id="orderChart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie Charts Section -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div></div>
+                    <div class="card-body">
+                        <div id="orderSummaryPie" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div></div>
+                    <div class="card-body">
+                        <div id="supportTicketPie" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Top Selling Products Table -->
+    <section class="section mt-4">
+        <div class="card">
+            <div class="card-header"><h5>Top Selling Products by Seller</h5></div>
+            <div class="card-body">
+                <!-- Custom container for search and buttons -->
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+
+                    <div id="table1_filter" class="dataTables_filter"></div>
+                    <div class="dt-buttons-main"></div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="table1" class="table table-striped table-bordered table-full-width datatable-export">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllTopProducts" /></th>
+                                <th>Sr No</th>
+                                <th>Seller Name</th>
+                                <th>Product Name</th>
+                                <th>SKU</th>
+                                <th>Email</th>
+                                <th>Mobile No</th>
+                                <th>GSTIN</th>
+                                <th>Total Orders</th>
+                                <th>Total Commission(₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int srNo = 1; }
+                            @foreach (var item in Model)
+                            {
+                                <tr data-sku="@item.SKU">
+                                    <td><input type="checkbox" class="rowCheckbox" /></td>
+                                    <td>@srNo</td>
+                                    <td>@item.SellerName</td>
+                                    <td>@item.ProductName</td>
+                                    <td>@item.SKU</td>
+                                    <td>@item.Email</td>
+                                    <td>@($"+91 {item.Mobile}")</td>
+                                    <td>@item.GSTIN</td>
+                                    <td>@item.TotalOrders</td>
+                                    <td>@item.TotalCommissionAmount</td>
+                                   
+
+                                </tr>
+                                srNo++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Toast Notification HTML -->
+    <div class="position-fixed top-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <span id="toastMessage"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/drilldown.js"></script>
+
+
+
+
+
+    @section Scripts {
+
+
+
+
+        <!-- jQuery -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+        <!-- DataTables -->
+        <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+
+        @*DataTables Buttons CSS*@
+        <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css">
+
+        @*DataTables Buttons JS*@
+        <script src="~/Content/Document/CustomJS/buttons.bootstrap5.min.js"></script>
+        <script src="~/Content/Document/CustomJS/buttons.print.min.js"></script>
+
+
+
+        <script src="~/Content/Document/CustomJS/jszip.min.js"></script>
+        <script src="~/Content/Document/CustomJS/pdfmake.min.js"></script>
+        <script src="~/Content/Document/CustomJS/vfs_fonts.js"></script>
+        <script src="~/Content/Document/CustomJS/dataTables.buttons.min.js"></script>
+        <script src="~/Content/Document/CustomJS/buttons.html5.min.js"></script>
+
+
+
+
+
+        <!-- Moment.js -->
+        <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+
+        <!-- Daterangepicker CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" />
+
+        <!-- Daterangepicker JS -->
+        <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+
+
+
+
+        <script>
+            $(document).ready(function () {
+                //$('#table1').DataTable({
+                //    responsive: true,
+                //    autoWidth: false
+                //});
+                // Initialize DataTable with export functionality for Top 5 Selling Products
+                var topProductsTable = $('#table1').DataTable({
+                    responsive: true,
+                    searching: true,
+                    paging: true,
+                    ordering: false,
+                    info: true,
+                    lengthChange: false,
+                    pageLength: 10,
+                    destroy: true,
+                    autoWidth: false,
+                    scrollX: false,
+                    language: {
+                        search: "Search:",
+                        searchPlaceholder: "Type to search..."
+                    },
+                    buttons: [
+                        {
+                            extend: 'copy',
+                            className: 'btn btn-sm',
+                            text: '<img src="/Content/Document/Image/Copy.png" alt="Copy">',
+                            attr: { title: 'Copy to clipboard' },
+                            title: 'Top 5 Selling Products by Seller',
+                            messageTop: 'Export Date: ' + getCurrentDateTime(),
+                            exportOptions: {
+                                rows: function (idx, data, node) {
+                                    return $(node).find('input.rowCheckbox').prop('checked');
+                                },
+                                columns: ':not(:first-child)', // Exclude checkbox column
+                                format: {
+                                    body: function (data, row, column, node) {
+                                        // Fix Sr No for dynamic numbering in exports
+                                        if (column === 0) { // Sr No column (after removing checkbox column)
+                                            var selectedRows = [];
+                                            topProductsTable.rows({ search: 'applied' }).nodes().each(function (rowNode, index) {
+                                                if ($(rowNode).find('input.rowCheckbox').prop('checked')) {
+                                                    selectedRows.push(rowNode);
+                                                }
+                                            });
+                                            var currentRowIndex = selectedRows.indexOf(node.parentNode);
+                                            return currentRowIndex + 1;
+                                        }
+                                        return data;
+                                    }
+                                }
+                            },
+                            action: function (e, dt, button, config) {
+                                if (getSelectedCountTopProducts() === 0) {
+                                    showErrorToast('Please select at least one row to export');
+                                    return false;
+                                }
+                                $.fn.dataTable.ext.buttons.copyHtml5.action.call(this, e, dt, button, config);
+                            }
+                        },
+                        {
+                            extend: 'csv',
+                            className: 'btn btn-sm',
+                            text: '<img src="/Content/Document/Image/CSV.png" alt="CSV">',
+                            attr: { title: 'Export as CSV file' },
+                            title: 'Top 5 Selling Products by Seller',
+                            messageTop: 'Export Date: ' + getCurrentDateTime(),
+                            exportOptions: {
+                                rows: function (idx, data, node) {
+                                    return $(node).find('input.rowCheckbox').prop('checked');
+                                },
+                                columns: ':not(:first-child)',
+                                format: {
+                                    body: function (data, row, column, node) {
+                                        if (column === 0) {
+                                            var selectedRows = [];
+                                            topProductsTable.rows({ search: 'applied' }).nodes().each(function (rowNode, index) {
+                                                if ($(rowNode).find('input.rowCheckbox').prop('checked')) {
+                                                    selectedRows.push(rowNode);
+                                                }
+                                            });
+                                            var currentRowIndex = selectedRows.indexOf(node.parentNode);
+                                            return currentRowIndex + 1;
+                                        }
+                                        return data;
+                                    }
+                                }
+                            },
+                            action: function (e, dt, button, config) {
+                                if (getSelectedCountTopProducts() === 0) {
+                                    showErrorToast('Please select at least one row to export');
+                                    return false;
+                                }
+                                $.fn.dataTable.ext.buttons.csvHtml5.action.call(this, e, dt, button, config);
+                            }
+                        },
+                        {
+                            extend: 'excel',
+                            className: 'btn btn-sm',
+                            text: '<img src="/Content/Document/Image/XLS.png" alt="Excel">',
+                            attr: { title: 'Export as Excel file' },
+                            title: 'Top 5 Selling Products by Seller',
+                            messageTop: 'Export Date: ' + getCurrentDateTime(),
+                            exportOptions: {
+                                rows: function (idx, data, node) {
+                                    return $(node).find('input.rowCheckbox').prop('checked');
+                                },
+                                columns: ':not(:first-child)',
+                                format: {
+                                    body: function (data, row, column, node) {
+                                        if (column === 0) {
+                                            var selectedRows = [];
+                                            topProductsTable.rows({ search: 'applied' }).nodes().each(function (rowNode, index) {
+                                                if ($(rowNode).find('input.rowCheckbox').prop('checked')) {
+                                                    selectedRows.push(rowNode);
+                                                }
+                                            });
+                                            var currentRowIndex = selectedRows.indexOf(node.parentNode);
+                                            return currentRowIndex + 1;
+                                        }
+                                        return data;
+                                    }
+                                }
+                            },
+                            action: function (e, dt, button, config) {
+                                if (getSelectedCountTopProducts() === 0) {
+                                    showErrorToast('Please select at least one row to export');
+                                    return false;
+                                }
+                                $.fn.dataTable.ext.buttons.excelHtml5.action.call(this, e, dt, button, config);
+                            }
+                        },
+                        {
+                            extend: 'pdf',
+                            className: 'btn btn-sm',
+                            text: '<img src="/Content/Document/Image/PDFicon.png" alt="PDF">',
+                            attr: { title: 'Export as PDF' },
+                            title: 'Top 5 Selling Products by Seller',
+                            messageTop: 'Export Date: ' + getCurrentDateTime(),
+                            orientation: 'landscape',
+                            pageSize: 'A4',
+                            customize: function (doc) {
+                                if (doc.content[1] && doc.content[1].text) {
+                                    doc.content[1].fontSize = 10;
+                                    doc.content[1].alignment = 'left';
+                                    doc.content[1].margin = [0, 0, 0, 10];
+                                }
+                                if (doc.content[0] && doc.content[0].text) {
+                                    doc.content[0].fontSize = 16;
+                                    doc.content[0].bold = true;
+                                    doc.content[0].alignment = 'center';
+                                }
+                            },
+                            exportOptions: {
+                                rows: function (idx, data, node) {
+                                    return $(node).find('input.rowCheckbox').prop('checked');
+                                },
+                                columns: ':not(:first-child)',
+                                format: {
+                                    body: function (data, row, column, node) {
+                                        if (column === 0) {
+                                            var selectedRows = [];
+                                            topProductsTable.rows({ search: 'applied' }).nodes().each(function (rowNode, index) {
+                                                if ($(rowNode).find('input.rowCheckbox').prop('checked')) {
+                                                    selectedRows.push(rowNode);
+                                                }
+                                            });
+                                            var currentRowIndex = selectedRows.indexOf(node.parentNode);
+                                            return currentRowIndex + 1;
+                                        }
+                                        return data;
+                                    }
+                                }
+                            },
+                            action: function (e, dt, button, config) {
+                                if (getSelectedCountTopProducts() === 0) {
+                                    showErrorToast('Please select at least one row to export');
+                                    return false;
+                                }
+                                $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, config);
+                            }
+                        },
+                        {
+                            extend: 'print',
+                            className: 'btn btn-sm',
+                            text: '<img src="/Content/Document/Image/Print.png" alt="Print">',
+                            attr: { title: 'Print' },
+                            title: 'Top 5 Selling Products by Seller',
+                            messageTop: 'Export Date: ' + getCurrentDateTime(),
+                            exportOptions: {
+                                rows: function (idx, data, node) {
+                                    return $(node).find('input.rowCheckbox').prop('checked');
+                                },
+                                columns: ':not(:first-child)',
+                                format: {
+                                    body: function (data, row, column, node) {
+                                        if (column === 0) {
+                                            var selectedRows = [];
+                                            topProductsTable.rows({ search: 'applied' }).nodes().each(function (rowNode, index) {
+                                                if ($(rowNode).find('input.rowCheckbox').prop('checked')) {
+                                                    selectedRows.push(rowNode);
+                                                }
+                                            });
+                                            var currentRowIndex = selectedRows.indexOf(node.parentNode);
+                                            return currentRowIndex + 1;
+                                        }
+                                        return data;
+                                    }
+                                }
+                            },
+                            action: function (e, dt, button, config) {
+                                if (getSelectedCountTopProducts() === 0) {
+                                    showErrorToast('Please select at least one row to export');
+                                    return false;
+                                }
+                                $.fn.dataTable.ext.buttons.print.action.call(this, e, dt, button, config);
+                            }
+                        }
+                    ],
+                    language: {
+                        search: "Search:",
+                        searchPlaceholder: "Type to search...",
+                        paginate: {
+                            next: 'Next',
+                            previous: 'Previous'
+                        }
+                    
+                    },
+                    initComplete: function () {
+                        // Move buttons to our custom container
+                        this.api().buttons().container().appendTo($('#table1').closest('.card-body').find('.dt-buttons-main'));
+                        // Manually set the placeholder attribute as fallback
+                        $('#table1_filter input[type="search"]').attr('placeholder', 'Type to search...');
+                        // Move search to our custom container
+                        $('#table1_filter').appendTo($('#topProductsTable_filter'));
+                    }
+                });
+
+                // Select all checkbox functionality
+                $('#selectAllTopProducts').on('click', function () {
+                    var rows = topProductsTable.rows({ 'search': 'applied' }).nodes();
+                    $('input.rowCheckbox', rows).prop('checked', this.checked);
+                });
+
+                $('#table1 tbody').on('change', 'input.rowCheckbox', function () {
+                    if (!this.checked) {
+                        $('#selectAllTopProducts').prop('checked', false);
+                    } else {
+                        var allChecked = topProductsTable.rows({ 'search': 'applied' }).nodes().find('input.rowCheckbox:not(:checked)').length === 0;
+                        $('#selectAllTopProducts').prop('checked', allChecked);
+                    }
+                });
+
+                // Function to get selected count for top products table
+                function getSelectedCountTopProducts() {
+                    return $('#table1 input.rowCheckbox:checked').length;
+                }
+
+                // Function to get current date and time
+                function getCurrentDateTime() {
+                    var now = new Date();
+                    var day = String(now.getDate()).padStart(2, '0');
+                    var month = String(now.getMonth() + 1).padStart(2, '0');
+                    var year = now.getFullYear();
+                    var hours = String(now.getHours()).padStart(2, '0');
+                    var minutes = String(now.getMinutes()).padStart(2, '0');
+                    var seconds = String(now.getSeconds()).padStart(2, '0');
+
+                    return day + '/' + month + '/' + year + ' ' + hours + ':' + minutes + ':' + seconds;
+                }
+
+                // Toast notification function
+                function showErrorToast(message) {
+                    $('#toastMessage').text(message);
+                    var toastEl = document.getElementById('liveToast');
+                    var toast = new bootstrap.Toast(toastEl);
+                    toast.show();
+                }
+
+            });
+        </script>
+        <script>
+
+
+            //For Month-wise revenue and Order
+
+            $(document).ready(function () {
+                var currentYear = new Date().getFullYear();
+                var yearRevenue = parseInt($('#selectedYearRevenue').text());
+                var yearOrders = parseInt($('#selectedYearOrders').text());
+
+                // Load data initially
+                loadRevenueChart(yearRevenue);
+                loadOrdersChart(yearOrders);
+
+                // Initial button state validation
+                updateButtonStates();
+
+                // Revenue year filter handlers
+                $('#prevYearRevenue').click(function () {
+                    if (!$(this).prop('disabled')) {
+                        yearRevenue--;
+                        $('#selectedYearRevenue').text(yearRevenue);
+                        loadRevenueChart(yearRevenue);
+                        updateButtonStates();
+                    }
+                });
+
+                $('#nextYearRevenue').click(function () {
+                    if (!$(this).prop('disabled')) {
+                        yearRevenue++;
+                        $('#selectedYearRevenue').text(yearRevenue);
+                        loadRevenueChart(yearRevenue);
+                        updateButtonStates();
+                    }
+                });
+
+                // Orders year filter handlers
+                $('#prevYearOrders').click(function () {
+                    if (!$(this).prop('disabled')) {
+                        yearOrders--;
+                        $('#selectedYearOrders').text(yearOrders);
+                        loadOrdersChart(yearOrders);
+                        updateButtonStates();
+                    }
+                });
+
+                $('#nextYearOrders').click(function () {
+                    if (!$(this).prop('disabled')) {
+                        yearOrders++;
+                        $('#selectedYearOrders').text(yearOrders);
+                        loadOrdersChart(yearOrders);
+                        updateButtonStates();
+                    }
+                });
+
+                // Function to update button states based on current year validation
+                function updateButtonStates() {
+                    // Revenue chart buttons
+                    if (yearRevenue >= currentYear) {
+                        $('#nextYearRevenue').prop('disabled', true).addClass('disabled');
+                    } else {
+                        $('#nextYearRevenue').prop('disabled', false).removeClass('disabled');
+                    }
+
+                    // Orders chart buttons
+                    if (yearOrders >= currentYear) {
+                        $('#nextYearOrders').prop('disabled', true).addClass('disabled');
+                    } else {
+                        $('#nextYearOrders').prop('disabled', false).removeClass('disabled');
+                    }
+                }
+
+                function loadRevenueChart(year) {
+                    $.ajax({
+                        url: '/Admin/GetMonthWiseProfitDataNM',
+                        type: 'GET',
+                        data: { year: year },
+                        success: function (data) {
+                            Highcharts.chart('profitChart', {
+                                chart: { type: 'line' },
+                                title: { text: 'Month-wise Revenue (₹) - ' + year },
+                                credits: { enabled: false },
+                                xAxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] },
+                                yAxis: { title: { text: 'Revenue (₹)' } },
+                                series: [{ name: 'Revenue (₹)', data: data, color: 'green' }]
+                            });
+                        },
+                        error: function () {
+                            alert('Failed to load revenue data for year ' + year);
+                        }
+                    });
+                }
+
+                function loadOrdersChart(year) {
+                    $.ajax({
+                        url: '/Admin/GetMonthWiseOrderDataNM',
+                        type: 'GET',
+                        data: { year: year },
+                        success: function (data) {
+                            Highcharts.chart('orderChart', {
+                                chart: { type: 'column' },
+                                title: { text: 'Month-wise Orders - ' + year },
+                                credits: { enabled: false },
+                                xAxis: {
+                                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                                    crosshair: true,
+                                    title: { text: '' }
+                                },
+                                yAxis: {
+                                    min: 0,
+                                    title: { text: 'Number of Orders' }
+                                },
+                                tooltip: {
+                                    headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                                    pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                                        '<td style="padding:0"><b>{point.y} orders</b></td></tr>',
+                                    footerFormat: '</table>',
+                                    shared: true,
+                                    useHTML: true
+                                },
+                                plotOptions: {
+                                    column: {
+                                        pointPadding: 0.2,
+                                        borderWidth: 0
+                                    }
+                                },
+                                series: [{
+                                    name: 'Months',
+                                    data: data,
+                                    color: '#007bff'
+                                }]
+                            });
+                        },
+                        error: function () {
+                            alert('Failed to load orders data for year ' + year);
+                        }
+                    });
+                }
+            });
+
+
+
+
+
+
+
+
+         // For All Cards
+
+
+            $(document).ready(function () {
+                // Global variables for date range
+                let currentStartDate = null;
+                let currentEndDate = null;
+                let isDateFilterApplied = false;
+
+                // Get dates from URL parameters on page load
+                function initializeDatesFromUrl() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const startDateParam = urlParams.get('startDate');
+                    const endDateParam = urlParams.get('endDate');
+
+                    if (startDateParam && endDateParam) {
+                        currentStartDate = startDateParam;
+                        currentEndDate = endDateParam;
+                        isDateFilterApplied = true;
+                    } else {
+                        // Initially no date filter - load all data
+                        currentStartDate = null;
+                        currentEndDate = null;
+                        isDateFilterApplied = false;
+                    }
+                }
+
+                // Initialize dates
+                initializeDatesFromUrl();
+
+                // Initialize DateRangePicker with default range but don't use it for filtering initially
+                $('#hiddenDateRangePicker').daterangepicker({
+                    opens: 'right',
+                    startDate: moment().startOf('month'),
+                    endDate: moment().endOf('month'),
+                    locale: {
+                        format: 'YYYY-MM-DD',
+                        cancelLabel: 'Clear Filter',
+                        applyLabel: 'Apply Filter'
+                    },
+                    autoUpdateInput: false // Don't auto-update the input
+                });
+
+                // Update input display when dates are selected but not applied yet
+                $('#hiddenDateRangePicker').on('show.daterangepicker', function (ev, picker) {
+                    if (isDateFilterApplied && currentStartDate && currentEndDate) {
+                        picker.setStartDate(moment(currentStartDate));
+                        picker.setEndDate(moment(currentEndDate));
+                        $(this).val(moment(currentStartDate).format('MM/DD/YYYY') + ' - ' + moment(currentEndDate).format('MM/DD/YYYY'));
+                    } else {
+                        $(this).val('All Data (No Filter)');
+                    }
+                });
+
+                // Show date picker when floating button is clicked
+                $('#floatingDatePickerBtn').click(function (e) {
+                    e.preventDefault();
+                    $('#hiddenDateRangePicker').data('daterangepicker').show();
+                });
+
+                // Date range apply handler - only when user clicks "Apply Filter"
+                $('#hiddenDateRangePicker').on('apply.daterangepicker', function (ev, picker) {
+                    const startDate = picker.startDate.format('YYYY-MM-DD');
+                    const endDate = picker.endDate.format('YYYY-MM-DD');
+
+                    // Update global variables
+                    currentStartDate = startDate;
+                    currentEndDate = endDate;
+                    isDateFilterApplied = true;
+
+                    // Update input display
+                    $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+
+                    // Redirect to apply date filter
+                    window.location.href = `/Admin/DashboardNM?startDate=${startDate}&endDate=${endDate}`;
+                });
+
+                // Clear date filter - when user clicks "Clear Filter"
+                $('#hiddenDateRangePicker').on('cancel.daterangepicker', function (ev, picker) {
+                    currentStartDate = null;
+                    currentEndDate = null;
+                    isDateFilterApplied = false;
+                    $(this).val('All Data (No Filter)');
+                    // Redirect to clear filter
+                    window.location.href = '/Admin/DashboardNM';
+                });
+
+                // Update floating button text based on filter status
+                function updateFloatingButtonText() {
+                    const btnText = isDateFilterApplied ?
+                        `<i class="bi bi-calendar"></i> ` :
+                        `<i class="bi bi-calendar"></i> `;
+                    $('#floatingDatePickerBtn').html(btnText);
+                }
+
+                // Initialize button text
+                updateFloatingButtonText();
+
+                // SINGLE Card click handler
+                $('.clickable-card').on('click', function () {
+                    const jsAction = $(this).data('js-action');
+                    const title = $(this).data('title');
+
+                    console.log('Card clicked:', jsAction, 'Filter applied:', isDateFilterApplied, 'Dates:', currentStartDate, currentEndDate);
+
+                    $('#dashboardModalLabel').text(title + (isDateFilterApplied ? ' (Filtered)' : ' (All Data)'));
+                    $('#modalBodyContent').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading ${title} details...</p>
+                ${isDateFilterApplied ?
+                            `<small class="text-muted">Date Range: ${moment(currentStartDate).format('DD-MM-YYYY')} to ${moment(currentEndDate).format('DD-MM-YYYY')}</small>` :
+                            `<small class="text-muted">Loading all available data</small>`
+                        }
+            </div>
+        `);
+
+                    // Show the modal immediately
+                    $('#dashboardModal').modal('show');
+
+                    // Destroy any existing DataTable in modal
+                    destroyExistingDataTables();
+
+                    // Call the JavaScript function dynamically
+                    if (typeof window[jsAction] === 'function') {
+                        // Pass dates only if filter is applied, otherwise pass null
+                        const startDateParam = isDateFilterApplied ? currentStartDate : null;
+                        const endDateParam = isDateFilterApplied ? currentEndDate : null;
+                        window[jsAction](startDateParam, endDateParam, title);
+                    } else {
+                        showError(title, 'JavaScript function not found: ' + jsAction);
+                    }
+                });
+
+                // Function to destroy existing DataTables
+                function destroyExistingDataTables() {
+                    const tableIds = ['#sellerTable', '#customerTable', '#orderTable', '#offerTable',
+                        '#deliveredTable', '#returnTable', '#replaceTable', '#cancelTable'];
+
+                    tableIds.forEach(function (tableId) {
+                        if ($.fn.DataTable && $.fn.DataTable.isDataTable(tableId)) {
+                            $(tableId).DataTable().destroy();
+                        }
+                    });
+                }
+
+                // Individual functions for each action
+                window.loadSellerList = function (startDate, endDate, title) {
+                    makeAjaxCall('/Admin/DashboardSellerListNM', startDate, endDate, title, '#sellerTable');
+                };
+
+                window.loadCustomerList = function (startDate, endDate, title) {
+                    makeAjaxCall('/Admin/DashboardCustomerListNM', startDate, endDate, title, '#customerTable');
+                };
+
+                window.loadRevenue = function (startDate, endDate, title) {
+                    makeAjaxCall('/Admin/Reventune', startDate, endDate, title, null);
+                };
+
+                window.loadOrderList = function (startDate, endDate, title) {
+                    makeAjaxCall('/Admin/DashboardOrderListNM', startDate, endDate, title, '#orderTable');
+                };
+
+                window.loadActiveOffers = function (startDate, endDate, title) {
+                    makeAjaxCall('/Admin/DashboardCActiveOfferListNM', startDate, endDate, title, '#offerTable');
+                };
+
+                window.loadDeliveredOrders = function (startDate, endDate, title) {
+                    makeAjaxCall('/Admin/DashboardDeliveredOrderListNM', startDate, endDate, title, '#deliveredTable');
+                };
+
+                window.loadReturnOrders = function (startDate, endDate, title) {
+                    makeAjaxCall('/Admin/DashboardReturnOrderListNM', startDate, endDate, title, '#returnTable');
+                };
+
+                window.loadReplaceOrders = function (startDate, endDate, title) {
+                    makeAjaxCall('/Admin/DashboardReplaceOrderListNM', startDate, endDate, title, '#replaceTable');
+                };
+
+                window.loadCancelOrders = function (startDate, endDate, title) {
+                    makeAjaxCall('/Admin/DashboardCancelOrderListNM', startDate, endDate, title, '#cancelTable');
+                };
+
+                // Generic AJAX call function
+                function makeAjaxCall(url, startDate, endDate, title, tableSelector) {
+                    const data = {};
+
+                    // Only add date parameters if they are not null (i.e., filter is applied)
+                    if (startDate && endDate) {
+                        data.startDate = startDate;
+                        data.endDate = endDate;
+                    }
+
+                    console.log('Making AJAX call to:', url, 'with data:', data);
+
+                    $.ajax({
+                        url: url,
+                        type: 'GET',
+                        data: data,
+                        cache: false,
+                        timeout: 30000, // 30 seconds timeout
+                        success: function (response) {
+                            console.log('AJAX success for:', url);
+                            $('#modalBodyContent').html(response);
+
+                            // Initialize DataTable if table selector is provided
+                            if (tableSelector) {
+                                setTimeout(function () {
+                                    if ($(tableSelector).length && (!$.fn.DataTable || !$.fn.DataTable.isDataTable(tableSelector))) {
+                                        try {
+                                            if (typeof simpleDatatables !== 'undefined') {
+                                                new simpleDatatables.DataTable(tableSelector);
+                                            } else if ($.fn.DataTable) {
+                                                $(tableSelector).DataTable({
+                                                    responsive: true,
+                                                    autoWidth: false,
+                                                    paging: true,
+                                                    searching: true,
+                                                    info: true,
+                                                    order: [[1, "desc"]], // Assuming date column is usually second
+                                                    language: {
+                                                        search: "Search:",
+                                                        searchPlaceholder: "Type to search..."
+                                                    },
+                                                    initComplete: function () {
+                                                        $('.dataTables_filter input').attr('placeholder', 'Type to search...');
+                                                    }
+                                                });
+                                            }
+                                        } catch (e) {
+                                            console.error('Error initializing DataTable:', e);
+                                        }
+                                    }
+                                }, 100);
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error('AJAX error for:', url, 'Status:', status, 'Error:', error, 'Response:', xhr.responseText);
+                            showError(title, `Error: ${error} (Status: ${status})`);
+                        }
+                    });
+                }
+
+                // Common error handler
+                function showError(title, errorMessage = '') {
+                    $('#modalBodyContent').html(`
+            <div class="alert alert-danger">
+                <h5>Error Loading ${title}</h5>
+                <p>Failed to load ${title} details. Please try again.</p>
+                ${errorMessage ? `<small class="text-muted">${errorMessage}</small>` : ''}
+                <div class="mt-3">
+                    <button class="btn btn-primary btn-sm" onclick="location.reload()">Refresh Page</button>
+                </div>
+            </div>
+        `);
+                }
+            });
+
+            // Add this code after your existing document.ready function
+
+
+            // Handle click on Total Orders column - SIMPLIFIED to match old card click style
+            $(document).on('click', '#table1 tbody tr td:nth-child(9)', function () {
+                // Get the SKU from the row data
+                const sku = $(this).closest('tr').data('sku');
+
+                // Set modal title
+                $('#dashboardModalLabel').text('Total Order Details');
+
+                // Show simple loading indicator
+                $('#modalBodyContent').html(`
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading order details for SKU: ${sku}</p>
+            ${isDateFilterApplied ?
+                        `<small class="text-muted">Date Range: ${moment(currentStartDate).format('DD-MM-YYYY')} to ${moment(currentEndDate).format('DD-MM-YYYY')}</small>` :
+                        `<small class="text-muted">Loading all available data</small>`
+                    }
+        </div>
+    `);
+
+                // Show the modal
+                $('#dashboardModal').modal('show');
+
+                // Make simple AJAX call
+                $.ajax({
+                    url: '/Admin/GetTotalorderList',
+                    type: 'GET',
+                    data: {
+                        startDate: currentStartDate,
+                        endDate: currentEndDate,
+                        SKU: sku
+                    },
+                    success: function (response) {
+                        $('#modalBodyContent').html(response);
+                    },
+                    error: function (xhr, status, error) {
+                        $('#modalBodyContent').html(`
+                <div class="alert alert-danger">
+                    <h5>Error Loading Order Details</h5>
+                    <p>Failed to load order details. Please try again.</p>
+                    <small class="text-muted">Error: ${error}</small>
+                </div>
+            `);
+                    }
+                });
+            });
+
+            // CSS to make the Total Orders column clickable
+            const style = document.createElement('style');
+            style.textContent = `
+    #table1 tbody tr td:nth-child(9) {
+        cursor: pointer;
+        color: #0d6efd;
+        text-decoration: underline;
+    }
+    #table1 tbody tr td:nth-child(9):hover {
+        color: #0a58ca;
+        background-color: #f8f9fa;
+    }
+`;
+            document.head.appendChild(style);
+
+
+
+
+            // For Pie chart
+
+
+
+            $(document).ready(function () {
+    // Initialize main page DataTable first (Top 5 Selling Products)
+   // initializeMainPageDataTable();
+
+    // Order Summary Pie Chart
+    const orderStatusCounts = @Html.Raw(JsonConvert.SerializeObject(ViewBag.OrderStatusCounts));
+    const totalOrders = orderStatusCounts.reduce((sum, x) => sum + x.OrderCount, 0);
+
+    // Function to initialize main page DataTable (Top 5 Selling Products) - PROTECTED
+    function initializeMainPageDataTable() {
+        if ($('#table1').length) {
+            try {
+                console.log('Initializing main page DataTable #table1');
+
+                // Check if DataTable is already initialized
+                if ($.fn.DataTable.isDataTable('#table1')) {
+                    console.log('DataTable #table1 already initialized');
+                    return;
+                }
+
+                $('#table1').DataTable({
+                    responsive: true,
+                    autoWidth: false,
+                    paging: true,
+                    searching: true,
+                    info: true,
+                    order: [[5, "desc"]], // Sort by Total Orders column
+                    pageLength: 10,
+                    language: {
+                        search: "Search products:",
+                        lengthMenu: "Show _MENU_ entries",
+                        info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                        paginate: {
+                            first: "First",
+                            last: "Last",
+                            next: "Next",
+                            previous: "Previous"
+                        }
+                    }
+                });
+
+                console.log('Main page DataTable #table1 initialized successfully');
+            } catch (e) {
+                console.error('Error initializing main page DataTable:', e);
+            }
+        }
+    }
+
+    // Function to destroy ONLY modal DataTables (NEVER touches #table1)
+    function destroyModalDataTablesOnly() {
+        try {
+            if (typeof $.fn.DataTable !== 'undefined') {
+                // Define specific modal table IDs - EXCLUDES #table1
+                const modalTableIds = [
+                    '#orderTable', '#deliveredTable', '#returnTable',
+                    '#replaceTable', '#cancelTable', '#complaintTable',
+                    '#newComplaintTable', '#resolvedComplaintTable', '#inProcessComplaintTable'
+                ];
+
+                modalTableIds.forEach(function(tableId) {
+                    if ($(tableId).length && $.fn.DataTable.isDataTable(tableId)) {
+                        console.log('Destroying modal DataTable:', tableId);
+                        $(tableId).DataTable().clear().destroy();
+                    }
+                });
+
+                // Also check for tables inside modal container only
+                $('#dashboardModal .dataTable').each(function() {
+                    if ($.fn.DataTable.isDataTable(this) && this.id !== 'table1') {
+                        console.log('Destroying modal container DataTable:', this.id);
+                        $(this).DataTable().clear().destroy();
+                    }
+                });
+            }
+        } catch (error) {
+            console.warn('Error destroying modal DataTables:', error);
+        }
+    }
+
+    // LEGACY FUNCTION - Updated to protect main table
+    function destroyExistingDataTables() {
+        destroyModalDataTablesOnly(); // Only destroy modal tables
+    }
+
+    Highcharts.chart('orderSummaryPie', {
+        chart: {
+            type: 'pie',
+            events: {
+                render() {
+                    const chart = this,
+                        series = chart.series[0];
+                    let customLabel = chart.options.chart.customLabel;
+
+                    if (!customLabel) {
+                        customLabel = chart.options.chart.customLabel =
+                            chart.renderer.label(
+                                'Total Order<br/>' +
+                                '<strong>' + totalOrders + '</strong>'
+                            )
+                                .css({
+                                    color: '#000',
+                                    textAnchor: 'middle'
+                                })
+                                .add();
+                    }
+
+                    const x = series.center[0] + chart.plotLeft,
+                        y = series.center[1] + chart.plotTop -
+                            (customLabel.getBBox().height / 2);
+
+                    customLabel.attr({
+                        x,
+                        y
+                    });
+
+                    customLabel.css({
+                        fontSize: `${series.center[2] / 12}px`
+                    });
+                }
+            }
+        },
+        title: { text: 'Order Status Distribution' },
+        credits: { enabled: false },
+        tooltip: { pointFormat: '{series.name}: <b>{point.percentage:.0f}%</b>' },
+        legend: { enabled: false },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                point: {
+                    events: {
+                        click: function () {
+                            const orderType = this.name;
+                            handlePieChartClick(orderType);
+                        }
+                    }
+                },
+                borderRadius: 8,
+                dataLabels: [{
+                    enabled: true,
+                    distance: 20,
+                    format: '{point.name}'
+                }, {
+                    enabled: true,
+                    distance: -15,
+                    format: '{point.percentage:.1f}%',
+                    style: { fontSize: '0.8em' }
+                }]
+            }
+        },
+        series: [{
+            name: 'Orders',
+            colorByPoint: true,
+            innerSize: '75%',
+            data: orderStatusCounts.map(x => ({
+                name: x.OrderType,
+                y: x.OrderCount
+            }))
+        }]
+    });
+
+    // Function to handle pie chart clicks with date filter integration
+    function handlePieChartClick(orderType) {
+        console.log('Pie chart clicked:', orderType, 'Filter applied:', window.isDateFilterApplied, 'Dates:', window.currentStartDate, window.currentEndDate);
+
+        let actionUrl = '';
+
+        // Map order types to actions
+        switch (orderType) {
+            case 'Delivered':
+                actionUrl = '/Admin/DashboardDeliveredOrderListNM';
+                break;
+            case 'Returned':
+                actionUrl = '/Admin/DashboardReturnOrderListNM';
+                break;
+            case 'Replaced':
+                actionUrl = '/Admin/DashboardReplaceOrderListNM';
+                break;
+            case 'Cancelled':
+                actionUrl = '/Admin/DashboardCancelOrderListNM';
+                break;
+            default:
+                console.warn('Unknown order type:', orderType);
+                return;
+        }
+
+        if (actionUrl) {
+            const title = orderType + " Orders";
+
+            $('#dashboardModalLabel').text(title + (window.isDateFilterApplied ? ' (Filtered)' : ' (All Data)'));
+
+            // Show loading spinner with date filter info
+            $('#modalBodyContent').html(`
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading ${orderType} orders...</p>
+                    ${window.isDateFilterApplied ?
+                        `<small class="text-muted">Date Range: ${moment(window.currentStartDate).format('DD-MM-YYYY')} to ${moment(window.currentEndDate).format('DD-MM-YYYY')}</small>` :
+                        `<small class="text-muted">Loading all available data</small>`
+                    }
+                </div>
+            `);
+
+            // Show the modal
+            $('#dashboardModal').modal('show');
+
+            // Destroy only modal DataTables (NEVER main page table)
+            destroyModalDataTablesOnly();
+
+            // Make AJAX call to load the partial view
+            makeDirectAjaxCall(actionUrl, orderType);
+        }
+    }
+
+    // Function for AJAX calls to load partial views
+    function makeDirectAjaxCall(actionUrl, orderType) {
+        const data = {};
+
+        // Only add date parameters if filter is applied
+        if (window.isDateFilterApplied && window.currentStartDate && window.currentEndDate) {
+            data.startDate = window.currentStartDate;
+            data.endDate = window.currentEndDate;
+        }
+
+        console.log('Making AJAX call to:', actionUrl, 'with data:', data);
+
+        $.ajax({
+            url: actionUrl,
+            type: 'GET',
+            data: data,
+            cache: false,
+            success: function (response) {
+                console.log('AJAX success for:', actionUrl);
+                $('#modalBodyContent').html(response);
+
+                // Initialize DataTable for modal content only
+                setTimeout(function() {
+                    initializeModalDataTables();
+                }, 100);
+            },
+            error: function (xhr, status, error) {
+                console.error('AJAX error for:', actionUrl, 'Status:', status, 'Error:', error);
+                console.error('Response:', xhr.responseText);
+
+                $('#modalBodyContent').html(`
+                    <div class="alert alert-danger">
+                        <h5>Error Loading ${orderType} Orders</h5>
+                        <p>Failed to load ${orderType} orders. Please try again.</p>
+                        <small class="text-muted">Error: ${error} (Status: ${status})</small>
+                        ${xhr.responseText ? `<pre class="mt-2" style="font-size: 12px; max-height: 200px; overflow-y: auto;">${xhr.responseText}</pre>` : ''}
+                        <div class="mt-3">
+                            <button class="btn btn-primary btn-sm" onclick="location.reload()">Refresh Page</button>
+                        </div>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // Function to initialize DataTables for modal content only
+    function initializeModalDataTables() {
+        const tableSelectors = ['#orderTable', '#deliveredTable', '#returnTable', '#replaceTable', '#cancelTable'];
+
+        tableSelectors.forEach(function(selector) {
+            // Skip if it's the main page table
+            if (selector === '#table1') return;
+
+            if ($(selector).length && (!$.fn.DataTable || !$.fn.DataTable.isDataTable(selector))) {
+                try {
+                    console.log('Initializing modal DataTable for:', selector);
+
+                    if (typeof simpleDatatables !== 'undefined') {
+                        new simpleDatatables.DataTable(selector);
+                    } else if ($.fn.DataTable) {
+                        $(selector).DataTable({
+                            responsive: true,
+                            autoWidth: false,
+                            paging: true,
+                            searching: true,
+                            info: true,
+                            order: [[1, "desc"]]
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error initializing modal DataTable:', e);
+                }
+            }
+        });
+    }
+
+    // Initialize date filter variables if they don't exist
+    if (typeof window.isDateFilterApplied === 'undefined') {
+        window.isDateFilterApplied = false;
+        window.currentStartDate = null;
+        window.currentEndDate = null;
+
+        // Try to get from URL parameters as fallback
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('startDate') && urlParams.get('endDate')) {
+            window.isDateFilterApplied = true;
+            window.currentStartDate = urlParams.get('startDate');
+            window.currentEndDate = urlParams.get('endDate');
+            console.log('Date filter initialized from URL params:', window.currentStartDate, window.currentEndDate);
+        }
+    }
+
+    // Fan Animation Script for Pie Charts (unchanged)
+    (function (H) {
+        H.seriesTypes.pie.prototype.animate = function (init) {
+            const series = this,
+                chart = series.chart,
+                points = series.points,
+                { animation } = series.options,
+                { startAngleRad } = series;
+
+            function fanAnimate(point, startAngleRad) {
+                const graphic = point.graphic,
+                    args = point.shapeArgs;
+
+                if (graphic && args) {
+                    graphic
+                        .attr({
+                            start: startAngleRad,
+                            end: startAngleRad,
+                            opacity: 1
+                        })
+                        .animate({
+                            start: args.start,
+                            end: args.end
+                        }, {
+                            duration: animation.duration / points.length
+                        }, function () {
+                            if (points[point.index + 1]) {
+                                fanAnimate(points[point.index + 1], args.end);
+                            }
+                            if (point.index === series.points.length - 1) {
+                                series.dataLabelsGroup.animate({
+                                    opacity: 1
+                                },
+                                    void 0,
+                                    function () {
+                                        points.forEach(p => p.opacity = 1);
+                                        series.update({
+                                            enableMouseTracking: true
+                                        }, false);
+                                        chart.update({
+                                            plotOptions: {
+                                                pie: {
+                                                    innerSize: '40%',
+                                                    borderRadius: 8
+                                                }
+                                            }
+                                        });
+                                    });
+                            }
+                        });
+                }
+            }
+
+            if (init) {
+                points.forEach(point => point.opacity = 0);
+            } else {
+                fanAnimate(points[0], startAngleRad);
+            }
+        };
+    }(Highcharts));
+
+    // Customer Support Tickets Pie Chart with Date Filter Integration
+    const complaintsStatusCounts = @Html.Raw(JsonConvert.SerializeObject(ViewBag.ComplaintsStatusCounts));
+
+    // Custom animation function for support tickets pie chart (existing code retained)
+    (function (H) {
+        H.seriesTypes.pie.prototype.supportTicketAnimate = function (init) {
+            const series = this,
+                chart = series.chart,
+                points = series.points,
+                { animation } = series.options,
+                { startAngleRad } = series;
+
+            function supportFanAnimate(point, startAngleRad) {
+                const graphic = point.graphic,
+                    args = point.shapeArgs;
+
+                if (graphic && args) {
+                    graphic
+                        .attr({
+                            start: startAngleRad,
+                            end: startAngleRad,
+                            opacity: 1
+                        })
+                        .animate({
+                            start: args.start,
+                            end: args.end
+                        }, {
+                            duration: animation.duration / points.length
+                        }, function () {
+                            if (points[point.index + 1]) {
+                                supportFanAnimate(points[point.index + 1], args.end);
+                            }
+                            if (point.index === series.points.length - 1) {
+                                series.dataLabelsGroup.animate({
+                                    opacity: 1
+                                },
+                                void 0,
+                                function () {
+                                    points.forEach(point => {
+                                        point.opacity = 1;
+                                    });
+                                    series.update({
+                                        enableMouseTracking: true
+                                    }, false);
+                                });
+                            }
+                        });
+                }
+            }
+
+            if (init) {
+                points.forEach(point => {
+                    point.opacity = 0;
+                });
+            } else {
+                supportFanAnimate(points[0], startAngleRad);
+            }
+        };
+    }(Highcharts));
+
+    // Function to handle support ticket pie chart clicks with date filter integration
+    function handleSupportTicketClick(complaintStatus) {
+        console.log('Support ticket pie clicked:', complaintStatus, 'Filter applied:', window.isDateFilterApplied, 'Dates:', window.currentStartDate, window.currentEndDate);
+
+        let actionUrl = '';
+
+        // Map complaint status to actions
+        switch (complaintStatus) {
+            case 'New':
+                actionUrl = '/Admin/DashboardComplaintNewListPartialNM';
+                break;
+            case 'Resolved':
+                actionUrl = '/Admin/DashboardComplaintResolveListPartialNM';
+                break;
+            case 'In Process':
+                actionUrl = '/Admin/DashboardComplaintInProcessListPartialNM';
+                break;
+            default:
+                console.warn('Unknown complaint status:', complaintStatus);
+                return;
+        }
+
+        if (actionUrl) {
+            const title = complaintStatus + " Complaints";
+
+            $('#dashboardModalLabel').text(title + (window.isDateFilterApplied ? ' (Filtered)' : ' (All Data)'));
+
+            // Show loading spinner with date filter info
+            $('#modalBodyContent').html(`
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading ${complaintStatus} complaints...</p>
+                    ${window.isDateFilterApplied ?
+                        `<small class="text-muted">Date Range: ${moment(window.currentStartDate).format('DD-MM-YYYY')} to ${moment(window.currentEndDate).format('DD-MM-YYYY')}</small>` :
+                        `<small class="text-muted">Loading all available data</small>`
+                    }
+                </div>
+            `);
+
+            // Show the modal
+            $('#dashboardModal').modal('show');
+
+            // Destroy only modal DataTables (NEVER main page table)
+            destroyModalDataTablesOnly();
+
+            // Make AJAX call to load the partial view with date filter
+            makeSupportTicketAjaxCall(actionUrl, complaintStatus);
+        }
+    }
+
+    // Function for support ticket AJAX calls with date filter
+    function makeSupportTicketAjaxCall(actionUrl, complaintStatus) {
+        const data = {};
+
+        // Only add date parameters if filter is applied
+        if (window.isDateFilterApplied && window.currentStartDate && window.currentEndDate) {
+            data.startDate = window.currentStartDate;
+            data.endDate = window.currentEndDate;
+        }
+
+        console.log('Making support ticket AJAX call to:', actionUrl, 'with data:', data);
+
+        $.ajax({
+            url: actionUrl,
+            type: 'GET',
+            data: data,
+            cache: false,
+            success: function (response) {
+                console.log('Support ticket AJAX success for:', actionUrl);
+                $('#modalBodyContent').html(response);
+
+                // Initialize DataTable for modal content only
+                setTimeout(function() {
+                    initializeSupportTicketDataTables();
+                }, 100);
+            },
+            error: function (xhr, status, error) {
+                console.error('Support ticket AJAX error for:', actionUrl, 'Status:', status, 'Error:', error);
+                console.error('Response:', xhr.responseText);
+
+                $('#modalBodyContent').html(`
+                    <div class="alert alert-danger">
+                        <h5>Error Loading ${complaintStatus} Complaints</h5>
+                        <p>Failed to load ${complaintStatus} complaints. Please try again.</p>
+                        <small class="text-muted">Error: ${error} (Status: ${status})</small>
+                        ${xhr.responseText ? `<pre class="mt-2" style="font-size: 12px; max-height: 200px; overflow-y: auto;">${xhr.responseText}</pre>` : ''}
+                        <div class="mt-3">
+                            <button class="btn btn-primary btn-sm" onclick="location.reload()">Refresh Page</button>
+                        </div>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // Function to initialize DataTables for support tickets modal content
+    function initializeSupportTicketDataTables() {
+        const tableSelectors = ['#complaintTable', '#newComplaintTable', '#resolvedComplaintTable', '#inProcessComplaintTable'];
+
+        tableSelectors.forEach(function(selector) {
+            // Skip if it's the main page table
+            if (selector === '#table1') return;
+
+            if ($(selector).length && (!$.fn.DataTable || !$.fn.DataTable.isDataTable(selector))) {
+                try {
+                    console.log('Initializing support ticket DataTable for:', selector);
+
+                    if (typeof simpleDatatables !== 'undefined') {
+                        new simpleDatatables.DataTable(selector);
+                    } else if ($.fn.DataTable) {
+                        $(selector).DataTable({
+                            responsive: true,
+                            autoWidth: false,
+                            paging: true,
+                            searching: true,
+                            info: true,
+                            order: [[1, "desc"]]
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error initializing support ticket DataTable:', e);
+                }
+            }
+        });
+    }
+
+    // Initialize the support tickets pie chart with enhanced click functionality
+    Highcharts.chart('supportTicketPie', {
+        chart: {
+            type: 'pie'
+        },
+        credits: {
+            enabled: false
+        },
+        title: {
+            text: 'Customer Support Tickets Distribution'
+        },
+
+        tooltip: {
+            headerFormat: '',
+            pointFormat: '<span style="color:{point.color}">\u25cf</span> {point.name}: <b>{point.percentage:.1f}%</b>'
+        },
+        accessibility: {
+            point: {
+                valueSuffix: '%'
+            }
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                borderWidth: 2,
+                cursor: 'pointer',
+                point: {
+                    events: {
+                        click: function () {
+                            const complaintStatus = this.name;
+                            handleSupportTicketClick(complaintStatus);
+                        }
+                    }
+                },
+                dataLabels: {
+                    enabled: true,
+                    format: '<b>{point.name}</b><br>{point.percentage:.1f}%',
+                    distance: 20
+                }
+            }
+        },
+        series: [{
+            enableMouseTracking: false,
+            animation: {
+                duration: 2000
+            },
+            colorByPoint: true,
+            data: complaintsStatusCounts.map(x => ({
+                name: x.ComplaintStatus,
+                y: x.ComplaintCount
+            }))
+        }]
+    });
+
+    // Event handler for modal close to ensure main page DataTable remains intact
+    $('#dashboardModal').on('hidden.bs.modal', function () {
+        console.log('Modal closed - checking main page DataTable');
+
+        // Re-initialize main page DataTable if it was accidentally destroyed
+        if ($('#table1').length && !$.fn.DataTable.isDataTable('#table1')) {
+            console.log('Re-initializing main page DataTable after modal close');
+           // initializeMainPageDataTable();
+        } else {
+            console.log('Main page DataTable is still intact');
+        }
+    });
+
+    // Additional protection: Check main table periodically
+    setInterval(function() {
+        if ($('#table1').length && !$.fn.DataTable.isDataTable('#table1')) {
+            console.warn('Main page DataTable was destroyed - reinitializing');
+           // initializeMainPageDataTable();
+        }
+    }, 3000); // Check every 3 seconds
+});
+
+
+
+
+        </script>
+
+    }
+</body>
+</html>

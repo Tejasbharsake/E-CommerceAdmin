@@ -1,0 +1,67 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+<div class="modal fade" id="codRefundModal" tabindex="-1" role="dialog" aria-labelledby="codRefundModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content rounded-3 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Refund - COD</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <p><strong>Account Holder:</strong> @Model.BankAccountHolderName</p>
+                <p><strong>Account Number:</strong> @Model.BankAccountNumber</p>
+                <p><strong>IFSC Code:</strong> @Model.IFSCCode</p>
+                <p><strong>Refund Amount:</strong> ₹@Model.ProductAmount.ToString("0.00")</p>
+
+                <div id="paymentScreen" class="mt-3" style="display:none;">
+                    <img src="/images/fake-payment-gateway.png" class="img-fluid border rounded-2 shadow-sm" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="btnConfirmCODRefund" class="btn btn-success"
+                        onclick="confirmCODRefund('@Model.OrderCode', '@Model.ProductAmount')">
+                    Confirm Refund
+                </button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmCODRefund(orderCode, amount) {
+            const paymentId = "UTR" + Math.floor(100000000000 + Math.random() * 900000000000);
+            const gatewayRef = "GATEWAYREF" + Math.floor(Math.random() * 1000000);
+
+            const btn = document.getElementById("btnConfirmCODRefund");
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            document.querySelector("#paymentScreen").style.display = "block";
+
+            setTimeout(() => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Refund Processed',
+                    html: `
+                <b>Refund Sent to Bank</b><br><br>
+                <strong>Payment ID:</strong> ${paymentId}<br>
+                <strong>Gateway Ref:</strong> ${gatewayRef}<br>
+                <strong>Amount:</strong> ₹${amount}
+            `
+                }).then(() => {
+                    $.post("/Admin/SaveCODRefund", {
+                        OrderCode: orderCode,
+                        TransactionId: paymentId,
+                        TransactionAmount: parseFloat(amount)
+                    }, function () {
+                        location.reload();
+                    });
+                });
+            }, 3000);
+        }
+    </script>
+}

@@ -1,0 +1,526 @@
+﻿@model List<GSTECommerceLibrary.Admin.Admin>
+
+@{
+    //========================== START: Tejas ==========================
+    // Task: Feedback View
+    // Date: 6-Aug-2025
+    // Description: Sets the title for the page and defines the layout.
+    //==================================================================
+    ViewBag.Title = "Feedback List | RahiShop Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<head>
+    <link href="~/Content/Document/custom-datatables/custom-datatables.css" rel="stylesheet" />
+    <link href="~/Content/Document/CSS/FeedbackTB.css" rel="stylesheet" />
+    <style>
+
+
+        #feedbackTable thead th {
+            background-color: #2C3E50; /* Solid Navy */
+            color: #FFFFFF; /* White text */
+            font-weight: 600;
+            text-align: center;
+            padding: 5px;
+            border-bottom: 2px solid #ddd;
+            font-size: 14px; /* smaller text */
+            height: 8px !important; /* fixed header height */
+            font-family: 'Poppins', sans-serif; /* Added font */
+            vertical-align: middle;
+        }
+
+
+
+        /* Reduce body row height */
+        #feedbackTable tbody td {
+            padding: 2px 5px !important;
+            height: 5px !important;
+            line-height: 1;
+            font-size: 13px;
+            text-align: center;
+            font-family: 'Poppins', sans-serif; /* Added font */
+            vertical-align: middle;
+        }
+
+
+        /* Target DataTables pagination buttons */
+        #feedbackTable_paginate .pagination .page-link {
+            padding: 2px 10px; /* smaller height & width */
+            font-size: 12px; /* smaller text */
+            min-width: 33px; /* button width */
+        }
+
+
+
+
+        /* Change checkbox color to blue */
+        input[type="checkbox"] {
+            accent-color: blue;
+        }
+
+        @* ========================================= *@
+        @* // Change starts here - UI styling *@
+        @* ========================================= *@
+        /* Custom styling for better table visibility */
+       /* #feedbackTable_wrapper .dataTables_filter {
+            float: none !important;
+            text-align: left !important;
+            margin: 0 !important;
+        }
+
+        #feedbackTable_wrapper .dataTables_filter input {
+            width: 100% !important;
+        }
+*/
+        /* Inline label styles - labels beside inputs */
+        .inline-label-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .inline-label-container label {
+            white-space: nowrap;
+            margin-bottom: 0 !important;
+            font-weight: 600;
+        }
+
+        .inline-label-container .form-control,
+        .inline-label-container .form-select,
+        .inline-label-container .input-group {
+            flex: 1;
+        }
+        @* ========================================= *@
+        @* // Change ends here - UI styling *@
+        @* ========================================= *@
+    </style>
+</head>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+
+@* ========================================= *@
+@* // Change starts here - Layout changes *@
+@* ========================================= *@
+<div class="container-fluid mt-3 px-4">
+    <h2 class="text-center text-primary mb-3">📝 Feedback List</h2>
+
+    <!-- Row 1: Date Range Picker + Status Dropdown + Export Buttons & Search -->
+    <div class="row mb-2 align-items-center">
+        <!-- Date Range Picker with inline label -->
+        <div class="col-md-3">
+            <div class="inline-label-container">
+                <label>Date Range Picker</label>
+                <div class="input-group">
+                    <input class="form-control input-daterange-datepicker" placeholder="Select Date Range" type="text" name="daterange" autocomplete="off" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Dropdown with inline label -->
+        <div class="col-md-3">
+            <div class="inline-label-container">
+                <label>Status:</label>
+                <select class="form-select form-select-sm" id="feedbackSelect">
+                    <option value="@Url.Action("FeedbackTB", "Admin")" @(ViewContext.RouteData.Values["action"].ToString() == "FeedbackTB" ? "selected" : "")>
+                        Customer Feedback
+                    </option>
+                    <option value="@Url.Action("SellerFeedbackTB", "Admin")" @(ViewContext.RouteData.Values["action"].ToString() == "SellerFeedbackTB" ? "selected" : "")>
+                        Seller Feedback
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Export Buttons & Search Box (stacked vertically, right-aligned) -->
+        <div class="col-md-6">
+            <!-- Export Buttons Row -->
+            <div class="d-flex gap-2 justify-content-end flex-wrap mb-2">
+                <button class="btn btn-outline-primary btn-sm" id="copyBtn"><img src="~/Content/Document/Image/Copy.png" alt="Copy" style="width:16px; margin-right:4px;"></button>
+                <button class="btn btn-outline-info btn-sm" id="csvBtn"><img src="~/Content/Document/Image/CSV.png" alt="CSV" style="width:16px; margin-right:4px;"></button>
+                <button class="btn btn-outline-success btn-sm" id="excelBtn"><img src="~/Content/Document/Image/XLS.png" alt="Excel" style="width:16px; margin-right:4px;"></button>
+                <button class="btn btn-outline-danger btn-sm" id="pdfBtn"><img src="~/Content/Document/Image/PDFicon.png" alt="PDF" style="width:16px; margin-right:4px;"></button>
+                <button class="btn btn-outline-dark btn-sm" id="printBtn"><img src="~/Content/Document/Image/Print.png" alt="Print" style="width:16px; margin-right:4px;"></button>
+            </div>
+            <!-- Search Box Container (right-aligned below buttons) -->
+            <div id="searchBoxContainer" class="d-flex justify-content-end">
+                <!-- DataTables search will be moved here via JavaScript -->
+            </div>
+        </div>
+    </div>
+    @* ========================================= *@
+    @* // Change ends here - Layout changes *@
+    @* ========================================= *@
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("feedbackSelect").addEventListener("change", function () {
+                if (this.value) {
+                    window.location.href = this.value;
+                }
+            });
+        });
+    </script>
+
+    <div class="table-responsive">
+        <table id="feedbackTable" class="table table-striped table-bordered w-100">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll" /></th>
+                    <th>Sr No</th>
+                    <th>Order Code</th>
+                    <th>Product</th>
+                    <th class="d-none">RatingNo</th>
+                    <th>Rating</th>
+                    <th>Feedback</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    // Loop through each feedback item from the Model
+                    int srNo = 1;
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><input type="checkbox" class="rowCheckbox" value="@item.OrderCode" /></td>
+                            <td>@srNo</td>
+                            <td>@item.OrderCode</td>
+                            <td>@item.ProductName</td>
+                            <td class="d-none">@item.Rating</td>
+                            <td>
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <span class="@(i <= item.Rating ? "text-warning" : "text-secondary")"><i class="bi @(i <= item.Rating ? "bi-star-fill" : "bi-star")"></i></span>
+                                }
+                            </td>
+                            <td>@Html.Encode(item.Feedback)</td>
+                            <td>@item.FeedbackDate.ToString("dd-MM-yyyy")</td>
+                            <td>
+                                <button class="btn btn-sm  view-details" data-ordercode="@item.OrderCode" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        srNo++;
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="9" class="text-center text-danger">No feedback records found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header text-white modal-lg"
+                 style="background: #2C3E50; padding: 25px 20px; height: 50px;">
+                <h5 class="modal-title">Feedback Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body" id="detailsModalBody"></div>
+
+        </div>
+    </div>
+</div>
+<audio id="toastrAudio" src="https://cdn.pixabay.com/audio/2022/02/23/audio_115b9c8b34.mp3" preload="auto"></audio>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+
+
+
+    <script>
+        function getCurrentDateTime() {
+            var now = new Date();
+            return now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString('en-GB');
+        }
+
+        $(function () {
+            var table;
+
+            var commonExportOptions = {
+                rows: function (idx, data, node) {
+                    return $(node).find('input.rowCheckbox').prop('checked');
+                },
+                columns: [1, 2, 3, 4, 6, 7], // Sr No, Order Code, Product, RatingNo, Feedback, Date
+                format: {
+                    body: function (data, row, column, node) {
+                        // Adjust serial numbers for selected rows
+                        if (column === 0) { // Sr No column
+                            var selectedRows = [];
+                            table.rows({ search: 'applied' }).nodes().each(function (rowNode) {
+                                if ($(rowNode).find('input.rowCheckbox').prop('checked')) {
+                                    selectedRows.push(rowNode);
+                                }
+                            });
+                            return selectedRows.indexOf(node.parentNode) + 1;
+                        }
+                        return data;
+                    }
+                }
+            };
+
+            table = $('#feedbackTable').DataTable({
+                dom: 'Bfrtp',
+                buttons: [
+                    {
+                        extend: 'copy',
+                        className: 'd-none buttons-copy',
+                        title: 'Feedback List - ' + getCurrentDateTime(),
+                        exportOptions: commonExportOptions
+                    },
+                    {
+                        extend: 'csv',
+                        className: 'd-none buttons-csv',
+                        title: 'Feedback List - ' + getCurrentDateTime(),
+                        exportOptions: commonExportOptions
+                    },
+                    {
+                        extend: 'excel',
+                        className: 'd-none buttons-excel',
+                        title: 'Feedback List - ' + getCurrentDateTime(),
+                        exportOptions: commonExportOptions
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        className: 'd-none buttons-pdf',
+                        filename: 'Feedback List ' + new Date().toISOString().slice(0, 10),
+                        title: 'Feedback List',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: commonExportOptions,
+                        customize: function (doc, config) {
+                            // Remove default title
+                            doc.content.splice(0, 1);
+
+                            var totalRecords = table.rows().nodes().to$()
+                                .find('input.rowCheckbox:checked').length;
+
+                            var dateTime = getCurrentDateTime();
+
+                            // Add custom header with company name and report details
+                            doc.content.unshift({
+                                margin: [0, 0, 0, 12],
+                                table: {
+                                    widths: ['*', 'auto', '*'],
+                                    body: [
+                                        [
+                                            { text: '', border: [false, false, false, false] },
+                                            { text: 'Rahi Shop', alignment: 'center', fontSize: 16, bold: true, border: [false, false, false, false] },
+                                            { text: '', border: [false, false, false, false] }
+                                        ],
+                                        [
+                                            { text: '', border: [false, false, false, false] },
+                                            { text: 'Feedback List', alignment: 'center', fontSize: 14, bold: true, border: [false, false, false, false] },
+                                            { text: `Generated On: ${dateTime}\nTotal Records: ${totalRecords}`, alignment: 'right', fontSize: 10, italics: true, border: [false, false, false, false] }
+                                        ]
+                                    ]
+                                },
+                                layout: 'noBorders'
+                            });
+
+                            var tableBody = doc.content[1].table;
+                            tableBody.widths = ['auto', 'auto', '*', 'auto', '*', 'auto'];
+
+                            doc.styles.tableHeader.fillColor = '#007bff';
+                            doc.styles.tableHeader.color = 'white';
+                            doc.styles.tableHeader.alignment = 'center';
+                            doc.styles.tableHeader.fontSize = 10;
+                            doc.defaultStyle.fontSize = 9;
+
+                            // FIXED: Set vertical alignment to top for all cells
+                            var serial = 1;
+                            doc.content[1].table.body.forEach(function (row, i) {
+                                row.forEach(function(cell, j) {
+                                    if (typeof cell === 'object' && cell !== null) {
+                                        cell.alignment = cell.alignment || (j === 0 || j === 3 || j === 5 ? 'center' : 'left');
+                                        cell.margin = [3, 3, 3, 3]; // Add consistent padding
+                                    }
+                                });
+
+                                if (i > 0) { // Skip header row
+                                    row[0].text = serial++;
+                                    row[0].alignment = 'center'; // Sr No
+                                    row[1].alignment = 'left';   // Order Code
+                                    row[2].alignment = 'left';   // Product
+                                    row[3].alignment = 'center'; // RatingNo
+                                    row[4].alignment = 'left';   // Feedback
+                                    row[5].alignment = 'center'; // Date
+                                }
+                            });
+
+                            doc.pageMargins = [20, 60, 20, 40];
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        className: 'd-none buttons-print',
+                        title: 'Feedback List - ' + getCurrentDateTime(),
+                        exportOptions: commonExportOptions
+                    }
+                ],
+                responsive: true,
+                info: false,
+                lengthChange: false,
+                destroy: true,
+                autoWidth: false,
+                scrollX: false,
+                lengthMenu: [5, 10, 25, 50, 100],
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Type to search..."
+                },
+                paging: true,
+                searching: true,
+                ordering: false,
+                pageLength: 10,
+                columnDefs: [
+                    { "orderable": false, "targets": 0 }
+                ],
+                drawCallback: function (settings) {
+                    var api = this.api();
+                    api.column(1, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) { cell.innerHTML = i + 1; });
+                }
+            });
+
+            @* ========================================= *@
+            @* // Change starts here - Move search box *@
+            @* ========================================= *@
+            setTimeout(function() {
+                var searchBox = $('#feedbackTable_filter');
+                if (searchBox.length) {
+                    searchBox.detach().appendTo('#searchBoxContainer');
+                    searchBox.find('label').css({
+                        'display': 'flex',
+                        'align-items': 'center',
+                        'gap': '10px',
+                        'margin-bottom': '0',
+                        'font-weight': '600'
+                    });
+                    searchBox.find('input').css({
+                        'flex': '0 1 auto',
+                        'min-width': '200px'
+                    });
+                }
+            }, 100);
+            @* ========================================= *@
+            @* // Change ends here - Move search box *@
+            @* ========================================= *@
+
+            // ===== DATE PICKER LOGIC =====
+            var datepicker = $('.input-daterange-datepicker');
+            datepicker.daterangepicker({
+                autoUpdateInput: false,
+                locale: { cancelLabel: 'Clear', format: 'MM/DD/YYYY' }
+            });
+
+            datepicker.on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+                table.draw();
+            });
+
+            datepicker.on('cancel.daterangepicker', function (ev, picker) {
+                $(this).val('');
+                table.draw();
+            });
+
+            $.fn.dataTable.ext.search.push(
+                function (settings, data, dataIndex) {
+                    if (settings.nTable.id !== 'feedbackTable') {
+                        return true;
+                    }
+                    var picker = $('.input-daterange-datepicker').data('daterangepicker');
+                    var startDate = picker.startDate;
+                    var endDate = picker.endDate;
+                    var tableDate = moment(data[7], 'DD-MM-YYYY');
+
+                    if (startDate && endDate && startDate.isValid() && endDate.isValid() && $(picker.element).val() !== '') {
+                        return tableDate.isBetween(startDate, endDate, 'day', '[]');
+                    }
+                    return true;
+                }
+            );
+
+            // ===== CORRECTED CHECKBOX LOGIC =====
+            function updateSelectAllCheckbox() {
+                var rows = table.rows({ 'search': 'applied' }).nodes();
+                var $checkboxes = $(rows).find('.rowCheckbox');
+                var total = $checkboxes.length;
+                var checked = $checkboxes.filter(':checked').length;
+                var $selectAll = $('#selectAll');
+
+                if (checked === 0) {
+                    $selectAll.prop('indeterminate', false).prop('checked', false);
+                } else if (checked === total) {
+                    $selectAll.prop('indeterminate', false).prop('checked', true);
+                } else {
+                    $selectAll.prop('indeterminate', true).prop('checked', false);
+                }
+            }
+
+            $(document).on('change', '#selectAll', function () {
+                var isChecked = this.checked;
+                var rows = table.rows({ 'search': 'applied' }).nodes();
+                $(rows).find('.rowCheckbox').prop('checked', isChecked);
+                $(rows).toggleClass('selected-row', isChecked);
+                updateSelectAllCheckbox();
+            });
+
+            $('#feedbackTable tbody').on('change', '.rowCheckbox', function () {
+                $(this).closest('tr').toggleClass('selected-row', this.checked);
+                updateSelectAllCheckbox();
+            });
+
+            table.on('draw', function () {
+                updateSelectAllCheckbox();
+            });
+
+            updateSelectAllCheckbox();
+
+            // ===== EXPORT BUTTONS LOGIC =====
+            function playToastrSound() { var audio = document.getElementById('toastrAudio'); if (audio) audio.play(); }
+            function exportData(buttonClass) { if ($('.rowCheckbox:checked').length === 0) { toastr.error("Select at least one row."); playToastrSound(); } else { table.button(buttonClass).trigger(); } }
+            $('#copyBtn').click(() => exportData('.buttons-copy'));
+            $('#csvBtn').click(() => exportData('.buttons-csv'));
+            $('#excelBtn').click(() => exportData('.buttons-excel'));
+            $('#pdfBtn').click(() => exportData('.buttons-pdf'));
+            $('#printBtn').click(() => exportData('.buttons-print'));
+
+            $(document).on('click', '.view-details', function () {
+                var orderCode = $(this).data('ordercode');
+                $.get('/Admin/FeedbackDetailsTB', { orderCode }, function (data) {
+                    $('#detailsModalBody').html(data);
+                    new bootstrap.Modal(document.getElementById('detailsModal')).show();
+                });
+            });
+        });
+    </script>
+}

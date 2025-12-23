@@ -1,0 +1,174 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    ViewBag.Title = "PaymentManagmentHK";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<head>
+    <link href="~/Content/Document/CSS/custom-datatables.css" rel="stylesheet" />
+    <style>
+        /* Custom styles for full-size tabs */
+        .payment-tabs-container {
+            width: 100%;
+        }
+
+        .payment-tabs {
+            display: flex;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .payment-tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            font-weight: 600;
+            border-radius: 0;
+            transition: all 0.3s ease;
+        }
+
+            .payment-tab-btn:first-child {
+                border-top-left-radius: 8px;
+                border-bottom-left-radius: 8px;
+            }
+
+            .payment-tab-btn:last-child {
+                border-top-right-radius: 8px;
+                border-bottom-right-radius: 8px;
+            }
+
+        .payment-content-section {
+            width: 100%;
+            min-height: 500px;
+        }
+
+        /* Full width for tab content */
+        #paymentTabContent {
+            width: 100%;
+        }
+
+        /* Breadcrumb styling */
+        .breadcrumb {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .breadcrumb-item {
+            display: inline;
+        }
+
+            .breadcrumb-item a {
+                color: #0d6efd;
+                text-decoration: none;
+            }
+
+                .breadcrumb-item a:hover {
+                    text-decoration: underline;
+                }
+
+            .breadcrumb-item.active {
+                color: #495057;
+                font-weight: 500;
+            }
+
+            /* Custom separator styling */
+            .breadcrumb-item + .breadcrumb-item::before {
+                content: "/";
+                padding: 0 5px;
+                color: #6c757d;
+            }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .payment-tabs {
+                flex-direction: column;
+            }
+
+            .payment-tab-btn {
+                border-radius: 8px !important;
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<div class="main-content">
+    <section class="section">
+        <div class="container-fluid">
+            <!-- Breadcrumb -->
+            @*<nav aria-label="breadcrumb">*@
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item" id="breadcrumbBase">Payment Management</li>
+                    <li class="breadcrumb-item active" id="breadcrumbActive">Payment History</li>
+                </ol>
+            </nav>
+
+            <!-- Payment Tabs - Full Width -->
+            <div class="payment-tabs-container">
+                <div class="payment-tabs">
+                    <button class="btn payment-tab-btn active btn-primary shadow-sm" id="btnPaymentHistory">Payment History</button>
+                    <button class="btn payment-tab-btn btn-light shadow-sm" id="btnPendingPayment">Pending Payment</button>
+                </div>
+            </div>
+
+            <!-- Dynamic Content Area - Full Width -->
+            <div class="payment-content-section">
+                <div id="paymentTabContent">
+                    <div class="text-center mt-5">
+                        @*<strong>Loading...</strong>*@
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- AJAX Loader -->
+<div id="ajaxLoader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.6); z-index: 9999; text-align: center;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        @*<div class="mt-2">Loading, please wait...</div>*@
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Required CDN -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script>
+        function loadPaymentTab(url, activeBtn, tabName) {
+            $('#ajaxLoader').show();
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (data) {
+                    $("#paymentTabContent").html(data);
+                    $(".payment-tab-btn").removeClass("active btn-primary").addClass("btn-light");
+                    $(activeBtn).addClass("active btn-primary").removeClass("btn-light");
+                    // Update breadcrumb with the active tab name
+                    $("#breadcrumbActive").text(tabName);
+                },
+                error: function () {
+                    $("#paymentTabContent").html("<div class='text-danger text-center'>Failed to load data.</div>");
+                },
+                complete: function () {
+                    $('#ajaxLoader').fadeOut();
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            // Load Payment History tab by default
+            loadPaymentTab('@Url.Action("PaymentHistoryPartialHK", "Admin")', '#btnPaymentHistory', 'Payment History');
+
+            $("#btnPaymentHistory").click(function () {
+                loadPaymentTab('@Url.Action("PaymentHistoryPartialHK", "Admin")', this, 'Payment History');
+            });
+
+            $("#btnPendingPayment").click(function () {
+                loadPaymentTab('@Url.Action("PendingPaymentPartialHK", "Admin")', this, 'Pending Payment');
+            });
+        });
+    </script>
+}

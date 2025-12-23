@@ -1,0 +1,69 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+<div class="modal-header text-white" style="background: #2C3E50;">
+    <h5 class="modal-title">Offer Details @*- @Model.OfferCode*@</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+
+    @if (!string.IsNullOrEmpty(Model.OfferName))
+    {
+        <p><strong>Offer Name:</strong> @Model.OfferName</p>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ProductCode))
+    {
+        <p><strong>Product Code:</strong> @Model.ProductCode</p>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.MainCategoryCode))
+    {
+        <p><strong>MainCategory Code:</strong> @Model.MainCategoryCode</p>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ProductName))
+    {
+        <p><strong>Product Name:</strong> @Model.ProductName</p>
+    }
+
+    @if (Model.ProductMRP > 0)
+    {
+        <p><strong>Product MRP:</strong> @Model.ProductMRP</p>
+    }
+
+    @if (Model.ActualProductPrice > 0)
+    {
+        <p><strong>Actual Price:</strong> @Model.ActualProductPrice</p>
+    }
+
+    @if (Model.OfferStartDate != DateTime.MinValue)
+    {
+         <p>
+     <strong>Offer Start Date:</strong>
+     @(Model.OfferStartDate.HasValue
+    ? Model.OfferStartDate.Value.ToString("dd-MM-yyyy")
+    : "N/A")
+ </p>
+    }
+
+    @if (Model.OfferDuration > 0)
+    {
+        <p><strong>Duration(Days):</strong> @Model.OfferDuration</p>
+    }
+
+    @if (Model.OfferDiscountPercentage > 0)
+    {
+        <p><strong>Discount %:</strong> @Model.OfferDiscountPercentage</p>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.MainCategoryName))
+    {
+        <p><strong>Main Category:</strong> @Model.MainCategoryName</p>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.GSTDetails))
+    {
+        <p><strong>GST Details:</strong> @Model.GSTDetails</p>
+    }
+
+</div>

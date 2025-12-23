@@ -1,0 +1,109 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+<form id="updateForm">
+    <input type="hidden" name="SupportTicketId" value="@Model.SupportTicketId"/>
+    <input type="hidden" name="PartyEmail" value="@Model.PartyEmail" />
+
+    <div class="mb-2">
+        <label><strong>Subject:</strong></label>
+        <p>@Model.Subject</p>
+    </div>
+
+    <div class="mb-2">
+        <label><strong>Description:</strong></label>
+        <p>@Model.Description</p>
+    </div>
+
+    <div class="mb-2">
+        @*<label>Status:</label>*@
+        <div class="mb-2">
+            <label>Status:</label>
+            <select name="StatusId" class="form-control">
+                @foreach (var item in (SelectList)ViewBag.StatusList)
+                {
+                    <option value="@item.Value" @(item.Value == Model.StatusId.ToString() ? "selected" : "")>
+                        @item.Text
+                    </option>
+                }
+            </select>
+        </div>
+
+    </div>
+
+    <div class="mb-2">
+        <label>Resolution Description:</label>
+        <textarea name="ResolutionDescription" class="form-control" required>@Model.ResolutionDescription</textarea>
+
+    </div>
+    @*@if (!string.IsNullOrEmpty(Model.Attachment))
+        {
+            <div class="mb-2">
+                <label><strong>Attachment:</strong></label><br />
+                <a href="@Url.Content(Model.Attachment)" target="_blank" class="btn btn-outline-primary">
+                    View Image
+                </a>
+            </div>
+        }*@
+
+
+    <div class="modal-footer">
+        @*@<button type="submit" class="btn btn-primary">Update & Send Mail</button>@*@
+        <button type="submit" id="btnUpdate" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none" id="btnSpinner" role="status" aria-hidden="true"></span>
+            <span id="btnText">Update & Send Mail</span>
+        </button>
+
+        @*@<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>@*@
+    </div>
+</form>
+
+<script>
+    $('#updateForm').submit(function (e) {
+        e.preventDefault();
+
+        $('#btnSpinner').removeClass('d-none');
+        $('#btnText').text('Updating...');
+        $('#btnUpdate').prop('disabled', true);
+
+
+        $.ajax({
+            url: '@Url.Action("UpdateComplaintSG", "Admin")',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function (res) {
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: res.message || 'Complaint updated successfully!',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    }).then(() => {
+                        $('#complaintModal').modal('hide');
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: res.message || 'Update failed!',
+                        showConfirmButton: false,
+                        timer: 2500,
+                        timerProgressBar: true
+                    });
+                }
+            },
+            error: function (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: "Update failed: " + xhr.responseText,
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true
+                });
+            }
+        });
+    });
+</script>

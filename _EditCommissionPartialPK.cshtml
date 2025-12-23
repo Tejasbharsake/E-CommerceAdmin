@@ -1,0 +1,79 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    Layout = null;
+}
+
+<div class="modal-header text-white @*bg-dark text-white*@" style="background: #2C3E50;">
+    <h5 class="modal-title">Edit Commission</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+    @using (Html.BeginForm("UpdateCommissionPK", "Admin", FormMethod.Post, new { id = "editCommissionForm" }))
+    {
+        @* *@
+        @Html.HiddenFor(m => m.MainCategoryCode)
+        @Html.HiddenFor(m => m.Sub1CategoryCode)
+
+        @*@Html.DropDownListFor(m => m.MainCategoryCode,
+            (IEnumerable<SelectListItem>)ViewBag.MainCategories,
+            "-- Select Category --", new { @class = "form-select" })
+
+
+                 @Html.DropDownListFor(m => m.Sub1CategoryCode,
+                   (IEnumerable<SelectListItem>)ViewBag.SubCategories,
+                   "-- Select SubCategory --", new { @class = "form-select" })*@
+
+        @Html.DropDownListFor(
+    m => m.MainCategoryCode,
+    (IEnumerable<SelectListItem>)ViewBag.MainCategories,
+    "-- Select Category --",
+    new { @class = "form-select", @disabled = "disabled" }
+)
+
+        @Html.DropDownListFor(
+            m => m.Sub1CategoryCode,
+            (IEnumerable<SelectListItem>)ViewBag.SubCategories,
+            "-- Select SubCategory --",
+            new { @class = "form-select", @disabled = "disabled" }
+        )
+
+
+
+
+
+        @*<div class="mb-3">
+                <label class="form-label">Commission :-</label>
+                <div class="input-group">
+                    @Html.TextBoxFor(m => m.AdminCommission,
+                        new { @class = "form-control", type = "number", min = "0", max = "100" })
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>*@
+        <div class="mb-3">
+            <label class="form-label">Commission :-</label>
+            <div class="input-group">
+                @Html.TextBoxFor(
+                    m => m.AdminCommission,
+                    new
+                    {
+                        @class = "form-control",
+                        placeholder = "Enter like 10.50%",
+                        type = "text",
+                        pattern = @"^\d{1,2}(\.\d{1,2})?$", // allows 0–99.99
+                        title = "Enter a valid discount (e.g., 20.22)",
+                        maxlength = "5", // max like 99.99
+                        oninput = "this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*)\\./g, '$1');" // allow only digits and one dot
+                    }
+                )
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+
+
+        <div class="d-flex justify-content-end">
+
+            <button type="submit" class="btn btn-warning">Update Commission</button>
+        </div>
+    }
+</div>

@@ -1,0 +1,1084 @@
+﻿@{
+    var categories = new List<string>
+{
+        "Electronics",
+        "TVs & Appliances",
+        "Men",
+        "Women",
+        "Baby & Kids",
+        "Home & Furniture",
+        "Sports, Books & More",
+        "Grocery"
+    };
+}
+
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active" aria-current="page">
+        Rejected Products
+    </li>
+}
+<!-- Filters and Export Buttons Row -->
+<!--<div class="row mb-3 align-items-end">-->
+<!-- Left: Date Range Filter and Category Filter -->
+<!--<div class="col-md-6 d-flex align-items-end gap-2">
+    <div>
+        <label class="form-label fw-semibold mb-1 small">Date Range Filter</label>
+        <input class="form-control form-control-sm input-daterange-datepicker"
+               type="text" id="dateRangeFilter" name="daterange"
+               placeholder="Select date range" autocomplete="off" />
+    </div>
+    <div>
+        <label class="form-label fw-semibold mb-1 small">Category Filter</label>
+        <select id="categoryFilter" class="form-select form-select-sm">
+            <option value="">-- All Categories --</option>
+            @foreach (var category in categories)
+            {
+                <option value="@category">@category</option>
+            }
+        </select>
+    </div>
+</div>-->
+
+
+<div class="row mb-3 align-items-center">
+    <div class="col-md-6 d-flex gap-4">
+        <!-- Date Range Filter -->
+        <div class="d-flex align-items-center">
+            <label for="dateRangeFilter" class="form-label fw-semibold small mb-0 me-2" style="white-space: nowrap;">
+                Date Range Filter:
+            </label>
+            <input type="text" id="dateRangeFilter" name="daterange"
+                   class="form-control form-control-sm input-daterange-datepicker"
+                   placeholder="Select date range" autocomplete="off" />
+        </div>
+
+        <!-- Category Filter -->
+        <div class="d-flex align-items-center">
+            <label for="categoryFilter" class="form-label fw-semibold small mb-0 me-2" style="white-space: nowrap;">
+                Category Filter:
+            </label>
+            <select id="categoryFilter" class="form-select form-select-sm">
+                <option value="">-- All Categories --</option>
+                @foreach (var category in categories)
+                {
+                    <option value="@category">@category</option>
+                }
+            </select>
+        </div>
+    </div>
+
+
+
+
+
+
+
+<!-- Right: Export Buttons -->
+<div class="col-md-6 text-end">
+    <div class="d-flex gap-2 justify-content-end">
+        <button class="btn border-primary btn-sm" id="copyBtn">
+            <img src="~/Content/Document/Image/Copy.png" alt="Copy" title="Copy to clipboard" style="width:16px; margin-right:4px;">
+        </button>
+        <button class="btn border-primary btn-sm" id="csvBtn">
+            <img src="~/Content/Document/Image/CSV.png" alt="CSV" title="Export as CSV file" style="width:16px; margin-right:4px;">
+        </button>
+        <button class="btn border-primary btn-sm" id="excelBtn">
+            <img src="~/Content/Document/Image/XLS.png" alt="Excel" title="Export as Excel file" style="width:16px; margin-right:4px;">
+        </button>
+        <button class="btn border-primary btn-sm" id="pdfBtn">
+            <img src="~/Content/Document/Image/PDFicon.png" alt="PDF" title="Export as PDF" style="width:16px; margin-right:4px;">
+        </button>
+        <button class="btn border-primary btn-sm" id="printBtn">
+            <img src="~/Content/Document/Image/Print.png" alt="Print" title="Print" style="width:16px; margin-right:4px;">
+        </button>
+    </div>
+</div>
+</div>
+
+<!-- Product Table -->
+@if (Model != null && Model.Count > 0)
+{
+    <div class="table-responsive">
+        <table id="productTable" class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll" /></th>
+                    <th>Sr No</th>
+                    <th class="d-none">Product Code</th>
+                    <th>Product Name</th>
+                    <th>Main Category</th>
+                    <th>Manufacturer</th>
+                    <th>ProductRegisterDate</th>
+                    <th>Product Price (₹)</th>
+                    <th>Actual Price (₹)</th>
+                    <th>Stock (No.)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var srNo = 1;
+                }
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><input type="checkbox" class="product-checkbox" value="@item.ProductCode" /></td>
+                        <td>@srNo</td>
+                        <td class="d-none">@item.ProductCode</td>
+                        <td>@item.ProductName</td>
+                        <td>@item.MainCategory</td>
+                        <td>@item.ManufactureName</td>
+                        <td>@item.ProductRegisterDate.ToString("dd-MM-yyyy")</td>
+                        <td>@item.ProductMRP</td>
+                        <td>@item.ActualPrice</td>
+                        <td>@item.Stock</td>
+                        <td>
+                            <!-- View Details -->
+                            <button type="button" class="btn btn-link p-0"
+                                    onclick="showDetails('@item.ProductCode')"
+                                    title=" Product View Details">
+                                <i class="bi bi-eye text-dark" style="font-size: 1.2rem;"></i>
+                            </button>
+
+                            @if (ViewBag.TabName == "All")
+                            {
+                                <!-- Delete Product -->
+                                @*<button type="button" class="btn btn-link p-0 delete-product"
+                                            data-productcode="@item.ProductCode"
+                                            title="Delete Product">
+                                        <i class="bi bi-trash text-dark" style="font-size: 1.2rem;"></i>
+                                    </button>*@
+
+
+                                <button type="button" class="btn btn-link p-0 delete-product"
+                                        data-productcode="@item.ProductCode"
+                                        title="Delete Product">
+                                    <i class="bi bi-trash text-dark" style="font-size: 1.2rem;"></i>
+                                </button>
+                            }
+                            else if (ViewBag.TabName == "Rejected")
+                            {
+                                <!-- Approve Product -->
+                                <button type="button" class="btn btn-link p-0 approve-product"
+                                        data-productcode="@item.ProductCode"
+                                        title="Approve Product">
+                                    <i class="bi bi-check-circle text-dark" style="font-size: 1.2rem;"></i>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                    srNo++;
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Toast Notification HTML -->
+    <div class="position-fixed end-0 p-3" style="z-index: 11; top: 60px;">
+        <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <span id="toastMessage"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">No records found.</div>
+}
+
+<!-- DataTables Initialization & Filter Script -->
+<script>
+    // Global variables
+    var dataTable;
+    var selectedRows = new Set();
+
+    // Date parsing function
+    function parseDate(dateStr) {
+        if (!dateStr) return null;
+
+        var dateFormats = [
+            'DD-MM-YYYY',
+            'DD/MM/YYYY',
+            'MM-DD-YYYY',
+            'MM/DD/YYYY',
+            'YYYY-MM-DD'
+        ];
+
+        for (var i = 0; i < dateFormats.length; i++) {
+            var date = moment(dateStr, dateFormats[i], true);
+            if (date.isValid()) {
+                return date.toDate();
+            }
+        }
+
+        return null;
+    }
+
+    // Custom date range filtering function for DataTables
+    $.fn.dataTable.ext.search.push(
+        function (settings, data, dataIndex) {
+            var tableId = settings.nTable.id;
+            if (!tableId || tableId !== 'productTable') {
+                return true;
+            }
+
+            var dateRange = $('#dateRangeFilter').val();
+            if (!dateRange) {
+                return true;
+            }
+
+            var dates = dateRange.split(' - ');
+            if (dates.length !== 2) {
+                return true;
+            }
+
+            var startDate = moment(dates[0], 'DD/MM/YYYY').startOf('day').toDate();
+            var endDate = moment(dates[1], 'DD/MM/YYYY').endOf('day').toDate();
+
+            var dateColumnIndex = 6;
+            var rowDateStr = data[dateColumnIndex];
+            var rowDate = parseDate(rowDateStr.trim());
+
+            if (!rowDate) {
+                return false;
+            }
+
+            return (rowDate >= startDate && rowDate <= endDate);
+        }
+    );
+
+    // Toast notification functions
+    function showErrorToast(message) {
+        $('#toastMessage').text(message);
+        $('#liveToast').removeClass('bg-success').addClass('bg-danger');
+        var toastEl = document.getElementById('liveToast');
+        var toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+
+    function showSuccessToast(message) {
+        $('#toastMessage').text(message);
+        $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+        var toastEl = document.getElementById('liveToast');
+        var toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+
+    $(document).ready(function () {
+        if (typeof $.fn.DataTable === 'undefined') {
+            console.error('DataTables library is not loaded!');
+            alert('DataTables library missing. Please include DataTables JS file.');
+            return;
+        }
+
+        // Initialize DataTable with export functionality
+        setTimeout(function () {
+            // Destroy existing DataTable if it exists
+            if ($.fn.DataTable.isDataTable('#productTable')) {
+                $('#productTable').DataTable().destroy();
+            }
+            var dataTable = $('#productTable').DataTable({
+                responsive: true,
+                searching: true,
+                paging: true,
+                ordering: false,
+                info: true,
+                lengthChange: false,
+                pageLength: 10,
+                destroy: true,
+                autoWidth: false,
+                scrollX: false,
+                lengthMenu: [5, 10, 25, 50, 100],
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Type to search..."
+                },
+                columnDefs: [
+                    { orderable: false, targets: [0, 5] },
+                    {
+                        targets: 1, // Sr.No column index
+                        render: function (data, type, row, meta) {
+                            // Continuous serial number across pages
+                            return meta.row + meta.settings._iDisplayStart + 1;
+                        }
+                    }
+                ],
+                drawCallback: function () {
+                    var api = this.api();
+
+                    // Update Sr.No after search/pagination
+                    var start = api.page.info().start;
+                    api.column(1, { page: 'current' }).nodes().each(function (cell, i) {
+                        cell.innerHTML = start + i + 1;
+                    });
+
+                    // Restore checkbox states (if you use them)
+                    if (typeof restoreCheckboxStates === "function") restoreCheckboxStates();
+                    if (typeof updateSelectAllState === "function") updateSelectAllState();
+                }
+            });
+
+            dataTable.columns().every(function (index) {
+                if (index === 0) {
+                    $(this.header()).css("width", "1%");
+                } else if (index === dataTable.columns().nodes().length - 1) {
+                    $(this.header()).css("width", "10%");
+                } else {
+                    $(this.header()).css("width", "auto");
+                }
+            });
+
+            function restoreCheckboxStates() {
+                $('.product-checkbox').each(function () {
+                    var productCode = $(this).val();
+                    var isSelected = selectedRows.has(productCode);
+                    $(this).prop('checked', isSelected);
+                    $(this).closest('tr').toggleClass('selected-row', isSelected);
+                });
+            }
+
+            function updateSelectAllState() {
+                var currentPageCheckboxes = $('.product-checkbox:visible');
+                var currentPageChecked = currentPageCheckboxes.filter(':checked');
+
+                if (currentPageCheckboxes.length === 0) {
+                    $('#selectAll').prop('checked', false).prop('indeterminate', false);
+                } else if (currentPageChecked.length === currentPageCheckboxes.length) {
+                    $('#selectAll').prop('checked', true).prop('indeterminate', false);
+                } else if (currentPageChecked.length > 0) {
+                    $('#selectAll').prop('checked', false).prop('indeterminate', true);
+                } else {
+                    $('#selectAll').prop('checked', false).prop('indeterminate', false);
+                }
+            }
+
+            // Category filter
+            $('#categoryFilter').off('change').on('change', function () {
+                var selectedCategory = $(this).val();
+                dataTable.column(4).search(selectedCategory).draw();
+            });
+
+            // Reset filter button
+            $('#resetFilterBtn').off('click').on('click', function () {
+                $('#categoryFilter').val('');
+                $('#dateRangeFilter').val('');
+                dataTable.column(4).search('').draw();
+                selectedRows.clear();
+                $('#selectAll').prop('checked', false).prop('indeterminate', false);
+                $('.product-checkbox').prop('checked', false);
+                $('tr').removeClass('selected-row');
+            });
+
+
+            //$(document).off('click', '.delete-product').on('click', '.delete-product', function () {
+            //    var productCode = $(this).data('productcode');
+            //    var row = $(this).closest('tr');
+
+            //    if (!confirm("Are you sure you want to delete this product?")) {
+            //        return;
+            //    }
+
+            //    $.ajax({
+            //        url: '/Admin/DeleteProductPK',
+            //        type: 'POST',
+            //        data: { productCode: productCode },
+            //        success: function (response) {
+            //            if (response.success) {
+            //                row.fadeOut(500, function () {
+            //                    row.remove();
+            //                    showSuccessToast("Product deleted successfully!");
+            //                    setTimeout(function () {
+            //                        location.reload();
+            //                    }, 1000);
+            //                });
+            //            } else {
+            //                showErrorToast("Failed to delete product.");
+            //            }
+            //        },
+            //        error: function () {
+            //            showErrorToast("Error occurred while deleting product.");
+            //        }
+            //    });
+            //});
+
+            $(document).off('click', '.delete-product').on('click', '.delete-product', function () {
+                var productCode = $(this).data('productcode');
+                var row = $(this).closest('tr');
+
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "This product will be permanently deleted!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#3085d6",
+                    confirmButtonText: "Yes, delete it!"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '/Admin/DeleteProductPK', // your controller action
+                            type: 'POST',
+                            data: { productCode: productCode },
+                            success: function (response) {
+                                if (response.success) {
+                                    row.fadeOut(500, function () {
+                                        row.remove();
+                                        // Optional: reload page after deletion
+                                        setTimeout(function () {
+                                            location.reload();
+                                        }, 1000);
+                                    });
+                                } else {
+                                    Swal.fire("Error", "Failed to delete product.", "error");
+                                }
+                            },
+                            error: function () {
+                                Swal.fire("Error", "An error occurred while deleting product.", "error");
+                            }
+                        });
+                    }
+                });
+            });
+
+
+
+
+
+
+
+
+            // Select All checkbox
+            //$('#selectAll').off('click').on('click', function () {
+            //    var isChecked = $(this).is(':checked');
+
+            //    if (isChecked) {
+            //        dataTable.rows({ search: 'applied' }).every(function () {
+            //            var row = this.node();
+            //            var checkbox = $(row).find('.product-checkbox');
+            //            var productCode = checkbox.val();
+            //            selectedRows.add(productCode);
+            //            checkbox.prop('checked', true);
+            //            $(row).addClass('selected-row');
+            //        });
+            //    } else {
+            //        dataTable.rows({ search: 'applied' }).every(function () {
+            //            var row = this.node();
+            //            var checkbox = $(row).find('.product-checkbox');
+            //            var productCode = checkbox.val();
+            //            selectedRows.delete(productCode);
+            //            checkbox.prop('checked', false);
+            //            $(row).removeClass('selected-row');
+            //        });
+            //    }
+
+            //    updateSelectAllState();
+            //});
+
+            // Individual checkbox
+            $('#productTable tbody').off('change', '.product-checkbox').on('change', '.product-checkbox', function () {
+                var row = $(this).closest('tr');
+                var productCode = $(this).val();
+                var isChecked = $(this).is(':checked');
+
+                if (isChecked) {
+                    selectedRows.add(productCode);
+                } else {
+                    selectedRows.delete(productCode);
+                }
+
+                row.toggleClass('selected-row', isChecked);
+                updateSelectAllState();
+            });
+
+            // Export functions
+            function getSelectedRowsData() {
+                var selectedData = [];
+                var serialNo = 1;
+
+                dataTable.rows().every(function () {
+                    var row = this.node();
+                    var checkbox = $(row).find('.product-checkbox');
+                    var productCode = checkbox.val();
+
+                    if (selectedRows.has(productCode)) {
+                        var rowData = [];
+                        rowData.push(serialNo.toString());
+
+                        $(row).find('td').each(function (index) {
+                            if (index > 1 && index < 10) {
+                                rowData.push($(this).text().trim());
+                            }
+                        });
+
+                        selectedData.push(rowData);
+                        serialNo++;
+                    }
+                });
+
+                return selectedData;
+            }
+
+            function getTableHeaders() {
+                var headers = ['Sr No'];
+                $('#productTable thead th').each(function (index) {
+                    if (index > 1 && index < 9) {
+                        headers.push($(this).text().trim());
+                    }
+                });
+                return headers;
+            }
+
+            // CSV Export
+            //$('#csvBtn').off('click').on('click', function () {
+            //    var selectedData = getSelectedRowsData();
+            //    if (selectedData.length === 0) {
+            //        showErrorToast('Please select at least one row to export.');
+            //        return;
+            //    }
+
+            //    var headers = getTableHeaders();
+            //    var csvContent = headers.join(',') + '\n';
+            //    selectedData.forEach(function (row) {
+            //        csvContent += row.map(function (cell) {
+            //            return '"' + cell.replace(/"/g, '""') + '"';
+            //        }).join(',') + '\n';
+            //    });
+
+            //    var blob = new Blob([csvContent], { type: 'text/csv' });
+            //    var url = window.URL.createObjectURL(blob);
+            //    var a = document.createElement('a');
+            //    a.href = url;
+            //    a.download = 'products_' + new Date().getTime() + '.csv';
+            //    a.click();
+            //    window.URL.revokeObjectURL(url);
+            //});
+
+            //// Excel Export
+            //$('#excelBtn').off('click').on('click', function () {
+            //    var selectedData = getSelectedRowsData();
+            //    if (selectedData.length === 0) {
+            //        showErrorToast('Please select at least one row to export.');
+            //        return;
+            //    }
+
+            //    var headers = getTableHeaders();
+            //    var excelContent = '<table border="1"><thead><tr>';
+            //    headers.forEach(function (header) {
+            //        excelContent += '<th>' + header + '</th>';
+            //    });
+            //    excelContent += '</tr></thead><tbody>';
+
+            //    selectedData.forEach(function (row) {
+            //        excelContent += '<tr>';
+            //        row.forEach(function (cell) {
+            //            excelContent += '<td>' + cell + '</td>';
+            //        });
+            //        excelContent += '</tr>';
+            //    });
+            //    excelContent += '</tbody></table>';
+
+            //    var blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+            //    var url = window.URL.createObjectURL(blob);
+            //    var a = document.createElement('a');
+            //    a.href = url;
+            //    a.download = 'products_' + new Date().getTime() + '.xls';
+            //    a.click();
+            //    window.URL.revokeObjectURL(url);
+            //});
+
+            //// Copy functionality
+            //$('#copyBtn').off('click').on('click', function () {
+            //    var selectedData = getSelectedRowsData();
+            //    if (selectedData.length === 0) {
+            //        showErrorToast('Please select at least one row to export.');
+            //        return;
+            //    }
+
+            //    var headers = getTableHeaders();
+            //    var copyText = headers.join('\t') + '\n';
+            //    selectedData.forEach(function (row) {
+            //        copyText += row.join('\t') + '\n';
+            //    });
+
+            //    // Copy to clipboard
+            //    navigator.clipboard.writeText(copyText).then(function () {
+            //        alert('Product data copied to clipboard! (' + selectedData.length + ' rows)');
+            //    }).catch(function () {
+            //        alert('Copy failed. Please try again.');
+            //    });
+            //});
+
+            // Export functions with Stock column included
+            function getSelectedRowsData() {
+                var selectedData = [];
+                var serialNo = 1;
+
+                dataTable.rows().every(function () {
+                    var row = this.node();
+                    var checkbox = $(row).find('.product-checkbox');
+                    var productCode = checkbox.val();
+
+                    if (selectedRows.has(productCode)) {
+                        var rowData = [];
+                        rowData.push(serialNo.toString());
+
+                        // Include columns 2-9 (skipping checkbox and Sr No, including Stock)
+                        $(row).find('td').each(function (index) {
+                            if (index > 1 && index < 10) { // Changed from < 10 to include Stock column
+                                rowData.push($(this).text().trim());
+                            }
+                        });
+
+                        selectedData.push(rowData);
+                        serialNo++;
+                    }
+                });
+
+                return selectedData;
+            }
+
+            function getTableHeaders() {
+                var headers = ['Sr No'];
+                $('#productTable thead th').each(function (index) {
+                    if (index > 1 && index < 10) { // Changed from < 9 to include Stock header
+                        headers.push($(this).text().trim());
+                    }
+                });
+                return headers;
+            }
+
+            // CSV Export - Replace ₹ with Rs.
+            $('#csvBtn').off('click').on('click', function () {
+                var selectedData = getSelectedRowsData();
+                if (selectedData.length === 0) {
+                    showErrorToast('Please select at least one row to export.');
+                    return;
+                }
+
+                var headers = getTableHeaders().map(function (header) {
+                    return header.replace(/₹/g, 'Rs.');
+                });
+
+                var csvContent = headers.join(',') + '\n';
+                selectedData.forEach(function (row) {
+                    csvContent += row.map(function (cell) {
+                        // Replace ₹ with Rs. in cell values too
+                        var cleanedCell = cell.replace(/₹/g, 'Rs.');
+                        return '"' + cleanedCell.replace(/"/g, '""') + '"';
+                    }).join(',') + '\n';
+                });
+
+                var blob = new Blob([csvContent], { type: 'text/csv' });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'products_' + new Date().getTime() + '.csv';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            });
+
+            // Excel Export - Replace ₹ with Rs.
+            $('#excelBtn').off('click').on('click', function () {
+                var selectedData = getSelectedRowsData();
+                if (selectedData.length === 0) {
+                    showErrorToast('Please select at least one row to export.');
+                    return;
+                }
+
+                var headers = getTableHeaders().map(function (header) {
+                    return header.replace(/₹/g, 'Rs.');
+                });
+
+                var excelContent = '<table border="1"><thead><tr>';
+                headers.forEach(function (header) {
+                    excelContent += '<th>' + header + '</th>';
+                });
+                excelContent += '</tr></thead><tbody>';
+
+                selectedData.forEach(function (row) {
+                    excelContent += '<tr>';
+                    row.forEach(function (cell) {
+                        // Replace ₹ with Rs. in cell values
+                        var cleanedCell = cell.replace(/₹/g, 'Rs.');
+                        excelContent += '<td>' + cleanedCell + '</td>';
+                    });
+                    excelContent += '</tr>';
+                });
+                excelContent += '</tbody></table>';
+
+                var blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'products_' + new Date().getTime() + '.xls';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            });
+
+            // Copy functionality - Replace ₹ with Rs.
+            $('#copyBtn').off('click').on('click', function () {
+                var selectedData = getSelectedRowsData();
+                if (selectedData.length === 0) {
+                    showErrorToast('Please select at least one row to export.');
+                    return;
+                }
+
+                var headers = getTableHeaders().map(function (header) {
+                    return header.replace(/₹/g, 'Rs.');
+                });
+
+                var copyText = headers.join('\t') + '\n';
+                selectedData.forEach(function (row) {
+                    var cleanedRow = row.map(function (cell) {
+                        return cell.replace(/₹/g, 'Rs.');
+                    });
+                    copyText += cleanedRow.join('\t') + '\n';
+                });
+
+                // Copy to clipboard
+                navigator.clipboard.writeText(copyText).then(function () {
+                   /* alert('Product data copied to clipboard! (' + selectedData.length + ' rows)');*/
+                }).catch(function () {
+                    /*alert('Copy failed. Please try again.');*/
+                });
+            });
+
+
+            //$('#pdfBtn').off('click').on('click', function () {
+
+            //    var selectedData = getSelectedRowsData();
+            //    if (selectedData.length === 0) {
+            //        showErrorToast('Please select at least one row to export.');
+            //        return;
+            //    }
+
+            //    if (typeof window.jspdf === 'undefined') {
+            //        showErrorToast('jsPDF library is not loaded');
+            //        return;
+            //    }
+
+            //    var headers = getTableHeaders();
+
+            //    try {
+            //        const { jsPDF } = window.jspdf;
+            //        const doc = new jsPDF({
+            //            orientation: 'landscape',
+            //            unit: 'pt',
+            //            format: 'a4'
+            //        });
+
+            //        // === BASIC SETTINGS ===
+            //        doc.setFont("helvetica");
+            //        var pageWidth = doc.internal.pageSize.getWidth();
+
+            //        // === MAIN TITLE ===
+            //        doc.setFontSize(22);
+            //        doc.setTextColor(0, 0, 0);
+            //        var rahishopTitle = "RahiShop";
+            //        var titleWidth = doc.getTextWidth(rahishopTitle);
+            //        var centerX = pageWidth / 2 - titleWidth / 2;
+            //        doc.text(rahishopTitle, centerX, 40);
+
+            //        // === SUBTITLE ===
+            //        doc.setFontSize(18);
+            //        doc.setTextColor(0, 0, 0);
+            //        var exportTitle = "Product Management";
+            //        var exportWidth = doc.getTextWidth(exportTitle);
+            //        var exportCenterX = pageWidth / 2 - exportWidth / 2;
+            //        doc.text(exportTitle, exportCenterX, 65);
+
+            //        // === METADATA ===
+            //        var now = new Date();
+            //        doc.setFontSize(11);
+            //        doc.setTextColor(100, 100, 100);
+            //        var rightMargin = 40;
+
+            //        doc.text("Generated on: " + now.toLocaleDateString() + " at " + now.toLocaleTimeString(),
+            //            pageWidth - rightMargin, 65, { align: 'right' });
+            //        doc.text("Total Records: " + selectedData.length,
+            //            pageWidth - rightMargin, 80, { align: 'right' });
+
+            //        // === REMOVE SECOND COLUMN from headers ===
+            //        var filteredHeaders = headers.filter(function (h, idx) {
+            //            return idx !== 1; // Remove second column (index 1)
+            //        });
+
+            //        // === Find Product Price and Actual Price indices in ORIGINAL headers ===
+            //        var mrpIndex = headers.findIndex(function (h) {
+            //            return h.replace(/\s+/g, '').toLowerCase() === 'productprice';
+            //        });
+            //        var actualIndex = headers.findIndex(function (h) {
+            //            return h.replace(/\s+/g, '').toLowerCase() === 'actualprice';
+            //        });
+
+            //        // Adjust indices after removing second column
+            //        var adjustedMrpIndex = mrpIndex > 1 ? mrpIndex - 1 : mrpIndex;
+            //        var adjustedActualIndex = actualIndex > 1 ? actualIndex - 1 : actualIndex;
+
+            //        // Add ₹ symbol to price headers
+            //        if (adjustedMrpIndex !== -1) {
+            //            filteredHeaders[adjustedMrpIndex] = 'Product Price (₹)';
+            //        }
+            //        if (adjustedActualIndex !== -1) {
+            //            filteredHeaders[adjustedActualIndex] = 'Actual Price (₹)';
+            //        }
+
+            //        // === ADD Stock column at the end ===
+            //        filteredHeaders.push('Stock');
+
+            //        // === DATA FORMATTING: Remove second column, add ₹ symbol, add Stock ===
+            //        var filteredData = selectedData.map(function (row) {
+            //            var newRow = row.filter(function (cell, idx) {
+            //                return idx !== 1; // Remove second column (index 1)
+            //            });
+
+            //            // Add ₹ symbol to price columns
+            //            if (adjustedMrpIndex !== -1 && newRow[adjustedMrpIndex]) {
+            //                var val = newRow[adjustedMrpIndex].toString().replace('₹', '').trim();
+            //                newRow[adjustedMrpIndex] = '₹' + val;
+            //            }
+            //            if (adjustedActualIndex !== -1 && newRow[adjustedActualIndex]) {
+            //                var val = newRow[adjustedActualIndex].toString().replace('₹', '').trim();
+            //                newRow[adjustedActualIndex] = '₹' + val;
+            //            }
+
+            //            // Add Stock value at the end (get from last column of original row or use placeholder)
+            //            var stockValue = row[row.length - 1] || '-';
+            //            newRow.push(stockValue);
+
+            //            return newRow;
+            //        });
+
+            //        // === TABLE ===
+            //        if (typeof doc.autoTable === 'function') {
+            //            var marginLeft = 30;
+            //            var marginRight = 30;
+            //            var availableWidth = pageWidth - marginLeft - marginRight;
+
+            //            // Dynamic column widths based on number of columns
+            //            var colCount = filteredHeaders.length;
+            //            var baseWidth = Math.floor(availableWidth / colCount);
+
+            //            var columnStyles = {};
+            //            for (var i = 0; i < colCount; i++) {
+            //                columnStyles[i] = { halign: 'center', cellWidth: baseWidth };
+            //            }
+
+            //            doc.autoTable({
+            //                head: [filteredHeaders],
+            //                body: filteredData,
+            //                startY: 100,
+            //                tableWidth: availableWidth,
+            //                margin: { left: marginLeft, right: marginRight },
+            //                styles: {
+            //                    fontSize: 9,
+            //                    cellPadding: 4,
+            //                    valign: 'middle',
+            //                    overflow: 'linebreak'
+            //                },
+            //                headStyles: {
+            //                    fillColor: [51, 122, 183],
+            //                    textColor: 255,
+            //                    fontSize: 10,
+            //                    fontStyle: 'bold',
+            //                    halign: 'center'
+            //                },
+            //                bodyStyles: {
+            //                    fillColor: [255, 255, 255]
+            //                },
+            //                alternateRowStyles: {
+            //                    fillColor: [248, 249, 250]
+            //                },
+            //                columnStyles: columnStyles,
+            //                tableLineColor: [200, 200, 200],
+            //                tableLineWidth: 0.5
+            //            });
+            //        }
+
+            //        // === SAVE FILE ===
+            //        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+            //        const filename = 'Product_Export_' + timestamp + '.pdf';
+            //        doc.save(filename);
+
+            //    } catch (error) {
+            //        console.error('PDF Generation Error:', error);
+            //        showErrorToast('Error generating PDF: ' + error.message);
+            //    }
+            //});
+
+
+            $('#pdfBtn').off('click').on('click', function () {
+                var selectedData = getSelectedRowsData();
+                if (selectedData.length === 0) {
+                    showErrorToast('Please select at least one row to export.');
+                    return;
+                }
+
+                if (typeof window.jspdf === 'undefined') {
+                    showErrorToast('jsPDF library is not loaded');
+                    return;
+                }
+
+                // Get headers and replace ₹ symbol with Rs.
+                var headers = getTableHeaders().map(function (header) {
+                    return header.replace(/₹/g, 'Rs.');
+                });
+
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({
+                        orientation: 'landscape',
+                        unit: 'pt',
+                        format: 'a4'
+                    });
+
+                    // Title and meta
+                    doc.setFont("helvetica");
+                    doc.setFontSize(22);
+                    var pageWidth = doc.internal.pageSize.getWidth();
+
+                    doc.setTextColor(0, 0, 0);
+                    var rahishopTitle = "RahiShop";
+                    var titleWidth = doc.getTextWidth(rahishopTitle);
+                    var centerX = pageWidth / 2 - titleWidth / 2;
+                    doc.text(rahishopTitle, centerX, 40);
+
+                    doc.setFontSize(18);
+                    var exportTitle = "Product Management";
+                    var exportWidth = doc.getTextWidth(exportTitle);
+                    var exportCenterX = pageWidth / 2 - exportWidth / 2;
+                    doc.text(exportTitle, exportCenterX, 65);
+
+                    // Metadata top right
+                    var now = new Date();
+                    doc.setFontSize(11);
+                    doc.setTextColor(100, 100, 100);
+                    var rightMargin = 40;
+                    doc.text("Generated on: " + now.toLocaleDateString() + " at " + now.toLocaleTimeString(),
+                        pageWidth - rightMargin, 65, { align: 'right' });
+                    doc.text("Total Records: " + selectedData.length,
+                        pageWidth - rightMargin, 80, { align: 'right' });
+
+                    // Remove second column (Product Code) from headers
+                    var filteredHeaders = headers.filter(function (_, idx) {
+                        return idx !== 1;
+                    });
+
+                    // Add Stock header explicitly if needed
+                    if (!filteredHeaders.includes('Stock')) {
+                        filteredHeaders.push('Stock');
+                    }
+
+                    // Prepare filtered data - remove second column, append stock value
+                    var filteredData = selectedData.map(function (row) {
+                        var newRow = row.filter(function (_, idx) {
+                            return idx !== 1;
+                        });
+
+                        // Append stock value from the last column (assuming it's the last)
+                        var stockValue = row[row.length - 1] || '-';
+                        newRow.push(stockValue);
+                        return newRow;
+                    });
+
+                    // Generate table using autotable
+                    if (typeof doc.autoTable === 'function') {
+                        var marginLeft = 30;
+                        var marginRight = 30;
+                        var availableWidth = pageWidth - marginLeft - marginRight;
+                        var colCount = filteredHeaders.length;
+                        var baseWidth = Math.floor(availableWidth / colCount);
+
+                        var columnStyles = {};
+                        for (var i = 0; i < colCount; i++) {
+                            columnStyles[i] = { halign: 'center', cellWidth: baseWidth };
+                        }
+
+                        doc.autoTable({
+                            head: [filteredHeaders],
+                            body: filteredData,
+                            startY: 100,
+                            margin: { left: marginLeft, right: marginRight },
+                            styles: {
+                                fontSize: 9,
+                                cellPadding: 4,
+                                valign: 'middle',
+                            },
+                            headStyles: {
+                                fillColor:'#007bff',
+                                textColor: 255,
+                                fontSize: 10,
+                                fontStyle: 'bold',
+                                halign: 'center',
+                            },
+                            alternateRowStyles: {
+                                fillColor: [248, 249, 250],
+                            },
+                            columnStyles: columnStyles,
+                            tableLineColor: [200, 200, 200],
+                            tableLineWidth: 0.5,
+                        });
+                    }
+
+                    // Save the PDF file
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+                    const filename = 'Product_Export_' + timestamp + '.pdf';
+                    doc.save(filename);
+
+                } catch (error) {
+                    console.error('PDF Generation Error:', error);
+                    showErrorToast('Error generating PDF: ' + error.message);
+                }
+            });
+
+
+            $('#printBtn').off('click').on('click', function () {
+                var selectedData = getSelectedRowsData();
+                if (selectedData.length === 0) {
+                    showErrorToast('Please select at least one row to export.');
+                    return;
+                }
+
+                var headers = getTableHeaders();
+                var printContent = '<html><head><title>Products Report</title>';
+                printContent += '<style>table{border-collapse:collapse;width:100%;font-size:12px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background-color:#f2f2f2;}@@media print{body{margin:0;}}</style>';
+                printContent += '</head><body>';
+                printContent += '<h2>Products Report - ' + new Date().toLocaleDateString() + '</h2>';
+                printContent += '<table><thead><tr>';
+
+                headers.forEach(function (header) {
+                    printContent += '<th>' + header + '</th>';
+                });
+                printContent += '</tr></thead><tbody>';
+
+                selectedData.forEach(function (row) {
+                    printContent += '<tr>';
+                    row.forEach(function (cell) {
+                        printContent += '<td>' + cell + '</td>';
+                    });
+                    printContent += '</tr>';
+                });
+                printContent += '</tbody></table></body></html>';
+
+                var printWindow = window.open('', '_blank');
+                printWindow.document.write(printContent);
+                printWindow.document.close();
+                printWindow.print();
+                printWindow.close();
+            });
+
+            // Add event listener for date range filter changes
+            $('#dateRangeFilter').on('change', function () {
+                if (dataTable) {
+                    dataTable.draw();
+                }
+            });
+
+        }, 100);
+    });
+</script>

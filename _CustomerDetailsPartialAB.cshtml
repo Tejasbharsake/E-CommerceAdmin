@@ -1,0 +1,79 @@
+﻿@model System.Data.DataSet
+@using System.Data
+@{
+    var dt = Model?.Tables[0];
+}
+<head>
+    <link href="~/Content/Document/CSS/custom-datatables.css" rel="stylesheet" />
+</head>
+<!-- Export Buttons Row -->
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-primary btn-sm" id="copyBtn" title="Copy">
+            <img src="~/Content/Document/Image/Copy.png"  alt="Copy" style="width:16px; margin-right:4px;" />
+        </button>
+        <button class="btn btn-outline-info btn-sm" id="csvBtn" title="Export to CSV">
+            <img src="~/Content/Document/Image/CSV.png" alt="CSV" style="width:16px; margin-right:4px;" />
+        </button>
+        <button class="btn btn-outline-success btn-sm" id="excelBtn" title="Export to Excel">
+            <img src="~/Content/Document/Image/XLS.png" alt="Excel" style="width:16px; margin-right:4px;" />
+        </button>
+        <button class="btn btn-outline-danger btn-sm" id="pdfBtn" title="Export to PDF">
+            <img src="~/Content/Document/Image/PDFicon.png" alt="PDF" style="width:16px; margin-right:4px;" />
+        </button>
+        <button class="btn btn-outline-dark btn-sm" id="printBtn" title="Print">
+            <img src="~/Content/Document/Image/Print.png" alt="Print" style="width:16px; margin-right:4px;"/>
+        </button>
+    </div>
+</div>
+<table class="table table-bordered table-striped" id="table1">
+    <thead>
+        <tr>
+            <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAll" /></th>
+            <th>Sr No</th>
+            <th>Order Code</th>
+            <th>Product Name</th>
+            <th>Manufacturer</th>
+            <th>Amount</th>
+            <th style="width: 150px;">Order Date</th>
+            <th>Transaction ID</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (dt != null && dt.Rows.Count > 0)
+        {
+            var srNo = 1;
+            foreach (DataRow row in dt.Rows)
+            {
+                <tr>
+                    <td style="text-align: center; width: 50px;">
+                        <input type="checkbox" class="row-checkbox" value="@srNo" />
+                    </td>
+                    <td>@srNo</td>
+                    <td>@row["OrderCode"]</td>
+                    <td>@row["ProductName"]</td>
+                    <td>@row["ManufacturerName"]</td>
+                    <td>@row["ProductAmount"]</td>
+                    <td>@(row["OrderDate"] != DBNull.Value ? Convert.ToDateTime(row["OrderDate"]).ToString("dd-MM-yyyy") : "")</td>
+                    <td>@row["TransactionId"]</td>
+                </tr>
+                srNo++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td style="text-align: center; width: 50px;">
+                    <input type="checkbox" class="row-checkbox" value="0" disabled style="visibility: hidden;" />
+                </td>
+                <td style="text-align: center; color: #6c757d;">-</td>
+                <td style="text-align: center; color: #6c757d;">-</td>
+                <td style="text-align: center; color: #6c757d; font-style: italic;">No orders found for this customer</td>
+                <td style="text-align: center; color: #6c757d;">-</td>
+                <td style="text-align: center; color: #6c757d;">-</td>
+                <td style="text-align: center; color: #6c757d;">-</td>
+                <td style="text-align: center; color: #6c757d;">-</td>
+            </tr>
+        }
+    </tbody>
+</table>

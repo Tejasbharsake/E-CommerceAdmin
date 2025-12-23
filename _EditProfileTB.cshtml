@@ -1,0 +1,562 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    Layout = null;
+}
+
+<link href="~/Content/Document/CSS/veditprofileTB.css" rel="stylesheet" />
+
+@using (Html.BeginForm("EditProfile1TB", "Admin", FormMethod.Post, new { id = "editProfileForm" }))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.ClientCode)
+
+    <div class="card-body p-4 p-md-5">
+        <div class="row g-4">
+            <!-- Profile Details Column -->
+            <div class="col-lg-6">
+                <h5 class="form-section-title">Profile Details</h5>
+
+                <div class="mb-3">
+                    @Html.LabelFor(m => m.UserName, "Full Name", new { @class = "form-label" })
+                    @Html.TextBoxFor(m => m.UserName, new { @class = "form-control", placeholder = "Enter Full Name", required = "required" })
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        @Html.LabelFor(m => m.BusinessName, "Business Name", new { @class = "form-label" })
+                        @Html.TextBoxFor(m => m.BusinessName, new { @class = "form-control", placeholder = "Enter Business Name", required = "required" })
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        @Html.LabelFor(m => m.BusinessPincode, "Business Pincode", new { @class = "form-label" })
+                        @Html.TextBoxFor(m => m.BusinessPincode,
+new
+{
+    @class = "form-control",
+    placeholder = "6-digit Pincode",
+    @readonly = "readonly"
+})
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    @Html.LabelFor(m => m.EmailId, "Email Id", new { @class = "form-label" })
+                    @Html.TextBoxFor(m => m.EmailId, new { @class = "form-control", type = "email", placeholder = "example@domain.com", @readonly = "readonly" })
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        @Html.LabelFor(m => m.MobileNo, "Mobile No", new { @class = "form-label" })
+                        @Html.TextBoxFor(m => m.MobileNo,
+ new
+ {
+     @class = "form-control numeric-only",
+     placeholder = "10-digit Mobile",
+     maxlength = "10",
+     pattern = "[0-9]{10}",
+     title = "Please enter exactly 10 digits",
+     required = "required"
+ })
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        @Html.LabelFor(m => m.AlternateMobileNo, "Alternate Mobile No", new { @class = "form-label" })
+                        @Html.TextBoxFor(m => m.AlternateMobileNo,
+new
+{
+    @class = "form-control numeric-only",
+    placeholder = "Optional Alternate",
+    maxlength = "10",
+    pattern = "[0-9]{10}",
+    title = "Please enter exactly 10 digits"
+})
+
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    @Html.LabelFor(m => m.GSTIN, "GSTIN", new { @class = "form-label" })
+                    @Html.TextBoxFor(m => m.GSTIN, new { @class = "form-control", placeholder = "e.g. 22AAAAA0000A1Z5", @readonly = "readonly" })
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        @Html.LabelFor(m => m.DOB, "DOB", new { @class = "form-label" })
+                        @Html.TextBoxFor(m => m.DOB, "{0:yyyy-MM-dd}", new { @class = "form-control", @type = "date", @readonly = "readonly" })
+                    </div>
+                </div>
+
+                @Html.HiddenFor(m => m.Gender)
+            </div>
+
+            <!-- Bank Details Column -->
+            <div class="col-lg-6">
+                <h5 class="form-section-title">Bank & KYC Details</h5>
+
+                <div class="mb-3">
+                    @Html.LabelFor(m => m.BankHolderName, "Bank Holder Name", new { @class = "form-label" })
+                    @Html.TextBoxFor(m => m.BankHolderName, new { @class = "form-control", placeholder = "Enter Bank Holder Name", @readonly = "readonly" })
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        @Html.LabelFor(m => m.BankAccountNo, "Bank Account No", new { @class = "form-label" })
+                        @Html.TextBoxFor(m => m.BankAccountNo, new
+                        {
+                            @class = "form-control bank-account-only",
+                            placeholder = "Enter Bank Account No (9-18 digits)",
+                            minlength = "9",
+                            maxlength = "18",
+                            pattern = "[0-9]{9,18}",
+                            title = "Please enter between 9 to 18 digits",
+                            required = "required"
+                        })
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        @Html.LabelFor(m => m.IFSCCode, "IFSC Code", new { @class = "form-label" })
+                        @Html.TextBoxFor(m => m.IFSCCode, new
+                        {
+                            @class = "form-control ifsc-code",
+                            placeholder = "e.g. SBIN0001234",
+                            maxlength = "11",
+                            pattern = "[A-Z]{4}0[A-Z0-9]{6}",
+                            title = "IFSC Code must be 4 letters, followed by 0, then 6 alphanumeric characters",
+                            required = "required"
+                        })
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        @Html.LabelFor(m => m.AadhaarCardNo, "Aadhaar Card No", new { @class = "form-label" })
+                        @Html.TextBoxFor(m => m.AadhaarCardNo,
+new
+{
+    @class = "form-control",
+    placeholder = "12-digit Aadhaar",
+    @readonly = "readonly"
+})
+
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        @Html.LabelFor(m => m.PanCardNo, "Pan Card No", new { @class = "form-label" })
+                        @Html.TextBoxFor(m => m.PanCardNo, new { @class = "form-control", placeholder = "Enter Pan Card No", @readonly = "readonly" })
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Address Section -->
+        <div class="row">
+            <div class="col-12">
+                <h5 class="form-section-title">Address Details</h5>
+            </div>
+            @Html.HiddenFor(m => m.Country, new { id = "hiddenCountry" })
+            @Html.HiddenFor(m => m.State, new { id = "hiddenState" })
+            @Html.HiddenFor(m => m.City, new { id = "hiddenCity" })
+            @Html.HiddenFor(m => m.CityId, new { id = "hiddenCityId" })
+
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Country</label>
+                <select id="countryDropdown" name="Country" class="form-select" disabled></select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">State <span id="state-loader" class="spinner-border spinner-border-sm"></span></label>
+                <select id="stateDropdown" name="State" class="form-select" required></select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">City <span id="city-loader" class="spinner-border spinner-border-sm"></span></label>
+                <select id="cityDropdown" name="City" class="form-select" required></select>
+            </div>
+            <div class="col-md-8 mb-3">
+                @Html.LabelFor(m => m.Address, "Full Address", new { @class = "form-label" })
+                @Html.TextAreaFor(m => m.Address, new { @class = "form-control", placeholder = "House No, Street, Landmark", rows = "3", required = "required" })
+            </div>
+            <div class="col-md-4 mb-3">
+                @Html.LabelFor(m => m.Pincode, "Pin Code", new { @class = "form-label" })
+                @Html.TextBoxFor(m => m.Pincode,
+new
+{
+    @class = "form-control pincode-only",
+    placeholder = "Enter 6-digit Pin Code",
+    maxlength = "6",
+    pattern = "[0-9]{6}",
+    title = "Please enter exactly 6 digits",
+    required = "required"
+})
+            </div>
+
+        </div>
+    </div>
+    <div class="card-footer text-center">
+        <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Save Changes</button>
+    </div>
+}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// COMMENT: partial view
+
+$(document).ready(function () {
+    // Restrict numeric-only fields to accept only digits
+    $('.numeric-only').on('keypress', function(e) {
+        var charCode = (e.which) ? e.which : e.keyCode;
+        if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    });
+
+    $('.numeric-only').on('paste', function(e) {
+        var pastedData = e.originalEvent.clipboardData.getData('text');
+        if (!/^\d+$/.test(pastedData)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Pincode validation: exactly 6 digits only
+    $('.pincode-only').on('keypress', function(e) {
+        var charCode = (e.which) ? e.which : e.keyCode;
+        var currentValue = $(this).val();
+        var currentLength = currentValue.length;
+
+        if (currentLength >= 6) {
+            e.preventDefault();
+            return false;
+        }
+
+        if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    });
+
+    $('.pincode-only').on('paste', function(e) {
+        var pastedData = e.originalEvent.clipboardData.getData('text');
+        if (!/^\d{6}$/.test(pastedData)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Bank Account Number validation: 9-18 digits only
+    $('.bank-account-only').on('keypress', function(e) {
+        var charCode = (e.which) ? e.which : e.keyCode;
+        var currentValue = $(this).val();
+        var currentLength = currentValue.length;
+
+        if (currentLength >= 18) {
+            e.preventDefault();
+            return false;
+        }
+
+        if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    });
+
+    $('.bank-account-only').on('paste', function(e) {
+        var pastedData = e.originalEvent.clipboardData.getData('text');
+        if (!/^\d{9,18}$/.test(pastedData)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // IFSC Code validation: 4 letters + 0 + 6 alphanumeric characters
+    $('.ifsc-code').on('keypress', function(e) {
+        var charCode = (e.which) ? e.which : e.keyCode;
+        var currentValue = $(this).val();
+        var currentLength = currentValue.length;
+
+        if (currentLength >= 11) {
+            e.preventDefault();
+            return false;
+        }
+
+        if (currentLength < 4) {
+            if (!((charCode >= 65 && charCode <= 90) || (charCode >= 97 && charCode <= 122))) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        else if (currentLength === 4) {
+            if (charCode !== 48) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        else if (currentLength >= 5 && currentLength < 11) {
+            if (!((charCode >= 48 && charCode <= 57) || (charCode >= 65 && charCode <= 90) || (charCode >= 97 && charCode <= 122))) {
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    $('.ifsc-code').on('input', function() {
+        $(this).val($(this).val().toUpperCase());
+    });
+
+    $('.ifsc-code').on('paste', function(e) {
+        var pastedData = e.originalEvent.clipboardData.getData('text').toUpperCase();
+        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(pastedData)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Form Submit AJAX logic with validation
+    $('#editProfileForm').submit(function (e) {
+        e.preventDefault();
+        var form = $(this);
+
+        var isValid = true;
+        var emptyFields = [];
+
+        form.find('input[required], textarea[required], select[required]').each(function() {
+            var fieldName = $(this).prev('label').text() || $(this).attr('name');
+            var fieldValue = $(this).val();
+
+            if ($(this).attr('readonly')) {
+                return true;
+            }
+
+            if (!fieldValue || fieldValue.trim() === '') {
+                isValid = false;
+                emptyFields.push(fieldName);
+            }
+        });
+
+        form.find('.numeric-only[required]').each(function() {
+            var fieldValue = $(this).val();
+            var pattern = $(this).attr('pattern');
+            var fieldName = $(this).prev('label').text();
+
+            if (fieldValue && pattern) {
+                var regex = new RegExp(pattern);
+                if (!regex.test(fieldValue)) {
+                    isValid = false;
+                    if (emptyFields.indexOf(fieldName) === -1) {
+                        emptyFields.push(fieldName + ' (invalid format)');
+                    }
+                }
+            }
+        });
+
+        var pincode = $('.pincode-only').val();
+        if (pincode) {
+            if (pincode.length !== 6) {
+                isValid = false;
+                if (emptyFields.indexOf('Pincode') === -1) {
+                    emptyFields.push('Pin Code (must be exactly 6 digits)');
+                }
+            }
+            if (!/^\d{6}$/.test(pincode)) {
+                isValid = false;
+                if (emptyFields.indexOf('Pincode') === -1) {
+                    emptyFields.push('Pin Code (must contain only digits)');
+                }
+            }
+        }
+
+        var bankAccountNo = $('.bank-account-only').val();
+        if (bankAccountNo) {
+            if (bankAccountNo.length < 9 || bankAccountNo.length > 18) {
+                isValid = false;
+                if (emptyFields.indexOf('BankAccountNo') === -1) {
+                    emptyFields.push('Bank Account No (must be between 9 to 18 digits)');
+                }
+            }
+            if (!/^\d{9,18}$/.test(bankAccountNo)) {
+                isValid = false;
+                if (emptyFields.indexOf('BankAccountNo') === -1) {
+                    emptyFields.push('Bank Account No (must contain only digits)');
+                }
+            }
+        }
+
+        var ifscCode = $('.ifsc-code').val();
+        if (ifscCode) {
+            var ifscPattern = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+            if (!ifscPattern.test(ifscCode)) {
+                isValid = false;
+                if (emptyFields.indexOf('IFSCCode') === -1) {
+                    emptyFields.push('IFSC Code (must be 4 letters + 0 + 6 alphanumeric characters)');
+                }
+            }
+        }
+
+        if (!isValid) {
+            var message = 'Please fill the following required fields:<br><br>';
+            message += '<ul style="text-align: left; display: inline-block;">';
+            emptyFields.forEach(function(field) {
+                message += '<li>' + field + '</li>';
+            });
+            message += '</ul>';
+
+            Swal.fire({
+                title: 'Missing Values',
+                html: message,
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+
+        // If validation passes, proceed with AJAX submission
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("EditProfile1TB", "Admin")',
+            data: form.serialize(),
+            success: function (response) {
+                Swal.fire({
+                    title: "Success!",
+                    text: "Profile updated successfully!",
+                    icon: "success",
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true
+                }).then(() => {
+                    // Close the modal/view automatically after SweetAlert closes
+                    if (window.parent && window.parent.$) {
+                        window.parent.$('.modal').modal('hide');
+                    }
+
+                    // Reload parent page to reflect changes
+                    if (window.parent) {
+                        window.parent.location.reload();
+                    } else {
+                        location.reload();
+                    }
+                });
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.error(jqXHR.responseText);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Something went wrong while saving!',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    });
+
+    // Country-State-City API logic
+    const API_KEY = 'MHlrYUFTTjZFQnMxTjdxQWpRY1RDNzhXd1kxOFB0SWdLWGUxSGF3RQ==';
+    const headers = { 'X-CSCAPI-KEY': API_KEY };
+    const countryDropdown = $('#countryDropdown');
+    const stateDropdown = $('#stateDropdown');
+    const cityDropdown = $('#cityDropdown');
+    const stateLoader = $('#state-loader');
+    const cityLoader = $('#city-loader');
+
+    const savedCountry = $('#hiddenCountry').val() || "IN";
+    const savedState = $('#hiddenState').val();
+    const savedCityId = $('#hiddenCityId').val();
+
+    function resetDropdown(dropdown, text) {
+        dropdown.empty().append(`<option value="">${text}</option>`).prop('disabled', true);
+    }
+
+    function loadCountries() {
+        $.ajax({
+            url: 'https://api.countrystatecity.in/v1/countries',
+            method: 'GET',
+            headers: headers,
+            success: function (data) {
+                countryDropdown.empty().append('<option value="">Select Country</option>');
+                $.each(data, function (_, country) {
+                    countryDropdown.append($('<option></option>').val(country.iso2).text(country.name));
+                });
+                countryDropdown.val(savedCountry);
+                if (savedCountry) {
+                    loadStatesForCountry(savedCountry);
+                }
+            },
+            error: function() {
+                resetDropdown(countryDropdown, 'Could not load countries');
+            }
+        });
+    }
+
+    function loadStatesForCountry(countryIso2) {
+        stateLoader.show();
+        resetDropdown(stateDropdown, 'Loading...');
+        $.ajax({
+            url: `https://api.countrystatecity.in/v1/countries/${countryIso2}/states`,
+            method: 'GET',
+            headers: headers,
+            success: function (data) {
+                if (data && data.length) {
+                    stateDropdown.empty().append('<option value="">Select State</option>');
+                    $.each(data, function (_, state) {
+                        stateDropdown.append($('<option></option>').val(state.iso2).text(state.name));
+                    });
+                    stateDropdown.prop('disabled', false);
+                    if (savedState) {
+                        stateDropdown.val(savedState).trigger('change');
+                    }
+                } else {
+                    resetDropdown(stateDropdown, 'No states found');
+                }
+            },
+            error: function () { resetDropdown(stateDropdown, 'Error loading states'); },
+            complete: function () { stateLoader.hide(); }
+        });
+    }
+
+    stateDropdown.on('change', function () {
+        const countryIso2 = countryDropdown.val();
+        const stateIso2 = $(this).val();
+        $('#hiddenState').val(stateIso2);
+        resetDropdown(cityDropdown, 'Select City');
+        if (!countryIso2 || !stateIso2) return;
+
+        cityLoader.show();
+        resetDropdown(cityDropdown, 'Loading...');
+        $.ajax({
+            url: `https://api.countrystatecity.in/v1/countries/${countryIso2}/states/${stateIso2}/cities`,
+            method: 'GET',
+            headers: headers,
+            success: function (data) {
+                if (data && data.length) {
+                    cityDropdown.empty().append('<option value="">Select City</option>');
+                    $.each(data, function (_, city) {
+                        cityDropdown.append($('<option></option>').val(city.id).text(city.name));
+                    });
+                    cityDropdown.prop('disabled', false);
+                    if (savedCityId) {
+                        cityDropdown.val(savedCityId);
+                        $('#hiddenCity').val(cityDropdown.find('option:selected').text());
+                    }
+                } else {
+                    resetDropdown(cityDropdown, 'No cities found');
+                }
+            },
+            error: function () { resetDropdown(cityDropdown, 'Error loading cities'); },
+            complete: function () { cityLoader.hide(); }
+        });
+    });
+
+    cityDropdown.on('change', function () {
+        var selectedCityId = $(this).val();
+        var selectedCityName = $(this).find('option:selected').text();
+        $('#hiddenCityId').val(selectedCityId);
+        $('#hiddenCity').val(selectedCityName);
+    });
+
+    loadCountries();
+});
+</script>

@@ -1,0 +1,108 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+<link href="~/Content/Document/CSS/OrderDetailsPartial.css" rel="stylesheet" />
+
+@if (Model != null)
+
+{
+    <div class="container p-4">
+
+        
+
+        <!-- ✅ Image Carousel -->
+        <div id="productImageCarousel" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="3000" data-bs-pause="hover">
+
+            <!-- ✅ Image Items -->
+            <div class="carousel-inner rounded shadow-sm text-center">
+                @if (!string.IsNullOrEmpty(Model.ProductMedia1))
+                {
+                    <div class="carousel-item active">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia1"
+                             class="d-block mx-auto product-img"
+                             style="max-height: 220px; object-fit: contain;"
+                             alt="Product Image 1" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia2))
+                {
+                    <div class="carousel-item">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia2"
+                             class="d-block mx-auto product-img"
+                             style="max-height: 220px; object-fit: contain;"
+                             alt="Product Image 2" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia3))
+                {
+                    <div class="carousel-item">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia3"
+                             class="d-block mx-auto product-img"
+                             style="max-height: 220px; object-fit: contain;"
+                             alt="Product Image 3" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.ProductMedia4))
+                {
+                    <div class="carousel-item">
+                        <img src="~/Content/Document/Image/ProductImg/@Model.ProductMedia4"
+                             class="d-block mx-auto product-img"
+                             style="max-height: 220px; object-fit: contain;"
+                             alt="Product Image 4" />
+                    </div>
+                }
+            </div>
+
+            <!-- ✅ Left/Right Arrows -->
+            <button class="carousel-control-prev" type="button" data-bs-target="#productImageCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon custom-arrow"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#productImageCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon custom-arrow"></span>
+            </button>
+        </div>
+
+        <!-- ✅ Order Details Below Image -->
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Customer Name:</strong> @Model.CustomerName</p>
+                <p><strong>Mobile No:</strong> +91 @Model.MobileNo</p>
+                <p><strong>Email Id:</strong> @Model.EmailId</p>
+                <p><strong>Address:</strong> @Model.Address</p>
+                <p><strong>Product Name:</strong> @Model.ProductName</p>
+                <p><strong>Order Code:</strong> @Model.OrderCode</p>
+                <p><strong>Order Date:</strong> @Model.OrderDate.ToString("dd/MM/yyyy")</p>
+                <p><strong>Order Status:</strong> @Model.OrderStatus</p>
+                <p><strong>SKU:</strong> @Model.SKU</p>
+
+                <!-- ✅ Reason only if available -->
+                @if (!string.IsNullOrWhiteSpace(Model.Reason))
+                {
+                    <p><strong>Reason:</strong> @Model.Reason</p>
+                }
+            </div>
+            <div class="col-md-6">
+                <p><strong>Shipping Charges:</strong> ₹@Model.ShippingCharges</p>
+                <p><strong>Total Amount:</strong> ₹@Model.TotalAmount</p>
+                <p><strong>Commission:</strong> ₹@Model.CommissionInRupees</p>
+                <p><strong>Payment Method:</strong> @Model.PaymentMethod</p>
+                <p><strong>Transaction ID:</strong> @(string.IsNullOrWhiteSpace(Model.TransactionId) ? "Null" : Model.TransactionId)</p>
+                <p><strong>Quantity (No)</strong> @Model.Quantity</p>
+                <p><strong>Weight:</strong> @Model.ProductWeigth kg</p>
+                <p><strong>Unit Price :</strong> ₹@Model.ProductAmount</p>
+            </div>
+        </div>
+    </div>
+}
+
+else
+{
+    <p class="text-danger text-center">Order details not found.</p>
+}
+
+<!-- ✅ Custom CSS -->
+@*<style>
+        /* Make carousel arrows black */
+        .carousel-control-prev-icon,
+        .carousel-control-next-icon {
+            filter: invert(100%); /* White → Black */
+        }
+    </style>*@

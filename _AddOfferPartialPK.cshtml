@@ -1,0 +1,466 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+@using (Html.BeginForm("SaveOfferPK", "Admin", FormMethod.Post, new { id = "addOfferForm" }))
+{
+    <div class="modal-header text-white"
+         style="background: #2C3E50;">
+        <h5 class="modal-title">Add New Offer</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+
+    <div class="modal-body">
+
+        @Html.DropDownListFor(m => m.OfferNameId,
+            ViewBag.OfferNames as IEnumerable<SelectListItem>,
+            "-- Select Offer Name --",
+            new { @class = "form-select", required = "required" })
+
+        @*<div class="mb-3">
+            @Html.LabelFor(m => m.OfferStartDate)
+            <input type="date"
+                   class="form-control"
+                   name="OfferStartDate"
+                   value="@DateTime.Now.ToString("yyyy-MM-dd")"
+
+                   required />
+        </div>
+
+        <div class="mb-3">
+            @Html.LabelFor(m => m.OfferEndDate)
+            <input type="date"
+                   class="form-control"
+                   name="OfferEndDate"
+                   value="@DateTime.Now.ToString("yyyy-MM-dd")"
+                   required />
+        </div>*@
+
+
+        @*<div class="mb-3">
+            @Html.LabelFor(m => m.OfferStartDate)
+            <input type="date"
+                   class="form-control"
+                   name="OfferStartDate"
+                   value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                   min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                   required />
+        </div>
+
+        <div class="mb-3">
+            @Html.LabelFor(m => m.OfferEndDate)
+            <input type="date"
+                   class="form-control"
+                   name="OfferEndDate"
+                   value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                   min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                   required />
+        </div>*@
+
+        <div class="mb-3">
+            @Html.LabelFor(m => m.OfferStartDate)
+            @Html.TextBoxFor(m => m.OfferStartDate,
+                new
+                    {
+                        @type = "date",
+                    @class = "form-control",
+                    @value = DateTime.Today.ToString("yyyy-MM-dd"),
+                    @min = DateTime.Today.ToString("yyyy-MM-dd"),
+                    @required = "required"
+                })
+        </div>
+
+        <div class="mb-3">
+            @Html.LabelFor(m => m.OfferEndDate)
+            @Html.TextBoxFor(m => m.OfferEndDate,
+                new
+                    {
+                        @type = "date",
+                    @class = "form-control",
+                    @value = DateTime.Today.ToString("yyyy-MM-dd"),
+                    @min = DateTime.Today.ToString("yyyy-MM-dd"),
+                    @required = "required"
+                })
+        </div>
+
+
+        @*<div class="mb-3">
+            <label class="form-label">Offer Discount :-</label>
+            <div class="input-group">
+                @Html.TextBoxFor(
+                    m => m.OfferDiscountPercentage,
+                    new
+                         {
+                        @class = "form-control",
+                        placeholder = "Enter %",
+                        type = "number",
+                        min = "0.01",
+                        max = "100",
+                        step = "0.01"
+                    }
+                )
+                <span class="input-group-text">%</span>
+            </div>
+        </div>*@
+        <div class="mb-3">
+            <label class="form-label">Offer Discount :-</label>
+            <div class="input-group">
+                @Html.TextBoxFor(
+                    m => m.OfferDiscountPercentage,
+                    new
+                    {
+                        @class = "form-control",
+                        placeholder = "Enter like 10.50%",
+                        type = "text",
+                        pattern = @"^\d{1,2}(\.\d{1,2})?$", // allows 0–99.99
+                        title = "Enter a valid discount (e.g., 20.22)",
+                        maxlength = "5", // max like 99.99
+                        oninput = "this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*)\\./g, '$1');" // allow only digits and one dot
+                    }
+                )
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+
+
+
+        <div class="mb-3">
+            @Html.LabelFor(m => m.MainCategoryCode)
+            @Html.DropDownListFor(m => m.MainCategoryCode,
+                ViewBag.MainCategories as IEnumerable<SelectListItem>,
+                "-- Select Main Category --",
+                new { @class = "form-select", id = "MainCategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="SubCategoryContainer" style="display:none;">
+            @Html.LabelFor(m => m.SubCategoryCode)
+            @Html.DropDownListFor(m => m.SubCategoryCode,
+                ViewBag.SubCategories as IEnumerable<SelectListItem>,
+                "-- Select Sub Category --",
+                new { @class = "form-select", id = "SubCategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="Sub2CategoryContainer" style="display:none;">
+            <label class="form-label">Sub Category 2</label>
+            @Html.DropDownList("Sub2CategoryCode",
+                ViewData["Sub2Categories"] as IEnumerable<SelectListItem>,
+                "-- Select Sub Category 2 --",
+                new { @class = "form-select", id = "Sub2CategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="Sub3CategoryContainer" style="display:none;">
+            <label class="form-label">Sub Category 3</label>
+            @Html.DropDownList("Sub3CategoryCode",
+                ViewData["Sub3Categories"] as IEnumerable<SelectListItem>,
+                "-- Select Sub Category 3 --",
+                new { @class = "form-select", id = "Sub3CategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="Sub4CategoryContainer" style="display:none;">
+            <label class="form-label">Sub Category 4</label>
+            @Html.DropDownList("Sub4CategoryCode",
+                ViewData["Sub4Categories"] as IEnumerable<SelectListItem>,
+                "-- Select Sub Category 4 --",
+                new { @class = "form-select", id = "Sub4CategoryDropdown" })
+        </div>
+
+        <div class="mb-3" id="Sub5CategoryContainer" style="display:none;">
+            <label class="form-label">Sub Category 5</label>
+            @Html.DropDownList("Sub5CategoryCode",
+                ViewData["Sub5Categories"] as IEnumerable<SelectListItem>,
+                "-- Select Sub Category 5 --",
+                new { @class = "form-select", id = "Sub5CategoryDropdown" })
+        </div>
+
+        <div class="mb-3">
+            @Html.LabelFor(m => m.ProductCode)
+            @Html.DropDownListFor(m => m.ProductCode,
+                ViewBag.Products as IEnumerable<SelectListItem>,
+                "-- Select Product --",
+                new { @class = "form-select", id = "ProductDropdown" })
+        </div>
+
+    </div>
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-success">Save</button>
+
+    </div>
+}
+
+<!-- Required CSS -->
+<link href="~/Content/Document/CustomJS/bootstrap-datepicker.min.css" rel="stylesheet" />
+
+<!-- Required JS -->
+<script src="~/Content/Document/CustomJS/bootstrap-datepicker.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function () {
+
+    // Initialize date picker functionality
+    document.addEventListener('DOMContentLoaded', function () {
+        const datePickers = document.querySelectorAll('.date-picker-2025');
+        datePickers.forEach(function (picker) {
+            picker.addEventListener('focus', function () {
+                if (!this.value) {
+                    this.value = '2025-01-01';
+                }
+            });
+        });
+    });
+
+    // Utility function to fill dropdown
+    function fillDropdown(dropdownId, data) {
+        var ddl = $(dropdownId);
+        ddl.empty();
+        ddl.append($('<option>').val('').text('-- Select --'));
+        $.each(data, function (i, item) {
+            ddl.append($('<option>').val(item.Value).text(item.Text));
+        });
+    }
+
+    // Hide all subcategory containers
+    function hideAllSubCategories() {
+        $('#SubCategoryContainer').hide();
+        $('#Sub2CategoryContainer').hide();
+        $('#Sub3CategoryContainer').hide();
+        $('#Sub4CategoryContainer').hide();
+        $('#Sub5CategoryContainer').hide();
+    }
+
+    // Clear all subcategory dropdowns
+    function clearAllSubCategories() {
+        $('#SubCategoryDropdown').empty().append('<option value="">-- Select Sub Category --</option>');
+        $('#Sub2CategoryDropdown').empty().append('<option value="">-- Select Sub Category 2 --</option>');
+        $('#Sub3CategoryDropdown').empty().append('<option value="">-- Select Sub Category 3 --</option>');
+        $('#Sub4CategoryDropdown').empty().append('<option value="">-- Select Sub Category 4 --</option>');
+        $('#Sub5CategoryDropdown').empty().append('<option value="">-- Select Sub Category 5 --</option>');
+    }
+
+    // Main Category Change Event
+    $('#MainCategoryDropdown').change(function () {
+        var code = $(this).val();
+
+        // Hide and clear all subcategories first
+        hideAllSubCategories();
+        clearAllSubCategories();
+
+        // Clear products dropdown
+        $('#ProductDropdown').empty().append('<option value="">-- Select Product --</option>');
+
+        if (code && code !== '') {
+            $.ajax({
+                type: "POST",
+                url: '/Admin/GetSub1CategoriesByMainPK',
+                data: { MainCategoryCode: code },
+                success: function (data) {
+                    if (data && data.length > 0) {
+                        fillDropdown('#SubCategoryDropdown', data);
+                        $('#SubCategoryContainer').show(); // Show Sub1 Category
+                    }
+                },
+                error: function () {
+                    alert("Error loading subcategories");
+                }
+            });
+        }
+    });
+
+    // Sub Category 1 Change Event
+    $('#SubCategoryDropdown').change(function () {
+        var code = $(this).val();
+
+        // Hide categories below this level
+        $('#Sub2CategoryContainer').hide();
+        $('#Sub3CategoryContainer').hide();
+        $('#Sub4CategoryContainer').hide();
+        $('#Sub5CategoryContainer').hide();
+
+        // Clear dropdowns below this level
+        $('#Sub2CategoryDropdown').empty().append('<option value="">-- Select Sub Category 2 --</option>');
+        $('#Sub3CategoryDropdown').empty().append('<option value="">-- Select Sub Category 3 --</option>');
+        $('#Sub4CategoryDropdown').empty().append('<option value="">-- Select Sub Category 4 --</option>');
+        $('#Sub5CategoryDropdown').empty().append('<option value="">-- Select Sub Category 5 --</option>');
+
+        if (code && code !== '') {
+            $.ajax({
+                type: "POST",
+                url: '/Admin/GetSub2CategoriesBySub1PK',
+                data: { sub1CategoryCode: code },
+                success: function (data) {
+                    if (data && data.length > 0) {
+                        fillDropdown('#Sub2CategoryDropdown', data);
+                        $('#Sub2CategoryContainer').show(); // Show Sub2 Category
+                    }
+                },
+                error: function () {
+                    alert("Error loading sub2 categories");
+                }
+            });
+        }
+    });
+
+    // Sub Category 2 Change Event
+    $('#Sub2CategoryDropdown').change(function () {
+        var code = $(this).val();
+
+        // Hide categories below this level
+        $('#Sub3CategoryContainer').hide();
+        $('#Sub4CategoryContainer').hide();
+        $('#Sub5CategoryContainer').hide();
+
+        // Clear dropdowns below this level
+        $('#Sub3CategoryDropdown').empty().append('<option value="">-- Select Sub Category 3 --</option>');
+        $('#Sub4CategoryDropdown').empty().append('<option value="">-- Select Sub Category 4 --</option>');
+        $('#Sub5CategoryDropdown').empty().append('<option value="">-- Select Sub Category 5 --</option>');
+
+        if (code && code !== '') {
+            $.ajax({
+                type: "POST",
+                url: '/Admin/GetSub3CategoriesBySub2PK',
+                data: { sub2CategoryCode: code },
+                success: function (data) {
+                    if (data && data.length > 0) {
+                        fillDropdown('#Sub3CategoryDropdown', data);
+                        $('#Sub3CategoryContainer').show(); // Show Sub3 Category
+                    }
+                },
+                error: function () {
+                    alert("Error loading sub3 categories");
+                }
+            });
+
+            // Also load products for this level
+            loadProductsBySubCategory(code);
+        }
+    });
+
+    // Sub Category 3 Change Event
+    $('#Sub3CategoryDropdown').change(function () {
+        var code = $(this).val();
+
+        // Hide categories below this level
+        $('#Sub4CategoryContainer').hide();
+        $('#Sub5CategoryContainer').hide();
+
+        // Clear dropdowns below this level
+        $('#Sub4CategoryDropdown').empty().append('<option value="">-- Select Sub Category 4 --</option>');
+        $('#Sub5CategoryDropdown').empty().append('<option value="">-- Select Sub Category 5 --</option>');
+
+        if (code && code !== '') {
+            $.ajax({
+                type: "POST",
+                url: '/Admin/GetSub4CategoriesBySub3PK',
+                data: { sub3CategoryCode: code },
+                success: function (data) {
+                    if (data && data.length > 0) {
+                        fillDropdown('#Sub4CategoryDropdown', data);
+                        $('#Sub4CategoryContainer').show(); // Show Sub4 Category
+                    }
+                },
+                error: function () {
+                    alert("Error loading sub4 categories");
+                }
+            });
+
+            // Also load products for this level
+            loadProductsBySubCategory(code);
+        }
+    });
+
+    // Sub Category 4 Change Event
+    $('#Sub4CategoryDropdown').change(function () {
+        var code = $(this).val();
+
+        // Hide categories below this level
+        $('#Sub5CategoryContainer').hide();
+
+        // Clear dropdowns below this level
+        $('#Sub5CategoryDropdown').empty().append('<option value="">-- Select Sub Category 5 --</option>');
+
+        if (code && code !== '') {
+            $.ajax({
+                type: "POST",
+                url: '/Admin/GetSub5CategoriesBySub4PK',
+                data: { sub4CategoryCode: code },
+                success: function (data) {
+                    if (data && data.length > 0) {
+                        fillDropdown('#Sub5CategoryDropdown', data);
+                        $('#Sub5CategoryContainer').show(); // Show Sub5 Category
+                    }
+                },
+                error: function () {
+                    alert("Error loading sub5 categories");
+                }
+            });
+
+            // Also load products for this level
+            loadProductsBySubCategory(code);
+        }
+    });
+
+    // Sub Category 5 Change Event
+    $('#Sub5CategoryDropdown').change(function () {
+        var code = $(this).val();
+        if (code && code !== '') {
+            // Load products for this level
+            loadProductsBySubCategory(code);
+        }
+    });
+
+    // Function to load products by subcategory
+    function loadProductsBySubCategory(subCategoryCode) {
+        if (subCategoryCode && subCategoryCode !== "0" && subCategoryCode !== "") {
+            $.ajax({
+                type: "POST",
+                url: '@Url.Action("GetProductDropdownBySubCategoryPK", "Admin")',
+                data: { SelectedSubCategoryCode: subCategoryCode },
+                success: function (data) {
+                    var $productDropdown = $('#ProductDropdown');
+                    $productDropdown.empty();
+                    $productDropdown.append($('<option>', {
+                        value: '',
+                        text: '-- Select Product --'
+                    }));
+                    if (data && data.length > 0) {
+                        $.each(data, function (i, item) {
+                            $productDropdown.append($('<option>', {
+                                value: item.Value,
+                                text: item.Text
+                            }));
+                        });
+                    }
+                },
+                error: function () {
+                    alert("Error loading products");
+                }
+            });
+        } else {
+            $('#ProductDropdown').empty().append('<option value="">-- Select Product --</option>');
+        }
+    }
+
+    // Form submit handler
+    $(document).on('submit', '#addOfferForm', function (e) {
+        e.preventDefault();
+
+        $.ajax({
+            url: $(this).attr("action"),
+            type: "POST",
+            data: $(this).serialize(),
+            success: function (res) {
+                if (res.success) {
+                    alert("Offer added successfully.");
+                    location.reload();
+                } /*else {*/
+                //    alert(res.message || "Failed to add offer.");
+                //}
+            },
+            error: function () {
+                alert("Error occurred while saving offer.");
+            }
+        });
+    });
+
+});
+</script>
+
+

@@ -1,0 +1,609 @@
+﻿@{
+    var ds = ViewBag.OrderData as System.Data.DataSet;
+    var dt = ds?.Tables.Count > 0 ? ds.Tables[0] : null;
+    ViewBag.Title = "Pending Courier Payments";
+}
+
+<!-- CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.dataTables.min.css" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+<!-- Daterangepicker CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" />
+<link href="~/Content/Document/CSS/PendingCourierPayment.css" rel="stylesheet" />
+
+<style>
+    .dt-button {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 5px 12px !important;
+        font-size: 13px !important;
+        font-weight: 500;
+        border: 1px solid #0d6efd !important;
+        background-color: transparent !important;
+        color: #0d6efd !important;
+        box-shadow: none !important;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 2px 8px;
+        margin: 0 2px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        color: #495057 !important;
+        cursor: pointer;
+    }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background-color: #0d6efd !important;
+            color: white !important;
+            border: 1px solid #0d6efd;
+        }
+
+    .dt-button, .dt-button:active, .dt-button:focus, .dt-button:hover {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-auto">
+        <label class="form-label fw-semibold mb-1">Date Range Filter</label>
+        <input class="form-control input-daterange-datepicker" type="text" name="daterange" autocomplete="off" placeholder="Select Date Range" />
+    </div>
+</div>
+
+@if (dt != null && dt.Rows.Count > 0)
+{
+    <div class="table-responsive">
+        <table id="dataTable" class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll" /></th>
+                    <th>Sr No</th>
+                    <th>Courier Name</th>
+                    <th>Total Orders</th>
+                    <th>Total Payable Amount ₹</th>
+                    <th>Payment Date From</th>
+                    <th>Payment Date To</th>
+                    <th>Client Code</th>
+                    <th>Period</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (System.Data.DataRow row in dt.Rows)
+                {
+                    var fromDate = Convert.ToDateTime(row["Payment Date From"]).ToString("yyyy-MM-dd");
+                    var toDate = Convert.ToDateTime(row["Payment Date To"]).ToString("yyyy-MM-dd");
+                    var amount = row["Total Payable Amount"].ToString().Replace("â‚¹", "₹");
+                    <tr data-from-date="@fromDate" data-to-date="@toDate">
+                        <td><input type="checkbox" class="payment-checkbox" value="@row["ClientCode"]" data-from="@fromDate" data-to="@toDate" /></td>
+                        <td>@row["SrNo"]</td>
+                        <td>@row["Courier Name"]</td>
+                        <td>
+                            <a href="#" class="total-orders-link text-primary font-weight" data-clientcode="@row["ClientCode"]" data-from="@fromDate" data-to="@toDate" title="View orders for this period">
+                                @row["Total Orders"]
+                            </a>
+                        </td>
+                        <td>@amount</td>
+                        <td>@Convert.ToDateTime(row["Payment Date From"]).ToString("dd-MM-yyyy")</td>
+                        <td>@Convert.ToDateTime(row["Payment Date To"]).ToString("dd-MM-yyyy")</td>
+                        <td>@row["ClientCode"]</td>
+                        <td>@row["Period"]</td>
+                        <td>
+                            <button type="button" class="btn btn-pay btnCourierPay btn-sm" data-clientcode="@row["ClientCode"]" data-from="@fromDate" data-to="@toDate">
+                                Pay
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning text-center mt-4">
+        No pending courier payments available.
+    </div>
+}
+
+<!-- Toast Notification HTML -->
+<div class="position-fixed end-0 p-3" style="z-index: 9999; top: 60px;">
+    <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Courier Payment Modal -->
+<div class="modal fade" id="courierPaymentModal" tabindex="-1" aria-labelledby="courierPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background: #2C3E50;">
+                <h5 class="modal-title">Payment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="courierModalBody">
+                <div class="text-center">Loading courier payment details...</div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Total Orders Modal -->
+<div class="modal fade" id="totalOrdersModal" tabindex="-1" aria-labelledby="totalOrdersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background: #2C3E50;">
+                <h5 class="modal-title">Total Orders</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="totalOrdersModalBody">
+                <div class="text-center">Loading order details...</div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JS Scripts (FIXED ORDER AND VERSIONS) -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+<script src="~/Content/Document/CustomJS/jszip.min.js"></script>
+<script src="~/Content/Document/CustomJS/pdfmake.min.js"></script>
+<script src="~/Content/Document/CustomJS/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+        new bootstrap.Tooltip(tooltipTriggerEl, {
+            placement: 'top',
+            trigger: 'hover'
+        });
+    });
+
+    // ===================== DATE RANGE PICKER FUNCTIONALITY =====================
+    let minDate = null;
+    let maxDate = null;
+
+    function calculateDateRange() {
+        let allDates = [];
+        $('#dataTable tbody tr').each(function() {
+            var fromDateStr = $(this).data('from-date');
+            var toDateStr = $(this).data('to-date');
+            if (fromDateStr) allDates.push(moment(fromDateStr, 'YYYY-MM-DD'));
+            if (toDateStr) allDates.push(moment(toDateStr, 'YYYY-MM-DD'));
+        });
+        if (allDates.length > 0) {
+            minDate = moment.min(allDates);
+            maxDate = moment.max(allDates);
+            console.log('Calculated date range:', { minDate: minDate.format('DD-MM-YYYY'), maxDate: maxDate.format('DD-MM-YYYY') });
+            $('#dateRangeInfo').text(`Available range: ${minDate.format('DD-MM-YYYY')} to ${maxDate.format('DD-MM-YYYY')}`);
+            return { minDate: minDate, maxDate: maxDate };
+        }
+        return null;
+    }
+
+    var dateRange = calculateDateRange();
+
+    $('.input-daterange-datepicker').daterangepicker({
+        opens: 'right',
+        locale: { format: 'MM/DD/YYYY' },
+        startDate: dateRange ? dateRange.minDate : moment().subtract(30, 'days'),
+        endDate: dateRange ? dateRange.maxDate : moment(),
+        minDate: dateRange ? dateRange.minDate : moment().subtract(365, 'days'),
+        maxDate: dateRange ? dateRange.maxDate : moment(),
+        autoUpdateInput: false,
+        ranges: {
+            'Available Range': dateRange ? [dateRange.minDate, dateRange.maxDate] : [moment().subtract(30, 'days'), moment()],
+            'Today': [moment(), moment()],
+            'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+            'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+            'This Month': [moment().startOf('month'), moment().endOf('month')],
+            'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+        }
+    });
+
+    $('.input-daterange-datepicker').on('apply.daterangepicker', function (ev, picker) {
+        var startDate = picker.startDate;
+        var endDate = picker.endDate;
+
+        if (dateRange) {
+            if (startDate.isBefore(dateRange.minDate) || endDate.isAfter(dateRange.maxDate)) {
+                showErrorToast(`Please select dates within available range: ${dateRange.minDate.format('DD-MM-YYYY')} to ${dateRange.maxDate.format('DD-MM-YYYY')}`);
+                picker.setStartDate(dateRange.minDate);
+                picker.setEndDate(dateRange.maxDate);
+                return false;
+            }
+            if (startDate.isAfter(endDate)) {
+                showErrorToast('Start date cannot be after end date');
+                picker.setStartDate(dateRange.minDate);
+                picker.setEndDate(dateRange.maxDate);
+                return false;
+            }
+        }
+
+        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+
+        $.fn.dataTable.ext.search.pop();
+        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+            var paymentDateFrom = moment(data[5], 'DD-MM-YYYY');
+            var paymentDateTo = moment(data[6], 'DD-MM-YYYY');
+            return (paymentDateFrom >= startDate && paymentDateFrom <= endDate) ||
+                   (paymentDateTo >= startDate && paymentDateTo <= endDate) ||
+                   (paymentDateFrom <= startDate && paymentDateTo >= endDate);
+        });
+        table.draw();
+        showSuccessToast(`Date filter applied: ${startDate.format('DD-MM-YYYY')} to ${endDate.format('DD-MM-YYYY')}`);
+    });
+
+    $('.input-daterange-datepicker').on('cancel.daterangepicker', function (ev, picker) {
+        $(this).val('');
+        $.fn.dataTable.ext.search.pop();
+        table.draw();
+        if (dateRange) {
+            picker.setStartDate(dateRange.minDate);
+            picker.setEndDate(dateRange.maxDate);
+        } else {
+            picker.setStartDate(moment().subtract(30, 'days'));
+            picker.setEndDate(moment());
+        }
+        showSuccessToast('Date filter cleared');
+    });
+
+    // ===================== TOAST FUNCTIONS =====================
+    function showErrorToast(message) {
+        $('#toastMessage').text(message);
+        $('#liveToast').removeClass('bg-success').addClass('bg-danger');
+        try {
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        } catch (e) {
+            console.warn('Toast error', e);
+        }
+    }
+
+    function showSuccessToast(message) {
+        $('#toastMessage').text(message);
+        $('#liveToast').removeClass('bg-danger').addClass('bg-success');
+        try {
+            var toastEl = document.getElementById('liveToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        } catch (e) {
+            console.warn('Toast error', e);
+        }
+    }
+
+    // ===================== DATATABLES & EXPORT FUNCTIONALITY =====================
+    let selectedRows = new Set();
+    let srNoCounter = 0;
+
+    let table = $('#dataTable').DataTable({
+        responsive: true,
+        searching: true,
+        scrollX: false,
+        ordering: false,
+        paging: true,
+        lengthChange: false,
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50, 100],
+        info: true,
+        language: { search: "Search:", searchPlaceholder: "Type to search..." },
+        dom: '<"row mb-2"<"col-md-6"l><"col-md-6 text-end"<"dtb-wrap"B><"dtf-wrap"f>>>rt<"row"<"col-md-6"i><"col-md-6"p>>',
+        buttons: [
+            exportBtnConfig('copy', 'Copy.png', 'btn-info', 'Courier_Payments_', 'Copy to clipboard'),
+            exportBtnConfig('csv', 'CSV.png', 'btn-success', 'Courier_Payments_', 'Export as CSV file'),
+            exportBtnConfig('excel', 'XLS.png', 'btn-primary', 'Courier_Payments_', 'Export as Excel file'),
+            exportBtnConfig('pdf', 'PDFicon.png', 'btn-danger', 'Courier_Payments_', 'Export as PDF file', true),
+            exportBtnConfig('print', 'Print.png', 'btn-warning', '', 'Print')
+        ],
+        columnDefs: [{ targets: [0, 9], orderable: false, searchable: false }]
+    });
+
+    function exportBtnConfig(type, iconFile, btnClass, filePrefix = '', tooltipText = '', isPdf = false) {
+        return {
+            extend: type,
+            text: `<img src="/Content/Document/Image/${iconFile}" class="btn-icon" />`,
+            className: `btn ${btnClass} ${type === 'print' ? 'text-dark' : 'text-white'} btn-sm`,
+            title: 'Courier Payments Report',
+            filename: filePrefix + new Date().toISOString().slice(0, 10),
+            attr: {
+                'data-bs-toggle': 'tooltip',
+                'title': tooltipText
+            },
+            orientation: isPdf ? 'landscape' : undefined,
+            pageSize: isPdf ? 'A4' : undefined,
+            exportOptions: {
+                columns: [1, 2, 3, 4, 5, 6, 7, 8],
+                rows: function (idx, data, node) {
+                    return $(node).find('.payment-checkbox').is(':checked');
+                },
+                format: {
+                    body: function (data, row, column, node) {
+                        if (column === 0) {
+                            srNoCounter++;
+                            return srNoCounter;
+                        }
+                        return $('<div>').html(data).text().trim();
+                    }
+                }
+            },
+            action: function (e, dt, node, config) {
+                if ($('.payment-checkbox:checked').length === 0) {
+                    showErrorToast(`Please select at least one row to ${type}.`);
+                    return;
+                }
+                srNoCounter = 0;
+                const btnAction = $.fn.dataTable.ext.buttons[`${type}Html5`] || $.fn.dataTable.ext.buttons[type];
+                btnAction.action.call(this, e, dt, node, config);
+            },
+            customize: isPdf ? function (doc) {
+                var shopName = 'Rahishop';
+                var heading = 'Pending Courier Payments';
+                var now = moment().format('DD-MM-YYYY HH:mm:ss');
+
+                // Calculate Order Count as the number of selected rows (entries)
+                var orderCount = $('.payment-checkbox:checked').length;
+                console.log('Number of selected entries (Order Count):', orderCount);
+
+                // Remove default title
+                if (doc.content.length && typeof doc.content[0].text === 'string') {
+                    doc.content.splice(0, 1);
+                }
+
+                // Set margins
+                doc.pageMargins = [20, 40, 20, 20];
+
+                // Add shop name and heading centered
+                doc.content.unshift({
+                    text: heading,
+                    alignment: 'center',
+                    fontSize: 13,
+                    bold: true,
+                    margin: [0, 10, 0, 5]
+                });
+                doc.content.unshift({
+                    text: shopName,
+                    alignment: 'center',
+                    fontSize: 16,
+                    bold: true,
+                    margin: [0, 10, 0, 5]
+                });
+
+                // Add "Generated On" and "Order Count" on the right side below heading
+                doc.content.splice(2, 0, {
+                    columns: [
+                        { text: '', width: '*' },
+                        {
+                            stack: [
+                                { text: 'Generated On: ' + now, alignment: 'right', fontSize: 9 },
+                                { text: 'Order Count: ' + orderCount, alignment: 'right', fontSize: 9 }
+                            ],
+                            width: 'auto'
+                        }
+                    ],
+                    margin: [0, 5, 20, 10]
+                });
+
+                // Table styling
+                var objLayout = {};
+                objLayout['hLineWidth'] = function () { return 0; };
+                objLayout['vLineWidth'] = function () { return 0; };
+                objLayout['hLineColor'] = function () { return '#aaa'; };
+                objLayout['vLineColor'] = function () { return '#aaa'; };
+                objLayout['paddingLeft'] = function () { return 5; };
+                objLayout['paddingRight'] = function () { return 5; };
+
+                doc.content.forEach(function (contentItem) {
+                    if (contentItem.table) {
+                        contentItem.layout = objLayout;
+                        contentItem.table.widths = ['5%', '15%', '10%', '15%', '15%', '15%', '15%', '10%'];
+                    }
+                });
+
+                // Default Styles
+                doc.defaultStyle.fontSize = 9;
+                doc.styles.tableHeader.fontSize = 10;
+                doc.styles.tableHeader.fillColor = '#2E86C1';
+                doc.styles.tableHeader.color = 'white';
+                doc.styles.tableHeader.bold = true;
+
+                // Row striping
+                doc.content.forEach(function (contentItem) {
+                    if (contentItem.table) {
+                        var body = contentItem.table.body;
+                        for (var i = 1; i < body.length; i++) {
+                            if (i % 2 === 0) {
+                                body[i].forEach(function (cell) {
+                                    cell.fillColor = '#F2F3F4';
+                                });
+                            }
+                        }
+                    }
+                });
+            } : undefined
+        };
+    }
+
+    // ===================== SELECT ALL & CHECKBOX FUNCTIONALITY =====================
+    $('#selectAll').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        table.rows({ filter: 'applied' }).every(function() {
+            const rowNode = this.node();
+            $(rowNode).find('.payment-checkbox').prop('checked', isChecked);
+            if (isChecked) selectedRows.add(rowNode); else selectedRows.delete(rowNode);
+        });
+        updateRowStyles();
+    });
+
+    $(document).on('change', '.payment-checkbox', function() {
+        const $row = $(this).closest('tr');
+        if ($(this).is(':checked')) selectedRows.add($row[0]);
+        else {
+            selectedRows.delete($row[0]);
+            $('#selectAll').prop('checked', false).prop('indeterminate', false);
+        }
+        updateRowStyles();
+        updateSelectAllCheckbox();
+    });
+
+    function updateRowStyles() { }
+
+    function updateSelectAllCheckbox() {
+        const visibleRows = table.rows({ filter: 'applied' }).count();
+        const selectedVisibleCount = table.rows({ filter: 'applied' }).nodes().toArray().filter(row =>
+            $(row).find('.payment-checkbox').is(':checked')
+        ).length;
+        if (selectedVisibleCount === 0) $('#selectAll').prop('indeterminate', false).prop('checked', false);
+        else if (selectedVisibleCount === visibleRows) $('#selectAll').prop('indeterminate', false).prop('checked', true);
+        else $('#selectAll').prop('indeterminate', true);
+    }
+
+    table.on('draw', function() {
+        updateSelectAllCheckbox();
+    });
+
+    // ===================== MODAL FUNCTIONS =====================
+    function showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.style.display = 'block';
+        modal.classList.add('show');
+        document.body.classList.add('modal-open');
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        backdrop.id = modalId + '-backdrop';
+        document.body.appendChild(backdrop);
+    }
+
+    function hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        const backdrop = document.getElementById(modalId + '-backdrop');
+        if (backdrop) backdrop.remove();
+        if (modalId === 'courierPaymentModal') $('#courierModalBody').html('<div class="text-center">Loading courier payment details...</div>');
+        else if (modalId === 'totalOrdersModal') $('#totalOrdersModalBody').html('<div class="text-center">Loading order details...</div>');
+    }
+
+    $(document).on('click', '[data-bs-dismiss="modal"]', function(e) {
+        e.preventDefault();
+        hideModal('courierPaymentModal');
+        hideModal('totalOrdersModal');
+    });
+
+    $(document).on('click', '.modal-backdrop', function() {
+        hideModal('courierPaymentModal');
+        hideModal('totalOrdersModal');
+    });
+
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideModal('courierPaymentModal');
+            hideModal('totalOrdersModal');
+        }
+    });
+
+    // ===================== PAY BUTTON =====================
+    $(document).off('click', '.btnCourierPay').on('click', '.btnCourierPay', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var clientCode = $(this).data('clientcode');
+        var fromDate = $(this).data('from');
+        var toDate = $(this).data('to');
+        console.log('Pay button clicked:', { clientCode, fromDate, toDate });
+        hideModal('courierPaymentModal');
+        setTimeout(function() {
+            $('#courierModalBody').html(`
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Loading payment details...</p>
+                </div>
+            `);
+            showModal('courierPaymentModal');
+            $.ajax({
+                url: '@Url.Action("CourierOrderDetailsPartialHK", "Admin")',
+                type: 'GET',
+                data: { clientCode: clientCode, startDate: fromDate, endDate: toDate },
+                success: function(response) { $('#courierModalBody').html(response); },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', { xhr, status, error });
+                    $('#courierModalBody').html('<div class="alert alert-danger">Error loading payment details. Please try again.</div>');
+                }
+            });
+        }, 200);
+    });
+
+    // ===================== TOTAL ORDERS CLICK =====================
+    $(document).off('click', '.total-orders-link').on('click', '.total-orders-link', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var clientCode = $(this).data('clientcode');
+        var fromDate = $(this).data('from');
+        var toDate = $(this).data('to');
+        console.log('Total Orders clicked:', { clientCode, fromDate, toDate });
+        hideModal('totalOrdersModal');
+        setTimeout(function() {
+            $('#totalOrdersModalBody').html(`
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Loading order details...</p>
+                </div>
+            `);
+            showModal('totalOrdersModal');
+            $.ajax({
+                url: '@Url.Action("CourierOrdersListPartialHK", "Admin")',
+                type: 'GET',
+                data: { clientCode: clientCode, startDate: fromDate, endDate: toDate },
+                success: function(response) { $('#totalOrdersModalBody').html(response); },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', { xhr, status, error });
+                    $('#totalOrdersModalBody').html('<div class="alert alert-danger">Error loading order details. Please try again.</div>');
+                }
+            });
+        }, 200);
+    });
+
+    // ===================== CLOSE MODAL ON OUTSIDE CLICK =====================
+    $(document).on('click', function (e) {
+        const $modal = $('.modal.show');
+        if ($modal.length &&
+            !$modal.find('.modal-dialog').is(e.target) &&
+            $modal.find('.modal-dialog').has(e.target).length === 0) {
+            $modal.removeClass('show').hide();
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+        }
+    });
+});
+</script>

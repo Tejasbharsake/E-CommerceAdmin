@@ -1,0 +1,749 @@
+﻿@model IEnumerable<GSTECommerceLibrary.Admin.Admin>
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>COD Refund Orders</title>
+
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+    <!-- DataTables Buttons CSS -->
+    <link href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.bootstrap5.min.css" rel="stylesheet" />
+
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
+
+
+    <!-- Daterangepicker CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" />
+    <style>
+        .modal-backdrop {
+            background-color: transparent !important;
+        }
+        div.dataTables_wrapper div#refundTable_info {
+            font-size: 16px !important;
+            font-weight: normal !important; /* regular weight */
+        }
+    </style>
+
+    <link href="~/Content/Document/CSS/PendingRefundOrdersOnlineSG.css" rel="stylesheet" />
+</head>
+<body>
+    @*<div class="container mt-4">*@
+        @*<h3 class="mb-4">COD Refund Orders </h3>*@
+
+
+
+        <div class="mb-3">
+            <span id="selectedCount" class="selected-count"></span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped" id="refundTable">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" class="select-checkbox" id="selectAllCheckbox">
+                        </th>
+                        <th>Sr No</th>
+                        <th>Order Code</th>
+                        <th>Customer</th>
+                        <th>Amount (₹)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        int serialNumber = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr data-order="@item.OrderCode">
+                                <td>
+                                    <input type="checkbox" class="select-checkbox row-checkbox">
+                                </td>
+                                <td>@serialNumber</td>
+                                <td>@item.OrderCode</td>
+                                <td>@item.CustomerName</td>
+                                <td>@item.ProductAmount.ToString("0.00")</td>
+                                <td>
+                                    @if (string.IsNullOrEmpty(item.RefundStatus) || item.RefundStatus != "Completed")
+                                    {
+                                        if (!string.IsNullOrEmpty(item.BankAccountHolderName) &&
+                                            !string.IsNullOrEmpty(item.BankAccountNumber) &&
+                                            !string.IsNullOrEmpty(item.IFSCCode))
+                                        {
+                                            <button class="btn btn-sm btn-primary btn-refund"
+                                                    data-order="@item.OrderCode"
+                                                    data-name="@item.CustomerName"
+                                                    data-account="@item.BankAccountNumber"
+                                                    data-holder="@item.BankAccountHolderName"
+                                                    data-ifsc="@item.IFSCCode"
+                                                    data-amount="@item.ProductAmount">
+                                                Refund
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger">Bank details missing</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-success btn-refunded" disabled>
+                                            <i class="fas fa-check-circle"></i> Refunded
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                            serialNumber++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center">No refund orders found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Refund Modal -->
+        <div class="modal fade" id="refundModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header text-white" style="background: #2C3E50">
+                        <h5 class="modal-title">COD Refund </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+
+                    </div>
+                    <div class="modal-body">
+                        <div id="refundForm">
+                            <div class="bank-details">
+                                <h5><i class="fas fa-bank"></i> Bank Transfer Details</h5>
+                                <p><strong>Account Holder Name:</strong> <span id="modalHolder"></span></p>
+                                <p><strong>Account Number:</strong> ••••••••<span id="modalLastFour"></span></p>
+                                <p><strong>IFSC Code:</strong> <span id="modalIfsc"></span></p>
+                                <p><strong>Refund Amount:</strong> ₹<span id="modalAmount"></span></p>
+                                <p><strong>Transfer Method:</strong> NEFT (Electronic Transfer)</p>
+                            </div>
+                        </div>
+
+                        <div class="processing-animation" style="display:none;">
+                            <div class="loader-dots">
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                            </div>
+                            <p>Processing NEFT transfer (Test Mode)</p>
+                            <i class="fas fa-check-circle success-check"></i>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" id="confirmRefund">
+                            <i class="fas fa-check-circle"></i> Process Refund
+                        </button>
+                        @*<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times-circle"></i> Close
+                        </button>*@
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <div class="position-fixed end-0 p-3" style="z-index: 11; top: 10px;">
+            <div id="liveToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <span id="toastMessage"></span>
+                    </div>
+                   
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <!-- jQuery & Moment.js -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+
+        <!-- Daterangepicker JS -->
+        <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+
+        <!-- DataTables JS -->
+        <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+        <!-- DataTables Buttons JS -->
+        <script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.bootstrap5.min.js"></script>
+
+        <!-- Downloaded CDN -->
+        <script src="~/Content/Document/CustomJS/buttons.print.min.js"></script>
+        <script src="~/Content/Document/CustomJS/buttons.html5.min.js"></script>
+        <script src="~/Content/Document/CustomJS/jszip.min.js"></script>
+        <script src="~/Content/Document/CustomJS/pdfmake.min.js"></script>
+        <script src="~/Content/Document/CustomJS/vfs_fonts.js"></script>
+
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+
+
+            function showErrorToast(message) {
+                var toastMessage = parent.document.getElementById('toastMessage');
+                toastMessage.innerText = message;
+
+                var toastEl = parent.document.getElementById('liveToast');
+                toastEl.classList.remove('bg-success');
+                toastEl.classList.add('bg-danger');
+
+                var toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }
+
+            function showSuccessToast(message) {
+                var toastMessage = parent.document.getElementById('toastMessage');
+                toastMessage.innerText = message;
+
+                var toastEl = parent.document.getElementById('liveToast');
+                toastEl.classList.remove('bg-danger');
+                toastEl.classList.add('bg-success');
+
+                var toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }
+
+
+
+            let table;
+            let selectedRows = new Set();
+
+            $(document).ready(function () {
+
+                table = $('#refundTable').DataTable({
+                   
+
+                    responsive: true,
+                    searching: true,
+                    paging: true,
+                    ordering: false,
+                    info: true,
+                    lengthChange: false,
+                    pageLength: 10,
+                    destroy: true,
+                    autoWidth: false,
+                    scrollX: false,
+                    lengthMenu: [5, 10, 25, 50, 100],
+                    drawCallback: function () {
+
+                        var pageInfo = this.api().page.info();
+                        this.api().column(1, { page: 'current' }).nodes().each(function (cell, i) {
+                            cell.innerHTML = pageInfo.start + i + 1;
+                        });
+
+                    },
+
+                    language: {
+                        search: "Search:",
+                        searchPlaceholder: "Type to search"
+                    },
+                    dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-end gap-2"B>>' +
+                        '<"row"<"col-sm-12"f>>' +
+                        '<"row"<"col-sm-12"tr>>' +
+                        '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+
+                    buttons: [
+                       
+
+                        {
+                            extend: 'copy',
+                            text: '<img src="/Content/Document/Image/Copy.png" style="width:16px; height:16px;">',
+                            attr: { title: 'Copy to Clipboard' }, 
+                         /*   className: 'btn btn-primary btn-sm',*/
+                            action: function (e, dt, button, config) {
+                                if ($('.row-checkbox:checked').length === 0) {
+                                    showErrorToast('Please select at least one row to export.');
+                                    return;
+                                }
+                                $.fn.dataTable.ext.buttons.copyHtml5.action.call(this, e, dt, button, config);
+                            },
+                            exportOptions: {
+                                columns: ':not(:first-child):not(:last-child)',
+                                rows: function (idx, data, node) {
+                                    return $(node).find('.row-checkbox').is(':checked');
+                                }
+                            },
+                            customize: function (data, config) {
+                                var lines = data.split('\n');
+
+                              
+                                var header = lines[0]; 
+                                var serialNumber = 1;
+
+                                for (var i = 2; i < lines.length; i++) {
+                                    if (lines[i].trim() !== '') {
+                                        var columns = lines[i].split('\t');
+                                        if (columns.length > 0) {
+                                            columns[0] = serialNumber++; 
+                                            lines[i] = columns.join('\t');
+                                        }
+                                    }
+                                }
+
+                                // Reconstruct the data with original header
+                                lines[0] = header;
+                                return lines.join('\n');
+                            }
+                        },
+
+
+                        {
+                            extend: 'csv',
+                            text: '<img src="/Content/Document/Image/CSV.png" style="width:16px; height:16px;">',
+                            attr: { title: 'Export as CSV file' }, 
+                            /*className: 'btn btn-info btn-sm',*/
+                            action: function (e, dt, button, config) {
+                                if ($('.row-checkbox:checked').length === 0) {
+                                    showErrorToast('Please select at least one row to export.');
+                                    return;
+                                }
+                                $.fn.dataTable.ext.buttons.csvHtml5.action.call(this, e, dt, button, config);
+                            },
+                            filename: 'Pending_Refund_Orders_COD_' + new Date().toISOString().slice(0, 10),
+                            exportOptions: {
+                                columns: ':not(:first-child):not(:last-child)',
+                                rows: function (idx, data, node) {
+                                    return $(node).find('.row-checkbox').is(':checked');
+                                }
+                            },
+                            customize: function (csv, config) {
+                                // Fix serial numbers in CSV
+                                var lines = csv.split('\n');
+                                var serialNumber = 1;
+
+                                for (var i = 1; i < lines.length; i++) {
+                                    if (lines[i].trim() !== '') {
+                                        var columns = lines[i].split(',');
+                                        if (columns.length > 0) {
+                                            columns[0] = serialNumber++;
+                                            lines[i] = columns.join(',');
+                                        }
+                                    }
+                                }
+                                return lines.join('\n');
+                            }
+                        },
+                        {
+                            extend: 'excel',
+                            text: '<img src = "/Content/Document/Image/XLS.png" style="width:16px; height:16px;">',
+                            attr: { title: 'Export as Excel file' }, 
+                           /* className: 'btn btn-success btn-sm',*/
+                            action: function (e, dt, button, config) {
+                                if ($('.row-checkbox:checked').length === 0) {
+                                    showErrorToast('Please select at least one row to export.');
+                                    return;
+                                }
+                                $.fn.dataTable.ext.buttons.excelHtml5.action.call(this, e, dt, button, config);
+                            },
+                            filename: 'Pending_Refund_Orders_COD' + new Date().toISOString().slice(0, 10),
+                            title: 'Pending_Refund_Orders_COD',
+                            exportOptions: {
+                                columns: ':not(:first-child):not(:last-child)',
+                                rows: function (idx, data, node) {
+                                    if (selectedRows.size > 0) return selectedRows.has(data[2]);
+                                    return true;
+                                },
+                                format: {
+                                    body: function (data, row, column, node) {
+
+                                        if (column === 0) return row + 1;
+
+
+                                        if (column === 2 && !data) {
+                                            return $(node).text();
+                                        }
+                                        return data;
+                                    }
+                                }
+                            },
+                            customize: function (xlsx) {
+                                var sheet = xlsx.xl.worksheets['sheet1.xml'];
+                                var serialNumber = 1;
+
+
+                                $('row c[r^="A"]', sheet).each(function (i) {
+                                    if (i > 1) {
+                                        $(this).find('v').text(serialNumber++);
+                                    }
+                                });
+                            }
+                        },
+                        {
+                            extend: 'pdf',
+                            text: '<img src = "/Content/Document/Image/PDFicon.png" style="width:16px; height:16px;">',
+                            attr: { title: 'Export as PDF' }, 
+                           /* className: 'btn btn-danger btn-sm',*/
+                            action: function (e, dt, button, config) {
+                                if (selectedRows.size === 0) {
+                                    showErrorToast('Please select at least one row to export.');
+                                    return;
+                                }
+
+                            
+                                config.customizeDataTable = dt;
+
+                                $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, config);
+                            },
+                            filename: 'Pending_Refund_Orders_COD_' + new Date().toISOString().slice(0, 10),
+                            title: 'Pending_Refund_Orders_COD',
+                            orientation: 'landscape',
+                            pageSize: 'A4',
+                            exportOptions: {
+                                columns: ':not(:first-child):not(:last-child)',
+                                rows: function (idx, data, node) {
+                                  
+                                    if (selectedRows.size > 0) {
+                                        return selectedRows.has(data[2]); 
+                                    }
+                                    return true;
+                                }
+                            },
+                            customize: function (doc, config) {
+                                var dt = config.customizeDataTable;
+
+                                doc.content.splice(0, 1); 
+
+                            
+                                var totalRecords = selectedRows.size;
+
+                                
+                                doc.content.unshift({
+                                    margin: [0, 0, 0, 12],
+                                    table: {
+                                        widths: ['*', '*', '*'],
+                                        body: [
+                                            [
+                                                { text: '', border: [false, false, false, false] },
+                                                { text: 'RahiShop', alignment: 'center', fontSize: 18, bold: true, border: [false, false, false, false] },
+                                                { text: '', border: [false, false, false, false] }
+                                            ],
+                                            [
+                                                { text: '', border: [false, false, false, false] },
+                                                { text: 'COD Refund List', alignment: 'center', fontSize: 14, bold: true, border: [false, false, false, false] },
+                                                { text: `Generated On: ${new Date().toLocaleString()} \nTotal Records: ${totalRecords}`, alignment: 'right', fontSize: 10, italics: true, border: [false, false, false, false] }
+                                            ]
+                                        ]
+                                    },
+                                    layout: 'noBorders'
+                                });
+
+                          
+                                var table = doc.content[1].table;
+                                table.widths = Array(table.body[0].length).fill('*');
+
+                             
+                                doc.styles.tableHeader.fillColor = '#007bff';
+                                doc.styles.tableHeader.color = 'white';
+                                doc.styles.tableHeader.alignment = 'center';
+                                doc.styles.tableHeader.fontSize = 10;
+
+                           
+                                doc.defaultStyle.fontSize = 9;
+
+                              
+                                var serial = 1;
+                                doc.content[1].table.body.forEach(function (row, i) {
+                                    if (i > 0) { 
+                                        row.forEach(function (cell, j) {
+                                            if (j === 0) { 
+                                                cell.text = serial++;
+                                                cell.alignment = 'center';
+                                            } else {
+                                                cell.alignment = 'center';
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        },
+
+                        {
+                            extend: 'print',
+                            text: '<img src="/Content/Document/Image/Print.png" style="width:16px; height:16px;">',
+                            attr: { title: 'Print' }, 
+                           /* className: 'btn btn-secondary btn-sm',*/
+                            action: function (e, dt, button, config) {
+                                if ($('.row-checkbox:checked').length === 0) {
+                                    showErrorToast('Please select at least one row to export.');
+                                    return;
+                                }
+                                $.fn.dataTable.ext.buttons.print.action.call(this, e, dt, button, config);
+                            },
+                            title: 'Pending_Refund_Orders_COD',
+                            exportOptions: {
+                                columns: ':not(:first-child):not(:last-child)',
+                                rows: function (idx, data, node) {
+                                    return $(node).find('.row-checkbox').is(':checked');
+                                }
+                            },
+                            customize: function (win) {
+                                $(win.document.body)
+                                    .css('font-size', '10pt')
+                                    .prepend(
+                                        '<div style="text-align:center; margin-bottom: 20px;"><h2>COD Refund Orders</h2><p>Generated on: ' + new Date().toLocaleDateString() + '</p></div>'
+                                    );
+
+                                var $table = $(win.document.body).find('table');
+                                $table.addClass('compact').css('font-size', '9pt');
+
+                               
+                                var serialNumber = 1;
+                                $table.find('tbody tr').each(function () {
+                                    $(this).find('td:first').text(serialNumber++);
+                                });
+                            }
+                        }
+                    ],
+                    columnDefs: [
+                        {
+                            targets: 0,
+                            orderable: false,
+                            searchable: false
+                        },
+                        {
+                            targets: 1,
+                            orderable: false,
+                            searchable: false
+                        }
+
+                    ]
+
+                });
+
+                function forceTransparentButtons() {
+                    $('.dt-buttons button, .dt-buttons a').each(function () {
+
+                        $(this).removeClass('btn-secondary btn-primary btn-success btn-info btn-warning btn-danger');
+
+                        this.style.setProperty('background', 'transparent', 'important');
+                        this.style.setProperty('background-color', 'transparent', 'important');
+                        this.style.setProperty('background-image', 'none', 'important');
+                        this.style.setProperty('border', '1px solid #0d6efd', 'important');
+                        this.style.setProperty('border-radius', '4px', 'important');
+                        this.style.setProperty('color', '#0d6efd', 'important');
+                        this.style.setProperty('margin', '0', 'important');  
+
+                    });
+
+                   
+                    $('.dt-buttons').closest('.row').each(function () {
+                        this.style.setProperty('margin-bottom', '8px', 'important');
+                        this.style.setProperty('margin-top', '0px', 'important');
+                        this.style.setProperty('padding-top', '0px', 'important');  
+                    });
+
+                    
+                    $('.dt-buttons').each(function () {
+                        this.style.setProperty('gap', '8px', 'important');
+                        this.style.setProperty('display', 'flex', 'important');
+                        this.style.setProperty('margin', '0', 'important');
+                    });
+                }
+                forceTransparentButtons();
+                setTimeout(forceTransparentButtons, 100);
+                setTimeout(forceTransparentButtons, 500);
+                setTimeout(forceTransparentButtons, 1000);
+
+
+                $('#selectAllCheckbox').on('change', function () {
+                    const isChecked = $(this).is(':checked');
+
+                    if (isChecked) {
+                        table.rows().every(function () {
+                            const rowData = this.data();
+                            const customerName = rowData[2];
+                            selectedRows.add(customerName);
+                        });
+                    } else {
+                        selectedRows.clear();
+                    }
+
+                    table.$('.row-checkbox').prop('checked', isChecked);
+                    updateRowStyles();
+                    updateSelectedCount();
+                });
+
+
+                $(document).on('change', '.row-checkbox', function () {
+                    const $row = $(this).closest('tr');
+                    const orderCode = $row.data('order');
+
+                    if ($(this).is(':checked')) {
+                        selectedRows.add(orderCode);
+                    } else {
+                        selectedRows.delete(orderCode);
+                    }
+
+                    updateRowStyles();
+                    updateSelectAllCheckbox();
+                    updateSelectedCount();
+                });
+
+
+                function updateSelectAllCheckbox() {
+                    const totalRows = table.rows().count();
+                    const selectedCount = selectedRows.size;
+
+                    if (selectedCount === 0) {
+                        $('#selectAllCheckbox').prop('indeterminate', false).prop('checked', false);
+                    } else if (selectedCount === totalRows) {
+                        $('#selectAllCheckbox').prop('indeterminate', false).prop('checked', true);
+                    } else {
+                        $('#selectAllCheckbox').prop('indeterminate', true);
+                    }
+                }
+
+
+                function updateSelectedCount() {
+                    const count = selectedRows.size;
+                    if (count > 0) {
+                        $('#selectedCount').text(`${count} row(s) selected`).show();
+                    } else {
+                        $('#selectedCount').hide();
+                    }
+                }
+
+
+                table.on('draw', function () {
+                    table.rows().every(function () {
+                        const rowData = this.data();
+                        const orderCode = rowData[2];
+                        const $checkbox = $(this.node()).find('.row-checkbox');
+
+                        if (selectedRows.has(orderCode)) {
+                            $checkbox.prop('checked', true);
+                            $(this.node()).addClass('selected');
+                        } else {
+                            $checkbox.prop('checked', false);
+                            $(this.node()).removeClass('selected');
+                        }
+                    });
+
+                    updateSelectAllCheckbox();
+                });
+
+
+                updateSelectedCount();
+
+                $(document).on('click', '.btn-refund', function () {
+                    const btn = $(this);
+                    const accountNo = btn.data('account');
+
+
+                    const accountStr = accountNo ? String(accountNo) : '';
+                    const lastFourDigits = accountStr.slice(-4);
+
+
+                    $('#modalHolder').text(btn.data('holder') || 'N/A');
+                    $('#modalLastFour').text(lastFourDigits || 'N/A');
+                    $('#modalIfsc').text(btn.data('ifsc') || 'N/A');
+                    $('#modalAmount').text(parseFloat(btn.data('amount')).toFixed(2));
+
+
+                    $('.loader-dots').show();
+
+
+
+                    $('.processing-animation p').text('Processing NEFT transfer');
+
+
+                    $('#refundModal').data('btn', btn);
+                    $('#refundForm').show();
+                    $('.processing-animation').hide();
+                    $('.success-check').hide();
+                    $('#confirmRefund').prop('disabled', false)
+                        .html('<i class="fas fa-check-circle"></i> Process Refund')
+                        .removeClass('btn-primary')
+                        .addClass('btn-success');
+
+                    var modal = new bootstrap.Modal(document.getElementById('refundModal'));
+                    modal.show();
+                });
+
+                $('#confirmRefund').click(function () {
+                    const btn = $(this);
+                    const refundBtn = $('#refundModal').data('btn');
+                    const amount = parseFloat($('#modalAmount').text());
+
+                    btn.prop('disabled', true);
+                    refundBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing');
+                    $('#refundForm').hide();
+                    $('.processing-animation').show();
+
+                    setTimeout(function () {
+                        $('.loader-dots').hide();
+                        $('.processing-animation p').text('Transfer Successful');
+                        $('.success-check').show();
+
+                        const utr = "HDFCN" + new Date().getTime();
+
+                        $.post('/Admin/SaveCODRefundSG', {
+                            OrderCode: refundBtn.data('order'),
+                            TransactionId: utr,
+                            TransactionAmount: amount
+                        }).done(function (response) {
+                            if (response.success) {
+                                refundBtn.removeClass('btn-primary')
+                                    .addClass('btn-success btn-refunded')
+                                    .html('<i class="fas fa-check-circle"></i> Refunded');
+
+                                btn.html('<i class="fas fa-check-circle"></i> Done')
+                                    .removeClass('btn-success')
+                                    .addClass('btn-primary');
+
+                                setTimeout(function () {
+                                    var modalEl = document.getElementById('refundModal');
+                                    var modal = bootstrap.Modal.getOrCreateInstance(modalEl); 
+                                    modal.hide();
+                                }, 1000);
+
+                            }
+                        }).fail(function () {
+                            $('.processing-animation').hide();
+                            $('#refundForm').show();
+                            refundBtn.prop('disabled', false).html('<i class="fas fa-undo-alt"></i> Refund');
+                            btn.prop('disabled', false);
+                        });
+                    }, 3000);
+                });
+
+                $('#refundModal').on('hidden.bs.modal', function () {
+                    $('.loader-dots').show();
+                    $('#refundForm').show();
+                    $('.processing-animation').hide();
+                    $('#confirmRefund').prop('disabled', false)
+                        .html('<i class="fas fa-check-circle"></i> Process Refund')
+                        .removeClass('btn-primary')
+                        .addClass('btn-success');
+                });
+            });
+        </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    ViewBag.Title = "Client Payment Details";
+    Layout = null;
+}
+
+<link href="~/Content/Document/CSS/SellerPaymentDetails.css" rel="stylesheet" />
+
+@if (Model == null)
+{
+    <div class="alert alert-warning text-center">No payment details found for this seller.</div>
+}
+else
+{
+    <div class="container mt-4 client-payment-wrapper">
+        <!-- Seller + Business Info -->
+        <div class="seller-info-box mb-4">
+            <p><strong>Seller Name:</strong> @Model.SellerName</p>
+            <p><strong>Business Name:</strong> @Model.BusinessName</p>
+            <p><strong>Total Orders:</strong> @Model.TotalOrder</p>
+            <p><strong>Date Range:</strong> @Model.PaymentDateFrom to @Model.PaymentDateTo</p>
+            <p><strong>Total Order Charge:</strong> ₹ @Model.TotalOrderAmount</p>
+
+            <input type="hidden" id="hdnClientCode" value="@Model.ClientCode" />
+            <input type="hidden" id="hdnPaymentFrom" value="@Model.PaymentDateFrom" />
+            <input type="hidden" id="hdnPaymentTo" value="@Model.PaymentDateTo" />
+            <input type="hidden" id="hdnTotalOrderCharge" value="@Model.TotalOrderAmount" />
+        </div>
+
+        <!-- Bank Info + Transfer Method -->
+        <div class="bank-info-box mb-4 p-3 border rounded shadow">
+            <h5 class="mb-3">Bank Details</h5>
+            <p><strong>Account Holder:</strong> @Model.BankHolderName</p>
+
+            @{
+                string accNo = string.IsNullOrEmpty(Model.BankAccountNo) ? "" : Model.BankAccountNo.Trim();
+                string formattedAccNo = accNo.Length <= 4
+                    ? accNo
+                    : "••••••••" + accNo.Substring(accNo.Length - 4);
+            }
+            <p><strong>Account Number:</strong> @formattedAccNo</p>
+            <p><strong>IFSC Code:</strong> @Model.IFSCCode</p>
+            <p><strong>Transfer Method:</strong> NEFT (Electronic Transfer)</p>
+        </div>
+
+        <!-- Payment Box -->
+        <div class="d-flex justify-content-center">
+            <div class="payment-summary-box border rounded p-4 shadow">
+                <div class="row text-center mb-3">
+                    <div class="col">
+                        <label><strong>Total Amount ₹</strong></label>
+                        <input type="text" class="form-control text-center"
+                               value="@Model.TotalOrderAmount"
+                               id="txtAmount" readonly />  <!-- Unchangeable (readonly) -->
+                        <span id="amountError" class="text-danger" style="display:none;"></span>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button id="btnChoosePayment" class="btn btn-primary px-4" style="background-color: #007bff; border-color: #007bff;">Pay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Option Modal -->
+    <div class="modal fade" id="paymentOptionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-3">
+                <h5 class="mb-3">Choose Payment Method</h5>
+                <div class="d-flex justify-content-around">
+                    <button id="btnRazorPay" class="btn btn-primary">Pay with Razorpay</button>
+                    <button id="btnNeftPay" class="btn btn-outline-secondary">Pay with NEFT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        $(document).ready(function () {
+            var rawMaxAmount = $("#hdnTotalOrderCharge").val();
+            var maxAmount = parseFloat(rawMaxAmount.toString().replace(/,/g, "")) || 0; // Remove commas for parsing
+
+            function convertDateToYMD(inputDate) {
+                const parts = inputDate.split("-");
+                if (parts.length !== 3) return inputDate;
+                const [day, month, year] = parts;
+                return `${year}-${month}-${day}`;
+            }
+
+            // Show modal on main Pay click
+            $("#btnChoosePayment").click(function () {
+                const enteredAmountStr = $("#txtAmount").val();
+                const enteredAmount = parseFloat(enteredAmountStr.replace(/,/g, "")) || 0; // Remove commas before parsing
+                if (enteredAmount <= 0) {
+                    $("#amountError").text("Invalid amount.").show();
+                    return;
+                }
+                $("#amountError").hide();
+                var modal = new bootstrap.Modal(document.getElementById('paymentOptionModal'));
+                modal.show();
+            });
+
+            // Razorpay flow
+            $("#btnRazorPay").click(function () {
+                const enteredAmountStr = $("#txtAmount").val();
+                const enteredAmount = parseFloat(enteredAmountStr.replace(/,/g, "")); // Remove commas
+                const amountInPaise = Math.round(enteredAmount * 100);
+
+                const options = {
+                    "key": "rzp_test_ett8OJ6dpelutz",
+                    "amount": amountInPaise,
+                    "currency": "INR",
+                    "name": "Seller: @Html.Raw(Model.SellerName)",
+                    "description": "Seller Payment",
+                    "handler": function (response) {
+                        savePaymentTransaction(response.razorpay_payment_id, enteredAmount, "Razorpay");
+                    },
+                    "prefill": {
+                        "name": "@Html.Raw(Model.SellerName)",
+                        "email": "katoreharshal118@gmail.com",
+                        "contact": "9403401126"
+                    },
+                    "theme": { "color": "#007bff" }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+            });
+
+            // NEFT flow
+            $("#btnNeftPay").click(function () {
+                const enteredAmountStr = $("#txtAmount").val();
+                const enteredAmount = parseFloat(enteredAmountStr.replace(/,/g, "")); // Remove commas
+                const txnId = "HDFC-" + Date.now(); // dummy txn ID
+                savePaymentTransaction(txnId, enteredAmount, "NEFT");
+            });
+
+            // Common Save function
+            function savePaymentTransaction(transactionId, amount, mode) {
+                const clientCode = $("#hdnClientCode").val();
+                const paidFrom = convertDateToYMD($("#hdnPaymentFrom").val());
+                const paidTo = convertDateToYMD($("#hdnPaymentTo").val());
+
+                $.ajax({
+                    url: '@Url.Action("InsertPaymentDetailsHK", "Admin")',
+                    type: 'POST',
+                    data: {
+                        ClientCode: clientCode,
+                        TransactionId: transactionId,
+                        PaymentMode: mode,
+                        PaidFrom: paidFrom,
+                        PaidTo: paidTo,
+                        StartDate: paidFrom,
+                        EndDate: paidTo,
+                        PaidAmount: amount,
+                        RemainingAmount: 0,
+                        TotalAmount: amount
+                    },
+                    success: function (result) {
+                        if (result && (result.status === "success" || result === true)) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: mode + ' Payment recorded successfully!',
+                                showConfirmButton: false,
+                                timer: 2000
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Failed to record payment',
+                                text: 'Please try again later.'
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Something went wrong while saving payment.'
+                        });
+                    }
+                });
+            }
+        });
+    </script>
+}

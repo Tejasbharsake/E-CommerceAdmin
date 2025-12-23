@@ -1,0 +1,228 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+@{
+    Layout = null;
+}
+
+<!-- Include SweetAlert CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+<div class="modal-header text-white" style="background: #2C3E50;">
+    <h5 class="modal-title">Add Commission</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal-body">
+    @using (Html.BeginForm("SaveCommissionPK", "Admin", FormMethod.Post, new { id = "commissionForm" }))
+    {
+        <!-- Main Category -->
+        <div class="mb-3">
+            <label class="form-label">Category Name :-</label>
+            @Html.DropDownListFor(m => m.MainCategoryCode,
+                (IEnumerable<SelectListItem>)ViewBag.MainCategories,
+                "-- Select Category --", new { @class = "form-select", id = "mainCategoryDropdown" })
+        </div>
+
+        <!-- Sub1 Category -->
+        <div class="mb-3">
+            <label class="form-label">Sub Category Name :-</label>
+            @Html.DropDownListFor(m => m.Sub1CategoryCode,
+                (IEnumerable<SelectListItem>)ViewBag.SubCategories,
+                "-- Select SubCategory --", new { @class = "form-select", id = "sub1CategoryDropdown", disabled = "disabled" })
+        </div>
+
+        @*<div class="mb-3">
+                <label class="form-label">Commission :-</label>
+                <div class="input-group">
+                    @Html.TextBoxFor(
+                        m => m.AdminCommission,
+                        new
+                        {
+                            @class = "form-control",
+                            placeholder = "Enter %",
+                            type = "number",
+                            min = "0",
+                            max = "100",
+                            step = "0.01"
+                        }
+                    )
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>*@
+
+        <div class="mb-3">
+            <label class="form-label">Commission :-</label>
+            <div class="input-group">
+                @Html.TextBoxFor(
+                    m => m.AdminCommission,
+                    new
+                    {
+                        @class = "form-control",
+                        placeholder = "Enter like 10.50%",
+                        type = "text",
+                        pattern = @"^\d{1,2}(\.\d{1,2})?$", // allows 0–99.99
+                        title = "Enter a valid discount (e.g., 20.22)",
+                        maxlength = "5", // max like 99.99
+                        oninput = "this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*)\\./g, '$1');" // allow only digits and one dot
+                    }
+                )
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+
+
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-success">Submit</button>
+        </div>
+    }
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Function to show SweetAlert
+        function showAlert(icon, title, text, confirmButtonText = 'OK') {
+            return Swal.fire({
+                icon: icon,
+                title: title,
+                text: text,
+                confirmButtonText: confirmButtonText,
+                confirmButtonColor: '#2C3E50'
+            });
+        }
+
+        // Function to show confirmation dialog
+        function showConfirmation(title, text, confirmButtonText = 'Yes', cancelButtonText = 'Cancel') {
+            return Swal.fire({
+                title: title,
+                text: text,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: confirmButtonText,
+                cancelButtonText: cancelButtonText
+            });
+        }
+
+        // Initially disable subcategory dropdown
+        $('#sub1CategoryDropdown').prop('disabled', true);
+
+        // Handle main category change
+        $('#mainCategoryDropdown').change(function () {
+            var selectedMainCat = $(this).val();
+            var $sub1Dropdown = $('#sub1CategoryDropdown');
+
+            if (selectedMainCat && selectedMainCat !== '') {
+                // Show loading state
+                $sub1Dropdown.prop('disabled', true);
+                $sub1Dropdown.html('<option value="">Loading...</option>');
+
+                $.ajax({
+                    url: '@Url.Action("GetSub1CategoriesByMainCommissionPK", "Admin")',
+                    type: 'POST',
+                    data: { mainCategoryCode: selectedMainCat },
+                    success: function (data) {
+                        $sub1Dropdown.empty();
+                        $sub1Dropdown.append($('<option>', { value: '', text: '-- Select SubCategory --' }));
+
+                        if (data && data.length > 0) {
+                            $.each(data, function (i, item) {
+                                $sub1Dropdown.append($('<option>', {
+                                    value: item.Value,
+                                    text: item.Text
+                                }));
+                            });
+                            $sub1Dropdown.prop('disabled', false);
+                        } else {
+                            $sub1Dropdown.append($('<option>', { value: '', text: 'No subcategories found' }));
+                            showAlert('info', 'No Subcategories', 'No subcategories found for the selected main category.');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.log('Error fetching subcategories:', error);
+                        $sub1Dropdown.html('<option value="">Error loading subcategories</option>');
+                        showAlert('error', 'Error', 'Error fetching subcategories. Please try again.');
+                    }
+                });
+            } else {
+                // Reset subcategory dropdown when no main category is selected
+                $sub1Dropdown.html('<option value="">-- Select SubCategory --</option>');
+                $sub1Dropdown.prop('disabled', true);
+            }
+        });
+
+        // Handle form submission
+        $('#commissionForm').submit(function (e) {
+            e.preventDefault();
+
+            // Validate form
+            var mainCat = $('#mainCategoryDropdown').val();
+            var subCat = $('#sub1CategoryDropdown').val();
+            var commission = $('input[name="AdminCommission"]').val();
+
+            if (!mainCat) {
+                showAlert('warning', 'Validation Error', 'Please select a main category.');
+                return false;
+            }
+
+            if (!subCat) {
+                showAlert('warning', 'Validation Error', 'Please select a subcategory.');
+                return false;
+            }
+
+            if (!commission || commission <= 0 || commission > 100) {
+                showAlert('warning', 'Validation Error', 'Please enter a valid commission between 0.01 and 100.');
+                return false;
+            }
+
+            // Show confirmation dialog before submitting
+            showConfirmation(
+                'Confirm Submission',
+                'Are you sure you want to add this commission?',
+                'Yes, Add Commission!',
+                'Cancel'
+            ).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit the form via AJAX
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        success: function (response) {
+                            if (response.success) {
+                                showAlert('success', 'Success', 'Commission added successfully!').then(() => {
+                                    $('#commissionModal').modal('hide');
+                                    location.reload(); // Refresh the main page
+                                });
+                            } else {
+                                showAlert('error', 'Error', response.message || 'Failed to save commission.');
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            showAlert('error', 'Server Error', 'Server error occurred. Please try again.');
+                            console.log('Error:', error);
+                        }
+                    });
+                }
+            });
+        });
+
+        // Handle form reset with SweetAlert
+        $('button[type="reset"]').click(function () {
+            showConfirmation(
+                'Confirm Reset',
+                'Are you sure you want to reset the form? All entered data will be lost.',
+                'Yes, Reset!',
+                'Cancel'
+            ).then((result) => {
+                if (result.isConfirmed) {
+                    $('#mainCategoryDropdown').val('');
+                    $('#sub1CategoryDropdown').html('<option value="">-- Select SubCategory --</option>');
+                    $('#sub1CategoryDropdown').prop('disabled', true);
+                    $('input[name="AdminCommission"]').val('');
+                    showAlert('success', 'Form Reset', 'Form has been reset successfully.');
+                }
+            });
+        });
+    });
+</script>

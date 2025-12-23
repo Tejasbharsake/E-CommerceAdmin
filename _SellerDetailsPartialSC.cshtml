@@ -1,0 +1,156 @@
+﻿@model GSTECommerceLibrary.Admin.Admin
+
+<div class="container-fluid">
+
+    <!-- Personal & Business Information -->
+    <div class="row g-3 align-items-stretch">
+        <!-- Personal Information -->
+        <div class="col-md-6 d-flex">
+            <div class="card shadow-sm w-100">
+                <div class="card-header bg-light fw-bold">
+                    Personal Information
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Seller Name:</strong></div>
+                        <div class="col-7">@Model.SellerName</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Email:</strong></div>
+                        <div class="col-7">@Model.Email</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Mobile No:</strong></div>
+                        <div class="col-7">
+                            @if (!string.IsNullOrEmpty(Model.MobileNo))
+                            {
+                                string mobileNo = Model.MobileNo.Trim();
+                                if (mobileNo.StartsWith("+91")) { mobileNo = mobileNo.Substring(3).Trim(); }
+                                else if (mobileNo.StartsWith("91") && mobileNo.Length >= 12) { mobileNo = mobileNo.Substring(2).Trim(); }
+                                @: +91 @mobileNo
+                            }
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-5"><strong>Gender:</strong></div>
+                        <div class="col-7">@Model.Gender</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Information -->
+        <div class="col-md-6 d-flex">
+            <div class="card shadow-sm w-100">
+                <div class="card-header bg-light fw-bold">
+                    Business Information
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Business Name:</strong></div>
+                        <div class="col-7">@Model.BusinessName</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>GSTIN:</strong></div>
+                        <div class="col-7">@Model.GSTIN</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>PAN Card No:</strong></div>
+                        <div class="col-7">@Model.PanCardNo</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-5"><strong>Aadhar Card No:</strong></div>
+                        <div class="col-7">@Model.AdharCardNo</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Address Information -->
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-bold">
+                    Address Information
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-3"><strong>Address:</strong></div>
+                        <div class="col-9">@Model.Address</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-3"><strong>City:</strong></div>
+                        <div class="col-9">@Model.ClientCityName</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-3"><strong>State:</strong></div>
+                        <div class="col-9">@Model.ClientState</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3"><strong>Pincode:</strong></div>
+                        <div class="col-9">@Model.Pincode1</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Information -->
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-bold">
+                    Bank Details
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-4"><strong>Bank Account No:</strong></div>
+                        <div class="col-8">@Model.BankAccountNo</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4"><strong>IFSC Code:</strong></div>
+                        <div class="col-8">@Model.IFSCCode</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Container -->
+    <div id="sellerProductsContainer" class="row mt-4"></div>
+</div>
+
+<script>
+    function closeSellerModal() {
+        $('#sellerDetailModal').modal('hide');
+    }
+
+    function viewSellerProducts(email) {
+        $.ajax({
+            url: '@Url.Action("GetSellerProducts", "Admin")',
+            type: 'GET',
+            data: { email: email },
+            beforeSend: function () {
+                $('#sellerProductsContainer').html(`
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading products...</p>
+                    </div>
+                `);
+            },
+            success: function (result) {
+                $('#sellerProductsContainer').html(result);
+            },
+            error: function () {
+                $('#sellerProductsContainer').html(`
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Could not load products
+                    </div>
+                `);
+            }
+        });
+    }
+</script>

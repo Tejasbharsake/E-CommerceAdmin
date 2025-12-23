@@ -1,0 +1,424 @@
+﻿@{
+    ViewBag.Title = "Order Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item">
+        <a href="#">Order Management</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page" id="dynamicBreadcrumb">
+        All Orders
+    </li>
+}
+
+<link href="~/Content/Document/CSS/OrderManagementAB.css" rel="stylesheet" />
+
+<style>
+
+
+    /* Force hide status filter by default - will override any other CSS */
+    #statusFilterDiv {
+        display: none !important;
+    }
+
+        /* Only show on All Orders tab */
+        #statusFilterDiv.show-status-filter {
+            display: flex !important;
+        }
+
+    .modal-open .dataTables_wrapper table.dataTable td {
+        padding: 6px !important;
+        line-height: 1.2 !important;
+    }
+
+    body.modal-open {
+        overflow: hidden;
+        padding-right: 17px; /* scrollbar compensation */
+    }
+
+    .dataTables_wrapper {
+        table-layout: fixed !important;
+    }
+
+    table.dataTable tbody td {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.2rem !important;
+        padding: 6px 8px !important;
+    }
+</style>
+
+<div class="main-content">
+    <section class="section">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <!-- Tabs -->
+                    <ul class="nav nav-pills nav-justified mb-3" id="orderTabs">
+                        <li class="nav-item"><a class="nav-link active" id="all-tab" href="#">All Orders</a></li>
+                        <li class="nav-item"><a class="nav-link" id="inprocess-tab" href="#">In-Process</a></li>
+                        <li class="nav-item"><a class="nav-link" id="dispatched-tab" href="#">Dispatched</a></li>
+                        <li class="nav-item"><a class="nav-link" id="returned-tab" href="#">Returned</a></li>
+                        <li class="nav-item"><a class="nav-link" id="refunded-tab" href="#">Replace</a></li>
+                        <li class="nav-item"><a class="nav-link" id="canceled-tab" href="#">Cancelled</a></li>
+                        <li class="nav-item"><a class="nav-link" id="delivered-tab" href="#">Delivered</a></li>
+                    </ul>
+
+                    <!-- Filters Row -->
+                    <div class="row mb-3 g-2 align-items-end">
+                        <!-- Filters (left side) -->
+                        <div class="col-md-9 d-flex gap-2">
+                            <!-- Date Range -->
+                            <div class="d-flex align-items-center flex-nowrap">
+                                <label for="dateRangeFilter" class="form-label fw-semibold mb-0 me-2 small text-nowrap">
+                                    Date Range Picker
+                                </label>
+                                <input class="form-control form-control-sm" type="text" id="dateRangeFilter" placeholder="Select Date Range" autocomplete="off" />
+                            </div>
+
+                            <!-- Business Filter -->
+                            <div class="d-flex align-items-center flex-nowrap">
+                                <label for="businessNameDropdown" class="form-label fw-semibold mb-0 me-2 small text-nowrap">Business</label>
+                                <select id="businessNameDropdown" class="form-select form-select-sm">
+                                    <option value="">-- Select Business --</option>
+                                </select>
+                            </div>
+
+                            <!-- Status Filter (Only All Orders tab) -->
+                            <div id="statusFilterDiv" class="d-flex align-items-center flex-nowrap">
+                                <label for="statusDropdown" class="form-label fw-semibold mb-0 me-2 small text-nowrap">Status</label>
+                                <select id="statusDropdown" class="form-select form-select-sm">
+                                    <option value="">-- Select Status --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Export Controls (right side) -->
+                        <div class="col-md-3 d-flex justify-content-end">
+                            <div class="export-controls d-flex align-items-center gap-2">
+                                <button type="button" class="btn border-primary btn-sm export-btn" data-format="copy" title="Copy as Clipboard">
+                                    <img src="~/Content/Document/Image/Copy.png" alt="Copy" class="export-icon" />
+                                </button>
+                                <button type="button" class="btn border-primary btn-sm export-btn" data-format="csv" title="Export as CSV">
+                                    <img src="~/Content/Document/Image/CSV.png" alt="CSV" class="export-icon" />
+                                </button>
+                                <button type="button" class="btn border-primary btn-sm export-btn" data-format="excel" title="Export as Excel">
+                                    <img src="~/Content/Document/Image/XLS.png" alt="Excel" class="export-icon" />
+                                </button>
+                                <button type="button" class="btn border-primary btn-sm export-btn" data-format="pdf" title="Export as PDF">
+                                    <img src="~/Content/Document/Image/PDFicon.png" alt="PDF" class="export-icon" />
+                                </button>
+                                <button type="button" class="btn border-primary btn-sm export-btn" data-format="print" title="Print">
+                                    <img src="~/Content/Document/Image/Print.png" alt="Print" class="export-icon" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content Area -->
+                    <div id="tabContentArea" class="mt-3">
+                        <div class="text-center mt-5">
+                            <strong>Loading...</strong>
+                        </div>
+                    </div>
+                </div> <!-- col-12 -->
+            </div> <!-- row -->
+        </div> <!-- container-fluid -->
+    </section>
+</div>
+
+<!-- Order Details / Invoice Modal -->
+<div class="modal fade" id="orderDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Header only for Order Details -->
+            <div class="modal-header text-white" style="background: #2C3E50; display: none;" id="orderDetailHeader">
+                <h5 class="modal-title mb-0">Order Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Always-visible close button (for invoice) -->
+            <button type="button" class="btn-close ms-auto me-2 mt-2" data-bs-dismiss="modal" aria-label="Close"></button>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-4" id="order-detail-content"></div>
+        </div>
+    </div>
+</div>
+@*<style>
+        #statusFilterDiv {
+            display: none !important; /* Hidden by default */
+        }
+
+            #statusFilterDiv.show-status-filter {
+                display: flex !important; /* Only shown when class is added */
+            }
+
+    </style>*@
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.css" />
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+    <script>
+        $(document).ready(function () {
+            const $tabContentArea = $("#tabContentArea");
+            const $dateRangeFilter = $('#dateRangeFilter');
+            const $businessNameDropdown = $("#businessNameDropdown");
+            const $statusDropdown = $("#statusDropdown");
+            const $statusFilterDiv = $("#statusFilterDiv");
+            const $orderDetailModal = $("#orderDetailModal");
+            const $orderDetailContent = $("#order-detail-content");
+            const $navLinks = $(".nav-link");
+
+            const URLS = {
+                loadAllOrders: '@Url.Action("LoadAllOrders", "Admin")',
+                loadInProcessOrders: '@Url.Action("LoadInProcessOrders", "Admin")',
+                loadDispatchedOrders: '@Url.Action("LoadDispatchedOrders", "Admin")',
+                loadReturnedOrders: '@Url.Action("LoadReturnedOrders", "Admin")',
+                loadRefundedOrders: '@Url.Action("LoadRefundedOrders", "Admin")',
+                loadCanceledOrders: '@Url.Action("LoadCanceledOrders", "Admin")',
+                loadDeliveredOrders: '@Url.Action("LoadDeliveredOrders", "Admin")',
+                orderDetailsPartial: '@Url.Action("OrderDetailsPartial", "Admin")',
+                orderInvoiceAB: '@Url.Action("OrderInvoiceAB", "Admin")',
+                getBusinessNameList: '@Url.Action("GetBusinessNameList", "Admin")',
+                getStatusList: '@Url.Action("GetStatusList", "Admin")'
+            };
+
+            let dataTable;
+            let dateFilter;
+
+            const dataTableConfig = {
+                responsive: true,
+                searching: true,
+                paging: true,
+                ordering: false,
+                info: true,
+                lengthChange: false,
+                pageLength: 10,
+                destroy: true,
+                autoWidth: false,
+                scrollX: false,
+                lengthMenu: [5, 10, 25, 50, 100],
+                drawCallback: function () {
+                    var pageInfo = this.api().page.info();
+                    this.api().column(1, { page: 'current' }).nodes().each(function (cell, i) {
+                        cell.innerHTML = pageInfo.start + i + 1;
+                    });
+                },
+                language: { search: "Search:", searchPlaceholder: "Type to search..." },
+                columnDefs: [{ orderable: false, targets: [0, 11] }]
+            };
+
+            // Date Range Filter
+            function initializeDateFilter() {
+                $dateRangeFilter.daterangepicker({ opens: 'right', locale: { format: 'MM/DD/YYYY' } });
+                let start = null, end = null;
+
+                dateFilter = function (settings, data, dataIndex) {
+                    const orderDateStr = data[5];
+                    const orderDate = moment(orderDateStr, 'DD-MM-YYYY');
+                    return (!start || !end) || (orderDate.isSameOrAfter(start) && orderDate.isSameOrBefore(end));
+                };
+
+                $dateRangeFilter.on('apply.daterangepicker', function (ev, picker) {
+                    start = picker.startDate;
+                    end = picker.endDate;
+                    $.fn.dataTable.ext.search.push(dateFilter);
+                    if (dataTable) dataTable.draw();
+                });
+
+                $dateRangeFilter.on('cancel.daterangepicker', function () {
+                    $(this).val('');
+                    $.fn.dataTable.ext.search = $.fn.dataTable.ext.search.filter(fn => fn !== dateFilter);
+                    if (dataTable) dataTable.draw();
+                });
+            }
+
+            function showLoader() { $('#globalLoader').fadeIn(200); }
+            function hideLoader() { $('#globalLoader').fadeOut(200); }
+
+            function loadTabContent(url, clickedTab) {
+                showLoader();
+                $.ajax({
+                    url: url,
+                    type: "GET",
+                    success: function (data) {
+                        $tabContentArea.html(data);
+                        $navLinks.removeClass("active");
+                        $(clickedTab).addClass("active");
+
+                        setTimeout(function () {
+                            if ($.fn.DataTable.isDataTable('#table1')) $('#table1').DataTable().destroy();
+                            dataTable = $('#table1').DataTable(dataTableConfig);
+                            initializeDateFilter();
+                            hideLoader();
+                        }, 100);
+                        table.on('order.dt search.dt', function () {
+                            let i = 1;
+                            table.cells(null, 0, { search: 'applied', order: 'applied' })
+                                .every(function (cell) { this.data(i++); });
+                        }).draw();
+                    },
+                    error: function () { hideLoader(); }
+                });
+            }
+
+            function resetFilter() {
+                $dateRangeFilter.val('');
+                $.fn.dataTable.ext.search = [];
+                $businessNameDropdown.val("");
+                $statusDropdown.val("");
+                if (dataTable) dataTable.columns().search("").draw();
+            }
+
+            function loadBusinessNames() {
+                $.ajax({
+                    url: URLS.getBusinessNameList,
+                    type: 'GET',
+                    success: function (data) {
+                        $businessNameDropdown.empty().append('<option value="">-- Select Business --</option>');
+                        $.each(data, function (i, item) {
+                            $businessNameDropdown.append($('<option>', { value: item.BusinessName, text: item.BusinessName }));
+                        });
+                    }
+                });
+            }
+
+            function loadStatusList() {
+                $.ajax({
+                    url: URLS.getStatusList,
+                    type: 'GET',
+                    success: function (data) {
+                        $statusDropdown.empty().append('<option value="">-- Select Status --</option>');
+                        $.each(data, function (i, item) {
+                            $statusDropdown.append($('<option>', { value: item.Status, text: item.Status }));
+                        });
+                    }
+                });
+            }
+
+            // Function to control status filter visibility using CSS class
+            function updateStatusFilterVisibility(tabId) {
+                if (tabId === "all-tab") {
+                    $statusFilterDiv.addClass('show-status-filter');
+                    console.log('Status filter SHOWN for All Orders tab');
+                } else {
+                    $statusFilterDiv.removeClass('show-status-filter');
+                    $statusDropdown.val("");
+                    if (dataTable) dataTable.column(7).search("").draw();
+                    console.log('Status filter HIDDEN for ' + tabId);
+                }
+            }
+
+            // Tab click handler
+            $('#orderTabs a.nav-link').on('click', function (e) {
+                e.preventDefault();
+                const tabId = $(this).attr('id');
+
+                console.log('Tab clicked: ' + tabId);
+
+                $('#dynamicBreadcrumb').text($(this).text());
+                resetFilter();
+
+                // Update status filter visibility FIRST before loading content
+                updateStatusFilterVisibility(tabId);
+
+                switch (tabId) {
+                    case "all-tab": loadTabContent(URLS.loadAllOrders, this); break;
+                    case "inprocess-tab": loadTabContent(URLS.loadInProcessOrders, this); break;
+                    case "dispatched-tab": loadTabContent(URLS.loadDispatchedOrders, this); break;
+                    case "returned-tab": loadTabContent(URLS.loadReturnedOrders, this); break;
+                    case "refunded-tab": loadTabContent(URLS.loadRefundedOrders, this); break;
+                    case "canceled-tab": loadTabContent(URLS.loadCanceledOrders, this); break;
+                    case "delivered-tab": loadTabContent(URLS.loadDeliveredOrders, this); break;
+                }
+            });
+
+            // Business filter
+            $(document).on("change", "#businessNameDropdown", function () {
+                if (!dataTable) return;
+                const selectedBusiness = $(this).val();
+                dataTable.column(2).search(selectedBusiness ? "^" + selectedBusiness + "$" : "", true, false).draw();
+            });
+
+            // Status filter
+            $(document).on("change", "#statusDropdown", function () {
+                if (!dataTable) return;
+                const selectedStatus = $(this).val();
+                dataTable.column(7).search(selectedStatus ? "^" + selectedStatus + "$" : "", true, false).draw();
+            });
+
+            // Order Details modal
+            $(document).on("click", ".view-details", function () {
+                const orderCode = $(this).data("order");
+                showLoader();
+                $.ajax({
+                    url: URLS.orderDetailsPartial,
+                    type: 'GET',
+                    data: { orderCode: orderCode },
+                    success: function (data) {
+                        $orderDetailContent.html(data);
+                        $("#orderDetailHeader").show();
+                        $("#orderDetailModal > .modal-dialog .btn-close:not(.btn-close-white)").hide();
+                        $orderDetailModal.modal("show");
+                    },
+                    complete: hideLoader
+                });
+            });
+
+            // Invoice modal
+            $(document).on("click", ".view-invoice", function () {
+                const orderCode = $(this).data("order");
+                const productCode = $(this).data("product");
+                const clientCode = $(this).data("client");
+
+                showLoader();
+
+                $.ajax({
+                    url: URLS.orderInvoiceAB,
+                    type: 'GET',
+                    data: { orderCode, productCode, clientCode },
+                    success: function (data) {
+                        $orderDetailContent.html(data);
+
+                        // Hide order detail header
+                        $("#orderDetailHeader").hide();
+
+                        // Show close button
+                        $("#orderDetailModal > .modal-dialog .btn-close:not(.btn-close-white)").show();
+
+                        // Show modal
+                        $orderDetailModal.modal("show");
+
+                        // ✅ Fix: Readjust DataTable layout (prevent row height jump)
+                        if (dataTable) {
+                            setTimeout(() => {
+                                dataTable.columns.adjust().draw(false);
+                            }, 400);
+                        }
+                    },
+                    complete: hideLoader
+                });
+            });
+
+
+
+            // Initialize - Load data and set initial state
+            loadBusinessNames();
+            loadStatusList();
+            loadTabContent(URLS.loadAllOrders, $("#all-tab"));
+
+            // Show status filter initially since "All Orders" tab is active by default
+            updateStatusFilterVisibility("all-tab");
+            console.log('Page initialized - All Orders tab active');
+        });
+    </script>
+}

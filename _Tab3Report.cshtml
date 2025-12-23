@@ -1,0 +1,756 @@
+﻿@model System.Data.DataTable
+
+<!-- Include required libraries at the top -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<!-- jsPDF libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<!-- Bootstrap JS (required for toast notifications) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+<!-- DataTables CSS & JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+@if (!string.IsNullOrEmpty(ViewBag.Error as string))
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+else if (Model != null && Model.Rows.Count > 0)
+{
+    <!-- Top Cards Section -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Total Offer</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="card-text">@(ViewBag.TotalOfferCount ?? "0")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success clickable-card" style="cursor: pointer;" onclick="loadAdminOffers()">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Admin Offer</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="card-text">@(ViewBag.AdminOfferCount ?? "0")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info clickable-card" style="cursor: pointer;" onclick="loadSellerOffers()">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Seller Offer</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="card-text">@(ViewBag.SellerOfferCount ?? "0")</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="OfferDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content p-4">
+                <div class="modal-header" style="background: #2C3E50;">
+                    >
+                    <h4 class="modal-title">Seller Details</h4>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+
+                </div>
+                <div class="modal-body" id="Offer-detail-content"></div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+    <!-- Export Buttons Row -->
+    <div class="row mb-3 align-items-end">
+        <div class="col-md-5">
+            @*<h4 class="mb-0">Offer Data Details</h4>*@
+        </div>
+        <div class="col-md-7 text-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end justify-content-start">
+            <button class="btn btn-outline-primary btn-sm" id="copyBtn" title="Copy">
+                <img src="~/Content/Document/Image/Copy.png" alt="Copy" width="16" height="16" />
+            </button>
+            <button class="btn btn-outline-info btn-sm" id="csvBtn" title="Export to CSV">
+                <img src="~/Content/Document/Image/CSV.png" alt="Copy" width="16" height="16" />
+            </button>
+            <button class="btn btn-outline-success btn-sm" id="excelBtn" title="Export to Excel">
+                <img src="~/Content/Document/Image/XLS.png" alt="Copy" width="16" height="16" />
+            </button>
+            <button class="btn btn-outline-danger btn-sm" id="pdfBtn" title="Export to PDF">
+                <img src="~/Content/Document/Image/PDFicon.png" alt="Copy" width="16" height="16" />
+            </button>
+            <button class="btn btn-outline-dark btn-sm" id="printBtn" title="Print">
+                <img src="~/Content/Document/Image/Print.png" alt="Copy" width="16" height="16" />
+            </button>
+        </div>
+    </div>
+
+    <!-- Offer Data Table -->
+    <div class="table-responsive mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Offer Data</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="offerTable" class="table table-striped table-bordered">
+                        <thead>
+                            <tr style="background: #2C3E50; color: white;">
+                                <th><input type="checkbox" id="selectAll" /></th>
+                                <th>Sr No</th>
+                                @foreach (System.Data.DataColumn col in Model.Columns)
+                                {
+                                    <th>@col.ColumnName</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var srNo = 1;
+                            }
+                            @foreach (System.Data.DataRow row in Model.Rows)
+                            {
+                                <tr>
+                                    <td><input type="checkbox" class="row-checkbox" value="@srNo" /></td>
+                                    <td>@srNo</td>
+                                    @foreach (var cell in row.ItemArray)
+                                    {
+                                        <td>@cell</td>
+                                    }
+                                </tr>
+                                srNo++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification HTML -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 11;">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header" style="background: #2C3E50;">
+                >
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+
+            </div>
+            <div class="toast-body" id="toastMessage">
+                <!-- Message will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Graph Container -->
+    <div id="offerChartContainer" style="width: 100%; height: 500px; margin-top: 40px;"></div>
+
+    <style>
+        /* DataTables compact styling */
+        #offerTable thead th {
+            background-color: #2C3E50; /* Solid Navy */
+            color: #FFFFFF; /* White text */
+            font-weight: 600;
+            text-align: center;
+            padding: 5px;
+            border-bottom: 2px solid #ddd;
+            font-size: 14px; /* smaller text */
+            height: 8px !important; /* fixed header height */
+            font-family: 'Poppins', sans-serif; /* Added font */
+            vertical-align: middle;
+        }
+
+        #offerTable tbody td {
+            padding: 2px 5px !important;
+            height: 5px !important;
+            line-height: 1;
+            font-size: 13px;
+            text-align: center;
+            font-family: 'Poppins', sans-serif; /* Added font */
+            vertical-align: middle;
+        }
+
+        #offerTable_paginate .pagination .page-link {
+            padding: 2px 10px;
+            font-size: 12px;
+            min-width: 33px;
+        }
+
+        /* Additional styles for export functionality */
+        .selected-row {
+            background-color: #e3f2fd !important;
+        }
+
+        .row-checkbox {
+            cursor: pointer;
+        }
+
+        #selectAll {
+            cursor: pointer;
+        }
+
+        .dataTables_length {
+            display: none; /* Hide the entire "Show entries" section */
+        }
+    </style>
+
+    <script>
+        $(document).ready(function() {
+            console.log('Document ready, initializing...');
+
+            // Toast notification functions with fallback
+            function showToast(message, type) {
+                console.log('Showing toast:', message, type);
+
+                if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+                    $('#toastMessage').text(message);
+                    var toastEl = document.getElementById('liveToast');
+                    $(toastEl).removeClass('text-bg-success text-bg-danger');
+                    if (type === 'success') {
+                        $(toastEl).addClass('text-bg-success');
+                    } else {
+                        $(toastEl).addClass('text-bg-danger');
+                    }
+                    var toast = new bootstrap.Toast(toastEl);
+                    toast.show();
+                } else {
+                    alert(message);
+                }
+            }
+
+            function showErrorToast(message) {
+                showToast(message, 'error');
+            }
+
+            function showSuccessToast(message) {
+                showToast(message, 'success');
+            }
+
+            // Global variable to store selected rows
+            var selectedRows = new Set();
+            var offerDataTable;
+
+            // Initialize DataTable with proper checkbox handling
+            function initializeOfferDataTable() {
+                // Destroy existing DataTable if it exists
+                if ($.fn.DataTable.isDataTable('#offerTable')) {
+                    offerDataTable.destroy();
+                    $('#offerTable').empty();
+                }
+
+                // Initialize DataTable
+                offerDataTable = $('#offerTable').DataTable({
+                    responsive: true,
+                    searching: true,
+                    paging: true,
+                    ordering: false,
+                    info: true,
+                    lengthChange: false,
+                    pageLength: 10,
+                    destroy: true,
+                    autoWidth: false,
+                    scrollX: false,
+                    lengthMenu: [5, 10, 25, 50, 100],
+                    language: {
+                        search: "Search:",
+                        searchPlaceholder: "Type to search...",
+                        lengthMenu: "", // Remove "Show MENU entries" text
+                        paginate: {
+                            first: "First",
+                            last: "Last",
+                            next: "Next",
+                            previous: "Previous"
+                        }
+                    },
+                    columnDefs: [
+                        { orderable: false, targets: [0] }
+                    ],
+                    drawCallback: function(settings) {
+                        // Re-initialize checkboxes after each DataTable draw
+                        initializeOfferCheckboxes();
+                    },
+                    initComplete: function(settings, json) {
+                        // Initialize checkboxes after DataTable is fully loaded
+                        initializeOfferCheckboxes();
+
+                        // Hide the "Show entries" label completely
+                        $('.dataTables_length label').contents().filter(function() {
+                            return this.nodeType === 3; // Text nodes
+                        }).remove();
+                    }
+                });
+            }
+
+            // Initialize checkboxes with proper DataTable handling
+            function initializeOfferCheckboxes() {
+                // Clear previous selections
+                selectedRows.clear();
+
+                // Select All functionality
+                $('#selectAll').off('click').on('click', function () {
+                    console.log('Select all clicked');
+                    var isChecked = $(this).is(':checked');
+                    $('.row-checkbox').prop('checked', isChecked);
+
+                    if (isChecked) {
+                        $('.row-checkbox').each(function () {
+                            selectedRows.add($(this).val());
+                            $(this).closest('tr').addClass('selected-row');
+                        });
+                    } else {
+                        selectedRows.clear();
+                        $('tr').removeClass('selected-row');
+                    }
+                    console.log('Selected rows:', selectedRows);
+                });
+
+                // Individual checkbox selection
+                $('.row-checkbox').off('change').on('change', function () {
+                    console.log('Individual checkbox changed');
+                    var row = $(this).closest('tr');
+                    var rowId = $(this).val();
+                    var isChecked = $(this).is(':checked');
+
+                    if (isChecked) {
+                        selectedRows.add(rowId);
+                        row.addClass('selected-row');
+                    } else {
+                        selectedRows.delete(rowId);
+                        row.removeClass('selected-row');
+                    }
+
+                    // Update select all checkbox state
+                    updateSelectAllCheckbox();
+                    console.log('Selected rows:', selectedRows);
+                });
+
+                // Update select all checkbox based on current selection
+                function updateSelectAllCheckbox() {
+                    var totalCheckboxes = $('.row-checkbox').length;
+                    var checkedCheckboxes = $('.row-checkbox:checked').length;
+
+                    if (checkedCheckboxes === 0) {
+                        $('#selectAll').prop('checked', false).prop('indeterminate', false);
+                    } else if (checkedCheckboxes === totalCheckboxes) {
+                        $('#selectAll').prop('checked', true).prop('indeterminate', false);
+                    } else {
+                        $('#selectAll').prop('checked', false).prop('indeterminate', true);
+                    }
+                }
+            }
+
+            // Function to get selected rows data (works with DataTable pagination)
+            function getSelectedRowsData() {
+                console.log('Getting selected rows data...');
+                var selectedData = [];
+                var headers = [];
+
+                // Get headers (excluding checkbox column)
+                $('#offerTable thead tr th').each(function (index) {
+                    if (index > 0) { // Skip checkbox column, include Sr No and all other columns
+                        headers.push($(this).text().trim());
+                    }
+                });
+
+                // Get selected row data from all pages
+                $('.row-checkbox:checked').each(function () {
+                    var row = $(this).closest('tr');
+                    var rowData = [];
+
+                    // Get all td elements except the first one (checkbox)
+                    row.find('td').each(function (index) {
+                        if (index > 0) { // Skip checkbox column
+                            var cellText = $(this).text().trim();
+                            // Clean up any extra whitespace
+                            cellText = cellText.replace(/\s+/g, ' ');
+                            rowData.push(cellText);
+                        }
+                    });
+
+                    if (rowData.length > 0) {
+                        selectedData.push(rowData);
+                    }
+                });
+
+                console.log('Headers:', headers);
+                console.log('Selected Data:', selectedData);
+                return { headers: headers, data: selectedData };
+            }
+
+            // Copy functionality
+            $('#copyBtn').on('click', function (e) {
+                e.preventDefault();
+                console.log('Copy button clicked');
+
+                var result = getSelectedRowsData();
+                if (result.data.length === 0) {
+                    showErrorToast('Please select at least one row to copy.');
+                    return;
+                }
+
+                var copyText = result.headers.join('\t') + '\n';
+                result.data.forEach(function (row) {
+                    copyText += row.join('\t') + '\n';
+                });
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(copyText).then(function () {
+                        showSuccessToast('Data copied to clipboard! (' + result.data.length + ' rows)');
+                    }).catch(function () {
+                        showErrorToast('Copy failed. Please try again.');
+                    });
+                } else {
+                    var textArea = document.createElement("textarea");
+                    textArea.value = copyText;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        showSuccessToast('Data copied to clipboard! (' + result.data.length + ' rows)');
+                    } catch (err) {
+                        showErrorToast('Copy failed. Please try again.');
+                    }
+                    document.body.removeChild(textArea);
+                }
+            });
+
+            // CSV Export
+            $('#csvBtn').on('click', function (e) {
+                e.preventDefault();
+                console.log('CSV button clicked');
+
+                var result = getSelectedRowsData();
+                if (result.data.length === 0) {
+                    showErrorToast('Please select at least one row to export.');
+                    return;
+                }
+
+                var csvContent = result.headers.join(',') + '\n';
+                result.data.forEach(function (row) {
+                    csvContent += row.map(function (cell) {
+                        return '"' + String(cell).replace(/"/g, '""') + '"';
+                    }).join(',') + '\n';
+                });
+
+                var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'offers_' + new Date().getTime() + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                showSuccessToast('CSV file downloaded! (' + result.data.length + ' rows)');
+            });
+
+            // Excel Export
+            $('#excelBtn').on('click', function (e) {
+                e.preventDefault();
+                console.log('Excel button clicked');
+
+                var result = getSelectedRowsData();
+                if (result.data.length === 0) {
+                    showErrorToast('Please select at least one row to export.');
+                    return;
+                }
+
+                var excelContent = '<table border="1"><thead><tr>';
+                result.headers.forEach(function (header) {
+                    excelContent += '<th>' + header + '</th>';
+                });
+                excelContent += '</tr></thead><tbody>';
+
+                result.data.forEach(function (row) {
+                    excelContent += '<tr>';
+                    row.forEach(function (cell) {
+                        excelContent += '<td>' + cell + '</td>';
+                    });
+                    excelContent += '</tr>';
+                });
+                excelContent += '</tbody></table>';
+
+                var blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'offers_' + new Date().getTime() + '.xls';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                showSuccessToast('Excel file downloaded! (' + result.data.length + ' rows)');
+            });
+
+            // PDF Export
+            $('#pdfBtn').on('click', function (e) {
+                e.preventDefault();
+                console.log('PDF button clicked');
+
+                var result = getSelectedRowsData();
+                if (result.data.length === 0) {
+                    showErrorToast('Please select at least one row to export.');
+                    return;
+                }
+
+                if (typeof window.jspdf === 'undefined') {
+                    showErrorToast('jsPDF library is not loaded. Please refresh the page.');
+                    return;
+                }
+
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+
+                    doc.setFont("helvetica");
+                    doc.setFontSize(18);
+                    doc.setTextColor(51, 51, 51);
+                    doc.text("Offer Data Report", 14, 20);
+
+                    doc.setFontSize(11);
+                    doc.setTextColor(102, 102, 102);
+                    doc.text("Generated on: " + new Date().toLocaleString(), 14, 30);
+                    doc.text("Total Records: " + result.data.length, 14, 38);
+
+                    doc.setLineWidth(0.5);
+                    doc.line(14, 42, 196, 42);
+
+                    if (typeof doc.autoTable === 'function') {
+                        doc.autoTable({
+                            head: [result.headers],
+                            body: result.data,
+                            startY: 48,
+                            styles: {
+                                fontSize: 9,
+                                cellPadding: 3,
+                                lineColor: [200, 200, 200],
+                                lineWidth: 0.1
+                            },
+                            headStyles: {
+                                fillColor: [41, 128, 185],
+                                textColor: 255,
+                                fontStyle: 'bold',
+                                halign: 'center',
+                                fontSize: 10
+                            },
+                            alternateRowStyles: {
+                                fillColor: [245, 247, 250]
+                            },
+                            margin: { top: 10, right: 14, bottom: 10, left: 14 }
+                        });
+                    } else {
+                        showErrorToast('autoTable plugin is not loaded.');
+                        return;
+                    }
+
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+                    const filename = 'offer_report_' + timestamp + '.pdf';
+                    doc.save(filename);
+                    showSuccessToast('PDF generated successfully! (' + result.data.length + ' records)');
+
+                } catch (error) {
+                    console.error('PDF Generation Error:', error);
+                    showErrorToast('Error generating PDF: ' + error.message);
+                }
+            });
+
+            // Print functionality
+            $('#printBtn').on('click', function (e) {
+                e.preventDefault();
+                console.log('Print button clicked');
+
+                var result = getSelectedRowsData();
+                if (result.data.length === 0) {
+                    showErrorToast('Please select at least one row to print.');
+                    return;
+                }
+
+                var printContent = '<!DOCTYPE html><html><head><title>Offer Data Report</title>';
+                printContent += '<style>';
+                printContent += 'body{font-family:Arial,sans-serif;margin:20px;}';
+                printContent += 'table{border-collapse:collapse;width:100%;margin-top:20px;}';
+                printContent += 'th,td{border:1px solid #ddd;padding:8px;text-align:left;}';
+                printContent += 'th{background-color:#f2f2f2;font-weight:bold;text-align:center;}';
+                printContent += 'td:first-child{text-align:center;}';
+                printContent += '@@media print{body{margin:0;}}';
+                printContent += '</style>';
+                printContent += '</head><body>';
+                printContent += '<h2>Offer Data Report</h2>';
+                printContent += '<p>Generated on: ' + new Date().toLocaleDateString() + ' | Total Records: ' + result.data.length + '</p>';
+                printContent += '<table><thead><tr>';
+
+                result.headers.forEach(function (header) {
+                    printContent += '<th>' + header + '</th>';
+                });
+                printContent += '</tr></thead><tbody>';
+
+                result.data.forEach(function (row) {
+                    printContent += '<tr>';
+                    row.forEach(function (cell) {
+                        printContent += '<td>' + cell + '</td>';
+                    });
+                    printContent += '</tr>';
+                });
+                printContent += '</tbody></table></body></html>';
+
+                var printWindow = window.open('', '_blank');
+                printWindow.document.write(printContent);
+                printWindow.document.close();
+
+                setTimeout(function() {
+                    printWindow.print();
+                }, 500);
+
+                showSuccessToast('Print dialog opened! (' + result.data.length + ' rows)');
+            });
+
+            // Initialize the Highcharts chart
+            if (typeof Highcharts !== 'undefined') {
+                Highcharts.chart('offerChartContainer', {
+                    chart: {
+                        type: 'column'
+                    },
+                    title: {
+                        text: 'Offer Distribution'
+                    },
+                    subtitle: {
+                        text: 'Dynamic offer data visualization'
+                    },
+                    xAxis: {
+                        type: 'category',
+                        labels: {
+                            autoRotation: [-45, -90],
+                            style: {
+                                fontSize: '13px',
+                                fontFamily: 'Verdana, sans-serif'
+                            }
+                        }
+                    },
+                    yAxis: {
+                        min: 0,
+                        title: {
+                            text: 'Offer Count'
+                        }
+                    },
+                    legend: {
+                        enabled: false
+                    },
+                    tooltip: {
+                        pointFormat: 'Count: <b>{point.y}</b>'
+                    },
+                    series: [{
+                        name: 'Offers',
+                        colorByPoint: true,
+                        data: [
+                            @if (ViewBag.TopCustomers != null)
+                            {
+                                foreach (System.Data.DataRow row in ((System.Data.DataTable)ViewBag.TopCustomers).Rows)
+                                {
+                                    <text>['@row["OfferName"]', @row["ProductsSoldCount"]],</text>
+                                }
+                            }
+                        ],
+                        dataLabels: {
+                            enabled: true,
+                            rotation: -90,
+                            color: '#FFFFFF',
+                            inside: true,
+                            verticalAlign: 'top',
+                            format: '{point.y}',
+                            y: 10,
+                            style: {
+                                fontSize: '13px',
+                                fontFamily: 'Verdana, sans-serif'
+                            }
+                        }
+                    }]
+                });
+            } else {
+                console.warn('Highcharts is not loaded.');
+            }
+
+            // Card click functions
+            window.loadAdminOffers = function() {
+                console.log('Loading Admin Offers...');
+                showToast('Loading Admin Offers...', 'success');
+
+                $.ajax({
+                    url: '/Admin/AdminOfferCount',
+                    type: 'GET',
+                    data: {
+                        startDate: '@ViewBag.StartDate' !== 'All' ? '@ViewBag.StartDate' : null,
+                        endDate: '@ViewBag.EndDate' !== 'All' ? '@ViewBag.EndDate' : null
+                    },
+                    success: function(data) {
+                        // Replace current content with admin offer data
+                        var mainContainer = $('#tab3-content');
+                        if (mainContainer.length === 0) {
+                            // If tab3-content doesn't exist, replace the current view content
+                            $('.container-fluid').html(data);
+                        } else {
+                            mainContainer.html(data);
+                        }
+                        showSuccessToast('Admin Offers loaded successfully!');
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading Admin Offers:', error);
+                        showErrorToast('Error loading Admin Offers: ' + error);
+                    }
+                });
+            };
+
+            window.loadSellerOffers = function() {
+                console.log('Loading Seller Offers...');
+                showToast('Loading Seller Offers...', 'success');
+
+                $.ajax({
+                    url: '/Admin/SellerOfferCount',
+                    type: 'GET',
+                    data: {
+                        startDate: '@ViewBag.StartDate' !== 'All' ? '@ViewBag.StartDate' : null,
+                        endDate: '@ViewBag.EndDate' !== 'All' ? '@ViewBag.EndDate' : null
+                    },
+                    success: function(data) {
+                        // Replace current content with seller offer data
+                        var mainContainer = $('#tab3-content');
+                        if (mainContainer.length === 0) {
+                            // If tab3-content doesn't exist, replace the current view content
+                            $('.container-fluid').html(data);
+                        } else {
+                            mainContainer.html(data);
+                        }
+                        showSuccessToast('Seller Offers loaded successfully!');
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading Seller Offers:', error);
+                        showErrorToast('Error loading Seller Offers: ' + error);
+                    }
+                });
+            };
+
+            // Initialize DataTable with proper checkbox handling
+            initializeOfferDataTable();
+
+            console.log('Initialization complete');
+        });
+    </script>
+}
+else
+{
+    <div class="alert alert-info">No offer data available.</div>
+}
